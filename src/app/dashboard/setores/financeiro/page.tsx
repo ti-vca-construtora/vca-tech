@@ -13,7 +13,7 @@ type Solucoes = {
 const solucoesData: Solucoes[] = [
   {
     titulo: 'Calculadora de Antecipação de Parcelas',
-    descricao: 'Efetua o cálculo de júros para antecipação de parcelas.',
+    descricao: 'Efetua o cálculo de juros para antecipação de parcelas.',
     Icon: CiCalculator1,
     href: 'calculadora-juros',
   },
@@ -22,7 +22,7 @@ const solucoesData: Solucoes[] = [
 const SolucoesCard = ({ titulo, descricao, Icon, href }: Solucoes) => {
   return (
     <Link
-      href={`/dashboard/setores/financeiro/${href}`}
+      href={`/dashboard/${href}`}
       className="w-[600px] h-28 border rounded flex items-center gap-3 p-2"
     >
       <div className="text-6xl border rounded p-4">

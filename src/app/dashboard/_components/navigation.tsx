@@ -4,6 +4,7 @@ import { IoIosArrowForward } from 'react-icons/io'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import classNames from 'classnames'
+import { Loader2 } from 'lucide-react'
 
 export function Navigation() {
   const [formattedPathname, setFormattedPathname] = useState([''])
@@ -40,8 +41,8 @@ export function Navigation() {
             className={classNames(
               'font-normal first-letter:uppercase',
               index + 1 === self.length
-                ? 'text-neutral-800 font-bold'
-                : 'text-neutral-400 font-semibold',
+                ? 'text-neutral-800 font-semibold'
+                : 'text-neutral-400 font-normal',
             )}
             onClick={handleClick}
           >
@@ -54,6 +55,8 @@ export function Navigation() {
       ))}
     </nav>
   ) : (
-    <nav>ok</nav>
+    <nav>
+      <Loader2 className="animation-spin duration-1000" />
+    </nav>
   )
 }
