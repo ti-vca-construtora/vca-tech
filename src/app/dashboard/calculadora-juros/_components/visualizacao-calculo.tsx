@@ -8,7 +8,14 @@ import {
 import { Contrato } from './contratos-tabela'
 import { Cliente } from './form'
 import { ParcelaSelecionada } from './parcelas-tabela'
-import { calcularDiferencaDias, formatarData, formatarValor } from '@/app/util'
+import {
+  buscaTaxaPorContrato,
+  calcularDiferencaDias,
+  calcularTJM,
+  calcularVPA,
+  formatarData,
+  formatarValor,
+} from '@/app/util'
 import { useEffect, useState } from 'react'
 
 import {
@@ -48,10 +55,46 @@ export function VisualizaoCalculo({
     CalculoPorParcela[]
   >([])
   const getvalorPresentePorParcela = () => {
+    const taxaAdm = buscaTaxaPorContrato(contrato.contractNumber)?.taxaAdm
+    const taxaTotal = buscaTaxaPorContrato(contrato.contractNumber)?.taxaTotal
+    let taxaAnual: number
+
+    const primeiroBalanceDue = parcelasSelecionadas[0]?.balanceDue || 0 // Balance due do primeiro item ou 0 se vazio
+
     const calculoParcelas = parcelasSelecionadas.map((item) => {
-      const valorPorParcela =
-        item.balanceDue /
-        Math.pow(1 + 0.0003317, calcularDiferencaDias(dataAPagar, item.dueDate))
+      const tipoDeParcela = item.conditionTypeId
+      const diferencaDias = calcularDiferencaDias(dataAPagar, item.dueDate)
+
+      if (taxaTotal && taxaAdm) {
+        taxaAnual = taxaTotal - taxaAdm
+      }
+
+      let valorPorParcela
+
+      switch (tipoDeParcela) {
+        case 'FP': // Tipo de parcela FP
+          if (taxaAnual) {
+            const taxaDeJurosMensal = calcularTJM(taxaAnual)
+            const mesesDeDiferenca = diferencaDias / 30
+
+            valorPorParcela = calcularVPA(
+              taxaDeJurosMensal,
+              mesesDeDiferenca,
+              item.balanceDue,
+            )
+            break
+          }
+
+          break
+
+        case 'PP': // Tipo de parcela PP
+          valorPorParcela = item.balanceDue * 1 // Exemplo de cálculo para PP
+          break
+
+        default: // Parcelas de Loteamento
+          valorPorParcela = primeiroBalanceDue // Define o valor como o balanceDue do primeiro item
+          break
+      }
 
       console.log(calcularDiferencaDias(dataAPagar, item.dueDate))
 
@@ -60,7 +103,7 @@ export function VisualizaoCalculo({
         valorPresente: valorPorParcela,
         dataAPagar,
         dataVencimento: item.dueDate,
-        taxa: 0.0003317,
+        taxa: taxaAnual,
       }
     })
 

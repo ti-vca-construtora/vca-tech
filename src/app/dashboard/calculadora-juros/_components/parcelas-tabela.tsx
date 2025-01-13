@@ -35,6 +35,11 @@ export function ParcelasTabela({
     ParcelaSelecionada[]
   >([])
   const [calculo, setCalculo] = useState<boolean>(false)
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split('T')[0], // Formata para YYYY-MM-DD
+  )
+
+  console.log(parcelas)
 
   const handleSelectParcela = (parcela: Parcela, index: number) => {
     setParcelasSelecionadas((prev) => {
@@ -73,9 +78,48 @@ export function ParcelasTabela({
   }
 
   const sortByDueDateDesc = (array: Parcela[]) => {
-    return array.sort(
+    if (array.length <= 1) return array // Retorna o array se houver 0 ou 1 item.
+
+    // Filtrar as parcelas com balanceDue diferente de 0
+    const validParcels = array.filter((parcel) => parcel.balanceDue !== 0)
+
+    if (validParcels.length === 0) {
+      throw new Error(
+        'Nenhuma parcela válida com balanceDue diferente de 0 encontrada.',
+      )
+    }
+
+    // Encontrar a parcela mais próxima com balanceDue diferente de 0
+    const closestParcel = validParcels.reduce((prev, curr) =>
+      new Date(prev.dueDate) < new Date(curr.dueDate) ? prev : curr,
+    )
+
+    // Separar a parcela mais próxima do restante
+    const remainingParcels = array.filter((parcel) => parcel !== closestParcel)
+
+    // Ordenar o restante em ordem decrescente
+    const sortedRemaining = remainingParcels.sort(
       (a, b) => Number(new Date(b.dueDate)) - Number(new Date(a.dueDate)),
     )
+
+    // Retornar o array com a parcela mais próxima na primeira posição
+    return [closestParcel, ...sortedRemaining]
+  }
+
+  const handleCalculo = () => {
+    const isDateValid = parcelasSelecionadas.every(
+      (parcela: Parcela) => new Date(selectedDate) <= new Date(parcela.dueDate),
+    )
+
+    if (!isDateValid) {
+      alert(
+        'A data de pagamento deve ser anterior ao vencimento de todas as parcelas selecionadas.',
+      )
+
+      return
+    }
+
+    setCalculo(true)
   }
 
   return (
@@ -86,7 +130,7 @@ export function ParcelasTabela({
           cliente={cliente}
           contrato={contrato}
           valor={Number(calcularTotalParcelasSelecionadas().toFixed(2))}
-          dataAPagar="2024-11-01"
+          dataAPagar={selectedDate}
         />
       ) : parcelas.results.length ? (
         <>
@@ -136,7 +180,10 @@ export function ParcelasTabela({
                 .map((parcela, index) => (
                   <TableRow
                     key={index}
-                    className={classNames(index % 2 === 0 && 'bg-neutral-100')}
+                    className={classNames(
+                      index % 2 === 0 && 'bg-neutral-100',
+                      index === 0 && 'bg-green-100',
+                    )}
                   >
                     <TableCell className="font-medium">
                       {formatarData(parcela.dueDate)}
@@ -164,18 +211,6 @@ export function ParcelasTabela({
                   {parcelas.resultSetMetadata.count}
                 </span>
               </span>
-              <span className="text-neutral-600">
-                Quantidade exibida de títulos:{' '}
-                <span className="font-bold">
-                  {parcelas.resultSetMetadata.limit}
-                </span>
-              </span>
-              <span className="text-neutral-600">
-                Offset:{' '}
-                <span className="font-bold">
-                  {parcelas.resultSetMetadata.offset}
-                </span>
-              </span>
             </div>
           </div>
           <div className="border rounded w-full p-2 flex justify-between items-start">
@@ -192,10 +227,16 @@ export function ParcelasTabela({
             <div className="rounded p-2 flex flex-col items-center gap-2">
               <span className="text-neutral-600">
                 Data a Pagar:{' '}
-                <span className="font-bold bg-neutral-100 p-2">15/04/2025</span>
+                <input
+                  id="date"
+                  type="date"
+                  className="font-bold"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                />
               </span>
               <button
-                onClick={() => setCalculo(true)}
+                onClick={handleCalculo}
                 className="w-fit bg-neutral-800 text-white rounded font-bold py-1 px-3 self-end"
               >
                 Calcular

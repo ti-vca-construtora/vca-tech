@@ -7,6 +7,8 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const billId = searchParams.get('billId')
+    const offset = searchParams.get('offset')
+    const limit = searchParams.get('limit')
 
     if (!billId) {
       return NextResponse.json(
@@ -16,7 +18,7 @@ export async function GET(req: NextRequest) {
     }
 
     const response = await fetch(
-      `${API_URL}vca/public/api/v1/accounts-receivable/receivable-bills/${billId}/installments?limit=200&offset=50`,
+      `${API_URL}vca/public/api/v1/accounts-receivable/receivable-bills/${billId}/installments?limit=${limit}&offset=${offset}`,
       {
         method: 'GET',
         headers: {

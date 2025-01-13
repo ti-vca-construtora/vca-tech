@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import classNames from 'classnames'
 import { Loader2 } from 'lucide-react'
+import { formatarRota } from '@/app/util'
 
 export function Navigation() {
   const [formattedPathname, setFormattedPathname] = useState([''])
@@ -39,14 +40,14 @@ export function Navigation() {
         <div key={index} className="flex gap-1 items-center">
           <button
             className={classNames(
-              'font-normal first-letter:uppercase',
+              'font-normal',
               index + 1 === self.length
                 ? 'text-neutral-800 font-semibold'
                 : 'text-neutral-400 font-normal',
             )}
             onClick={handleClick}
           >
-            {item}
+            {formatarRota(item)}
           </button>
           {index + 1 === self.length || (
             <IoIosArrowForward className="text-neutral-600" />
