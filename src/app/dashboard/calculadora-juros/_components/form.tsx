@@ -7,6 +7,7 @@ import * as z from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Contrato } from './contratos-tabela'
+import { IncomeByBillsApiResponse } from '@/app/api/income-by-bills/route'
 
 const formSchema = z.object({
   buscaCliente: z
@@ -32,22 +33,6 @@ type ContractItem = {
   }[]
 }
 
-export type Parcela = {
-  balanceDue: number
-  conditionTypeId: string
-  dueDate: string
-  installmentId: number
-}
-
-export type ParcelasFull = {
-  resultSetMetadata: {
-    count: number
-    offset: number
-    limit: number
-  }
-  results: Parcela[]
-}
-
 export function Form() {
   const [showTable, setShowTable] = useState(false)
   const [contratoInfo, setContratoInfo] = useState<Contrato>({
@@ -62,13 +47,8 @@ export function Form() {
     documentNumber: '',
   })
   const [contratosFull, setContratosFull] = useState<Contrato[]>([])
-  const [parcelas, setParcelas] = useState<ParcelasFull>({
-    resultSetMetadata: {
-      count: 0,
-      limit: 0,
-      offset: 0,
-    },
-    results: [],
+  const [parcelas, setParcelas] = useState<IncomeByBillsApiResponse>({
+    data: [],
   })
   const {
     register,

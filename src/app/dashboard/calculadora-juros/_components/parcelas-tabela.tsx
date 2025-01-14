@@ -10,15 +10,19 @@ import {
 } from '@/components/ui/table'
 import classNames from 'classnames'
 import { useState } from 'react'
-import { Cliente, Parcela, ParcelasFull } from './form'
+import { Cliente } from './form'
 import { Contrato } from './contratos-tabela'
 import { Loader2Icon } from 'lucide-react'
 import { VisualizaoCalculo } from './visualizacao-calculo'
 import { formatarData, formatarValor } from '@/app/util'
+import {
+  IncomeByBillsApiResponse,
+  Parcela,
+} from '@/app/api/income-by-bills/route'
 
 type ParcelasTabelaProps = {
   cliente: Cliente
-  parcelas: ParcelasFull
+  parcelas: IncomeByBillsApiResponse
   contrato: Contrato
 }
 
@@ -71,7 +75,7 @@ export function ParcelasTabela({
   const calcularTotalParcelasSelecionadas = () => {
     return parcelasSelecionadas.reduce((total, parcela) => {
       const valorNumerico = parseFloat(
-        parcela.balanceDue.toString().replace(',', '.').trim(),
+        parcela.correctedBalanceAmount.toString().replace(',', '.').trim(),
       )
       return total + (isNaN(valorNumerico) ? 0 : valorNumerico)
     }, 0)
@@ -81,7 +85,9 @@ export function ParcelasTabela({
     if (array.length <= 1) return array // Retorna o array se houver 0 ou 1 item.
 
     // Filtrar as parcelas com balanceDue diferente de 0
-    const validParcels = array.filter((parcel) => parcel.balanceDue !== 0)
+    const validParcels = array.filter(
+      (parcela) => parcela.correctedBalanceAmount !== 0,
+    )
 
     if (validParcels.length === 0) {
       throw new Error(
@@ -95,7 +101,9 @@ export function ParcelasTabela({
     )
 
     // Separar a parcela mais próxima do restante
-    const remainingParcels = array.filter((parcel) => parcel !== closestParcel)
+    const remainingParcels = array.filter(
+      (parcela) => parcela !== closestParcel,
+    )
 
     // Ordenar o restante em ordem decrescente
     const sortedRemaining = remainingParcels.sort(
@@ -122,14 +130,10 @@ export function ParcelasTabela({
     setCalculo(true)
   }
 
-  const updatedParcelas = sortByDueDateDesc(parcelas.results)
+  const updatedParcelas = sortByDueDateDesc(parcelas.data)
     .map((parcela) => {
-      const hasFP = parcelas.results.some(
-        (item) => item.conditionTypeId === 'FP',
-      )
-      const hasPP = parcelas.results.some(
-        (item) => item.conditionTypeId === 'PP',
-      )
+      const hasFP = parcelas.data.some((item) => item.paymentTerm.id === 'FP')
+      const hasPP = parcelas.data.some((item) => item.paymentTerm.id === 'PP')
 
       if (hasFP) {
         // Se existe algum conditionTypeId 'FP', altera todos para 'FP'
@@ -144,7 +148,7 @@ export function ParcelasTabela({
       // Caso não tenha 'FP' ou 'PP', mantém o objeto como está
       return parcela
     })
-    .filter((parcela) => parcela.balanceDue !== 0)
+    .filter((parcela) => parcela.correctedBalanceAmount !== 0)
 
   return (
     <div className="w-full h-full flex flex-col items-center justify-center gap-6 text-xs">
@@ -156,7 +160,7 @@ export function ParcelasTabela({
           valor={Number(calcularTotalParcelasSelecionadas().toFixed(2))}
           dataAPagar={selectedDate}
         />
-      ) : parcelas.results.length ? (
+      ) : parcelas.data.length ? (
         <>
           <div className="border rounded w-full p-2 flex justify-between items-start">
             <div className="rounded p-2 flex flex-col gap-2">
@@ -210,8 +214,10 @@ export function ParcelasTabela({
                   <TableCell className="font-medium">
                     {formatarData(parcela.dueDate)}
                   </TableCell>
-                  <TableCell>R$ {formatarValor(parcela.balanceDue)}</TableCell>
-                  <TableCell>{parcela.conditionTypeId}</TableCell>
+                  <TableCell>
+                    R$ {formatarValor(parcela.correctedBalanceAmount)}
+                  </TableCell>
+                  <TableCell>{parcela.paymentTerm.id}</TableCell>
                   <TableCell className="border text-center">
                     <input
                       type="checkbox"
@@ -227,9 +233,7 @@ export function ParcelasTabela({
             <div className="rounded flex items-center justify-center w-full text-xs gap-2">
               <span className="text-neutral-600">
                 Quantidade total de títulos:{' '}
-                <span className="font-bold">
-                  {parcelas.resultSetMetadata.count}
-                </span>
+                <span className="font-bold">{parcelas.data.length}</span>
               </span>
             </div>
           </div>

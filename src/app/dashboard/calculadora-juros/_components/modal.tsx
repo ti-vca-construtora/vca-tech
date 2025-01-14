@@ -10,11 +10,11 @@ import {
 import { Contrato, ContratosTabela } from './contratos-tabela'
 import { Dispatch, SetStateAction } from 'react'
 import { GoX } from 'react-icons/go'
-import { ParcelasFull } from './form'
+import { IncomeByBillsApiResponse } from '@/app/api/income-by-bills/route'
 
 type Modal = {
   action: Dispatch<SetStateAction<boolean>>
-  setParcelas: Dispatch<SetStateAction<ParcelasFull>>
+  setParcelas: Dispatch<SetStateAction<IncomeByBillsApiResponse>>
   setContratosInfo: Dispatch<SetStateAction<Contrato>>
   contratos: Contrato[]
   document: {

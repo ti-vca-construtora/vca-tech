@@ -59,10 +59,8 @@ export function VisualizaoCalculo({
     const taxaTotal = buscaTaxaPorContrato(contrato.contractNumber)?.taxaTotal
     let taxaAnual: number
 
-    const primeiroBalanceDue = parcelasSelecionadas[0]?.balanceDue || 0 // Balance due do primeiro item ou 0 se vazio
-
     const calculoParcelas = parcelasSelecionadas.map((item) => {
-      const tipoDeParcela = item.conditionTypeId
+      const tipoDeParcela = item.paymentTerm.id
       const diferencaDias = calcularDiferencaDias(dataAPagar, item.dueDate)
 
       if (taxaTotal && taxaAdm) {
@@ -81,7 +79,7 @@ export function VisualizaoCalculo({
             dataVencimento.getMonth() === dataAPagarDate.getMonth()
 
           if (isMesAtual) {
-            valorPorParcela = item.balanceDue
+            valorPorParcela = item.correctedBalanceAmount
           } else if (taxaAnual) {
             const taxaDeJurosMensal = calcularTJM(taxaAnual)
             const mesesDeDiferenca = diferencaDias / 30
@@ -89,7 +87,7 @@ export function VisualizaoCalculo({
             valorPorParcela = calcularVPA(
               taxaDeJurosMensal,
               mesesDeDiferenca,
-              item.balanceDue,
+              item.correctedBalanceAmount,
             )
           }
           break
@@ -97,22 +95,22 @@ export function VisualizaoCalculo({
 
         case 'PP':
         case 'M':
-          valorPorParcela = item.balanceDue * 1
+          valorPorParcela = item.correctedBalanceAmount * 1
           break
 
         // Para tipos 'M1', 'M2', ..., 'M9' ou '10', '11', '12', etc.
         case tipoDeParcela.match(/^M\d+$/)?.input: // Regex para M seguido de um número
         case tipoDeParcela.match(/^\d{2,}$/)?.input: // Regex para números de 10 ou mais dígitos
-          valorPorParcela = primeiroBalanceDue
+          valorPorParcela = item.originalAmount
           break
 
         default:
-          valorPorParcela = item.balanceDue
+          valorPorParcela = item.correctedBalanceAmount
           break
       }
 
       return {
-        valorAnterior: item.balanceDue,
+        valorAnterior: item.correctedBalanceAmount,
         valorPresente: valorPorParcela,
         dataAPagar,
         dataVencimento: item.dueDate,
