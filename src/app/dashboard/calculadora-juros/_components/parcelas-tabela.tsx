@@ -55,15 +55,6 @@ export function ParcelasTabela({
         // Desmarcar a parcela se ela já está selecionada
         return prev.filter((p) => p.installmentId !== parcela.installmentId)
       } else {
-        // Verificar se o índice da última parcela selecionada é `index - 1`
-        const ultimoIndexSelecionado =
-          prev.length > 0 ? prev[prev.length - 1].index : -1
-        if (ultimoIndexSelecionado !== index - 1) {
-          alert('Você precisa selecionar as parcelas na ordem inversa!')
-          return prev
-        }
-
-        // Adiciona a parcela ao estado, pois a seleção está válida
         return [...prev, { ...parcela, index }]
       }
     })
