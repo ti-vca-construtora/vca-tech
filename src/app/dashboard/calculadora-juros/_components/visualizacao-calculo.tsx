@@ -13,6 +13,7 @@ import {
   calcularDiferencaDias,
   calcularTJM,
   calcularVPA,
+  exportJsonToExcel,
   formatarData,
   formatarValor,
 } from '@/app/util'
@@ -28,6 +29,7 @@ import {
 } from '@/components/ui/table'
 import classNames from 'classnames'
 import { IncomeByBillsApiResponse } from '@/app/api/income-by-bills/route'
+import { PiDownload } from 'react-icons/pi'
 
 type VisualizaoCalculo = {
   valor: number
@@ -38,7 +40,7 @@ type VisualizaoCalculo = {
   contrato: Contrato
 }
 
-type CalculoPorParcela = {
+export type CalculoPorParcela = {
   valorAnterior: number
   valorPresente: number
   dataAPagar: string
@@ -85,8 +87,6 @@ export function VisualizaoCalculo({
       }
 
       let valorPorParcela = 0
-
-      console.log('Parcela do mês do pagamento: ', parcelaDoMesDoPagamento)
 
       const primeiraParcela = self[0]
 
@@ -265,8 +265,15 @@ export function VisualizaoCalculo({
         </Card>
       </div>
       <button
+        onClick={() => exportJsonToExcel(calculoPorParcela)}
+        className="w-48 bg-neutral-800 text-white rounded flex gap-2 items-center justify-center font-bold py-1 px-3 self-end disabled:bg-gray-300"
+      >
+        Download CSV
+        <PiDownload className="text-" />
+      </button>
+      <button
         onClick={() => window.location.reload()}
-        className="w-fit bg-neutral-800 text-white rounded font-bold py-1 px-3 self-end disabled:bg-gray-300"
+        className="w-48 bg-neutral-800 text-white rounded font-bold py-1 px-3 self-end disabled:bg-gray-300"
       >
         Fazer nova simulação
       </button>

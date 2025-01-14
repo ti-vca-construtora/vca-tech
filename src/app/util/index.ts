@@ -1,4 +1,6 @@
 import { contratos } from '@/data/contratos'
+import { CalculoPorParcela } from '../dashboard/calculadora-juros/_components/visualizacao-calculo'
+import * as xlsx from 'xlsx'
 
 export const formatarData = (dataISO: string) => {
   const [ano, mes, dia] = dataISO.split('-')
@@ -64,4 +66,28 @@ export const calcularVPA = (TJM: number, MD: number, VPO: number) => {
   console.log(TJM, MD, VPO)
   const VPA = VPO / Math.pow(1 + TJM, MD)
   return VPA - 1
+}
+
+export const exportJsonToExcel = (json: CalculoPorParcela[]) => {
+  const formattedArray = json.map((item) => {
+    return {
+      valorAnterior: formatarValor(item.valorAnterior),
+      valorPresente: formatarValor(item.valorPresente),
+      dataAPagar: formatarData(item.dataAPagar),
+      dataVencimento: formatarData(item.dataVencimento),
+      taxa: item.taxa || 'Sem taxa.',
+    }
+  })
+
+  // Create a new workbook
+  const workbook = xlsx.utils.book_new()
+
+  // Convert JSON data to a worksheet
+  const worksheet = xlsx.utils.json_to_sheet(formattedArray)
+
+  // Append the worksheet to the workbook
+  xlsx.utils.book_append_sheet(workbook, worksheet, 'Sheet1')
+
+  // Export the workbook as an Excel file
+  xlsx.writeFile(workbook, `${Date.now()}-data.xlsx`)
 }
