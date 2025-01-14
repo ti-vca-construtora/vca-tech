@@ -136,8 +136,11 @@ export async function GET(req: NextRequest) {
       )
     }
 
+    const today = new Date()
+    const formattedDate = today.toISOString().split('T')[0]
+
     const response = await fetch(
-      `${API_URL}vca/public/api/bulk-data/v1/income/by-bills?billsIds=${billId}`,
+      `${API_URL}vca/public/api/bulk-data/v1/income/by-bills?billsIds=${billId}&correctionDate=${formattedDate}`,
       {
         method: 'GET',
         headers: {

@@ -27,11 +27,13 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import classNames from 'classnames'
+import { IncomeByBillsApiResponse } from '@/app/api/income-by-bills/route'
 
 type VisualizaoCalculo = {
   valor: number
   dataAPagar: string
   parcelasSelecionadas: ParcelaSelecionada[]
+  parcelas: IncomeByBillsApiResponse
   cliente: Cliente
   contrato: Contrato
 }
@@ -48,6 +50,7 @@ export function VisualizaoCalculo({
   valor,
   dataAPagar,
   parcelasSelecionadas,
+  parcelas,
   cliente,
   contrato,
 }: VisualizaoCalculo) {
@@ -60,6 +63,19 @@ export function VisualizaoCalculo({
     const taxaTotal = buscaTaxaPorContrato(contrato.contractNumber)?.taxaTotal
     let taxaAnual: number
 
+    const parcelaDoMesDoPagamento = parcelas.data.find((item) => {
+      const dueDate = new Date(item.dueDate)
+      const pagarDate = new Date(dataAPagar)
+
+      console.log('dueDate: ', dueDate)
+      console.log('pagarDate: ', pagarDate)
+
+      return (
+        dueDate.getFullYear() === pagarDate.getFullYear() &&
+        dueDate.getMonth() === pagarDate.getMonth()
+      )
+    })
+
     const calculoParcelas = parcelasSelecionadas.map((item, _index, self) => {
       const tipoDeParcela = item.paymentTerm.id
       const diferencaDias = calcularDiferencaDias(dataAPagar, item.dueDate)
@@ -70,15 +86,7 @@ export function VisualizaoCalculo({
 
       let valorPorParcela = 0
 
-      const parcelaDoMesDoPagamento = self.find((item) => {
-        const dueDate = new Date(item.dueDate)
-        const pagarDate = new Date(dataAPagar)
-
-        return (
-          dueDate.getFullYear() === pagarDate.getFullYear() &&
-          dueDate.getMonth() === pagarDate.getMonth()
-        )
-      })
+      console.log('Parcela do mês do pagamento: ', parcelaDoMesDoPagamento)
 
       const primeiraParcela = self[0]
 
@@ -115,7 +123,7 @@ export function VisualizaoCalculo({
         case tipoDeParcela.match(/^M\d+$/)?.input: // Regex para M seguido de um número
         case tipoDeParcela.match(/^\d{2,}$/)?.input: // Regex para números de 10 ou mais dígitos
           if (parcelaDoMesDoPagamento) {
-            valorPorParcela = parcelaDoMesDoPagamento.correctedBalanceAmount
+            valorPorParcela = parcelaDoMesDoPagamento.originalAmount
 
             break
           }

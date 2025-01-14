@@ -142,8 +142,12 @@ export function ParcelasTabela({
 
   const verificarParcelaEmAberto = () => {
     const hoje = new Date() // Data atual
-    return parcelas.data.some((parcela) => new Date(parcela.dueDate) < hoje)
+    return parcelas.data
+      .filter((parcela) => parcela.correctedBalanceAmount !== 0)
+      .some((parcela) => new Date(parcela.dueDate) < hoje)
   }
+
+  const parcelaVencida = verificarParcelaEmAberto()
 
   const updateParcelas = sortByDueDateDesc(parcelas.data)
     .map((parcela) => {
@@ -170,6 +174,7 @@ export function ParcelasTabela({
       {calculo ? (
         <VisualizaoCalculo
           parcelasSelecionadas={parcelasSelecionadas}
+          parcelas={parcelas}
           cliente={cliente}
           contrato={contrato}
           valor={Number(calcularTotalParcelasSelecionadas().toFixed(2))}
@@ -219,7 +224,7 @@ export function ParcelasTabela({
               ? 'Desmarcar todas'
               : 'Selecionar todas'}
           </button>
-          {!verificarParcelaEmAberto() && (
+          {parcelaVencida && (
             <div className="font-bold text-base text-red-500">
               ESTE CLIENTE POSSUI PARCELAS EM ABERTO.
             </div>
@@ -230,7 +235,7 @@ export function ParcelasTabela({
                 <TableHead className="w-[200px]">DATA VENCIMENTO</TableHead>
                 <TableHead className="w-[200px]">VALOR</TableHead>
                 <TableHead className="w-[200px]">ID CONDIÇÃO</TableHead>
-                <TableHead className="w-[200px]">INDEXADOR</TableHead>
+                <TableHead className="w-[200px]">NOME INDEXADOR </TableHead>
                 <TableHead className="w-[150px] text-center">
                   SELECIONAR
                 </TableHead>
@@ -252,7 +257,7 @@ export function ParcelasTabela({
                     R$ {formatarValor(parcela.correctedBalanceAmount)}
                   </TableCell>
                   <TableCell>{parcela.paymentTerm.id}</TableCell>
-                  <TableCell>{parcela.indexerId}</TableCell>
+                  <TableCell>{parcela.indexerName}</TableCell>
                   <TableCell className="border text-center">
                     <input
                       type="checkbox"
@@ -268,7 +273,13 @@ export function ParcelasTabela({
             <div className="rounded flex items-center justify-center w-full text-xs gap-2">
               <span className="text-neutral-600">
                 Quantidade total de títulos:{' '}
-                <span className="font-bold">{parcelas.data.length}</span>
+                <span className="font-bold">
+                  {
+                    parcelas.data.filter(
+                      (parcela) => parcela.correctedBalanceAmount !== 0,
+                    ).length
+                  }
+                </span>
               </span>
             </div>
           </div>
@@ -297,7 +308,7 @@ export function ParcelasTabela({
               </span>
               <button
                 onClick={handleCalculo}
-                disabled={!verificarParcelaEmAberto() || !selectedDate}
+                disabled={parcelaVencida || !selectedDate}
                 className="w-fit bg-neutral-800 text-white rounded font-bold py-1 px-3 self-end disabled:bg-gray-300"
               >
                 Calcular

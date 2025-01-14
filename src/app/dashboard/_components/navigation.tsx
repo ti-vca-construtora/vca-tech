@@ -13,47 +13,54 @@ export function Navigation() {
   const router = useRouter()
 
   const formatPathname = () => {
-    const formated = pathname.split('/')
-
-    setFormattedPathname(formated)
+    const formatted = pathname.split('/')
+    setFormattedPathname(formatted)
   }
 
   useEffect(() => {
     formatPathname()
   }, [pathname])
 
-  const handleClick = () => {
-    const previousPath = pathname.split('/').map((item, index, self) => {
-      if (index < self.length - 1) {
-        return item
-      }
+  const handleClick = (itemPath: string) => {
+    if (itemPath === pathname) {
+      // Recarrega a página atual
+      window.location.reload()
+    } else {
+      // Vai para o caminho anterior
+      const previousPath = pathname.split('/').map((item, index, self) => {
+        if (index < self.length - 1) {
+          return item
+        }
+        return ''
+      })
 
-      return ''
-    })
-
-    router.push(`${previousPath.join('/')}`)
+      router.push(`${previousPath.join('/')}`)
+    }
   }
 
   return formattedPathname.length ? (
     <nav className="flex gap-1 w-full">
-      {formattedPathname.map((item, index, self) => (
-        <div key={index} className="flex gap-1 items-center">
-          <button
-            className={classNames(
-              'font-normal',
-              index + 1 === self.length
-                ? 'text-neutral-800 font-semibold'
-                : 'text-neutral-400 font-normal',
+      {formattedPathname.map((item, index, self) => {
+        const itemPath = `/${formattedPathname.slice(1, index + 1).join('/')}`
+        return (
+          <div key={index} className="flex gap-1 items-center">
+            <button
+              className={classNames(
+                'font-normal',
+                index + 1 === self.length
+                  ? 'text-neutral-800 font-semibold'
+                  : 'text-neutral-400 font-normal',
+              )}
+              onClick={() => handleClick(itemPath)}
+            >
+              {formatarRota(item)}
+            </button>
+            {index + 1 === self.length || (
+              <IoIosArrowForward className="text-neutral-600" />
             )}
-            onClick={handleClick}
-          >
-            {formatarRota(item)}
-          </button>
-          {index + 1 === self.length || (
-            <IoIosArrowForward className="text-neutral-600" />
-          )}
-        </div>
-      ))}
+          </div>
+        )
+      })}
     </nav>
   ) : (
     <nav>

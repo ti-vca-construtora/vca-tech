@@ -42,7 +42,10 @@ export function Modal({
       <AlertDialogContent>
         <AlertDialogHeader>
           <div className="absolute top-3 right-3">
-            <GoX className="text-xl" />
+            <GoX
+              onClick={() => window.location.reload()}
+              className="text-xl cursor-pointer"
+            />
           </div>
           <AlertDialogTitle>
             Contratos atrelados ao{' '}
