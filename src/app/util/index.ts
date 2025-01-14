@@ -12,6 +12,21 @@ export const formatarValor = (valor: number) => {
   })
 }
 
+export const formatarCpfCnpj = (documento: string) => {
+  const somenteNumeros = documento.replace(/\D/g, '') // Remove todos os caracteres não numéricos
+
+  if (somenteNumeros.length <= 11) {
+    // Formatar como CPF (###.###.###-##)
+    return somenteNumeros.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+  } else {
+    // Formatar como CNPJ (##.###.###/####-##)
+    return somenteNumeros.replace(
+      /(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,
+      '$1.$2.$3/$4-$5',
+    )
+  }
+}
+
 export const calcularDiferencaDias = (
   dataInicial: string,
   dataFinal: string,

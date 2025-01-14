@@ -12,8 +12,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'CPF não fornecido' }, { status: 400 })
     }
 
+    const documento = cpf.length === 11 ? 'cpf' : 'cnpj'
+
     const response = await fetch(
-      `${API_URL}vca/public/api/v1/customers?cpf=${cpf}`,
+      `${API_URL}vca/public/api/v1/customers?${documento}=${cpf}`,
       {
         method: 'GET',
         headers: {

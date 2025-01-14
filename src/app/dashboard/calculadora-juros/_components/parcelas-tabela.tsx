@@ -14,7 +14,7 @@ import { Cliente } from './form'
 import { Contrato } from './contratos-tabela'
 import { Loader2Icon } from 'lucide-react'
 import { VisualizaoCalculo } from './visualizacao-calculo'
-import { formatarData, formatarValor } from '@/app/util'
+import { formatarCpfCnpj, formatarData, formatarValor } from '@/app/util'
 import {
   IncomeByBillsApiResponse,
   Parcela,
@@ -39,11 +39,30 @@ export function ParcelasTabela({
     ParcelaSelecionada[]
   >([])
   const [calculo, setCalculo] = useState<boolean>(false)
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split('T')[0], // Formata para YYYY-MM-DD
-  )
+  const [selectedDate, setSelectedDate] = useState('')
 
-  console.log(parcelas)
+  const handleSelectTodasParcelas = () => {
+    if (
+      parcelasSelecionadas.length ===
+      parcelas.data.filter((parcela) => parcela.correctedBalanceAmount !== 0)
+        .length
+    ) {
+      setParcelasSelecionadas([])
+
+      return
+    }
+
+    setParcelasSelecionadas(
+      parcelas.data
+        .filter((parcela) => parcela.correctedBalanceAmount !== 0)
+        .map((item, index) => {
+          return {
+            ...item,
+            index,
+          }
+        }),
+    )
+  }
 
   const handleSelectParcela = (parcela: Parcela, index: number) => {
     setParcelasSelecionadas((prev) => {
@@ -121,7 +140,12 @@ export function ParcelasTabela({
     setCalculo(true)
   }
 
-  const updatedParcelas = sortByDueDateDesc(parcelas.data)
+  const verificarParcelaEmAberto = () => {
+    const hoje = new Date() // Data atual
+    return parcelas.data.some((parcela) => new Date(parcela.dueDate) < hoje)
+  }
+
+  const updateParcelas = sortByDueDateDesc(parcelas.data)
     .map((parcela) => {
       const hasFP = parcelas.data.some((item) => item.paymentTerm.id === 'FP')
       const hasPP = parcelas.data.some((item) => item.paymentTerm.id === 'PP')
@@ -161,7 +185,9 @@ export function ParcelasTabela({
               </span>
               <span className="text-neutral-600">
                 CPF/CNPJ:{' '}
-                <span className="font-bold">{cliente.documentNumber}</span>
+                <span className="font-bold">
+                  {formatarCpfCnpj(cliente.documentNumber)}
+                </span>
               </span>
               <span className="text-neutral-600">
                 Empreendimento:{' '}
@@ -182,19 +208,36 @@ export function ParcelasTabela({
               </span> */}
             </div>
           </div>
+          <button
+            onClick={handleSelectTodasParcelas}
+            className="w-fit bg-neutral-800 text-white rounded font-bold py-1 px-3 self-end"
+          >
+            {parcelasSelecionadas.length ===
+            parcelas.data.filter(
+              (parcela) => parcela.correctedBalanceAmount !== 0,
+            ).length
+              ? 'Desmarcar todas'
+              : 'Selecionar todas'}
+          </button>
+          {!verificarParcelaEmAberto() && (
+            <div className="font-bold text-base text-red-500">
+              ESTE CLIENTE POSSUI PARCELAS EM ABERTO.
+            </div>
+          )}
           <Table className="border p-2 rounded">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[200px]">DATA VENCIMENTO</TableHead>
                 <TableHead className="w-[200px]">VALOR</TableHead>
-                <TableHead className="flex-grow">ID CONDIÇÃO</TableHead>
+                <TableHead className="w-[200px]">ID CONDIÇÃO</TableHead>
+                <TableHead className="w-[200px]">INDEXADOR</TableHead>
                 <TableHead className="w-[150px] text-center">
                   SELECIONAR
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {updatedParcelas.map((parcela, index) => (
+              {updateParcelas.map((parcela, index) => (
                 <TableRow
                   key={index}
                   className={classNames(
@@ -209,6 +252,7 @@ export function ParcelasTabela({
                     R$ {formatarValor(parcela.correctedBalanceAmount)}
                   </TableCell>
                   <TableCell>{parcela.paymentTerm.id}</TableCell>
+                  <TableCell>{parcela.indexerId}</TableCell>
                   <TableCell className="border text-center">
                     <input
                       type="checkbox"
@@ -247,12 +291,14 @@ export function ParcelasTabela({
                   type="date"
                   className="font-bold"
                   value={selectedDate}
+                  min={new Date().toISOString().split('T')[0]}
                   onChange={(e) => setSelectedDate(e.target.value)}
                 />
               </span>
               <button
                 onClick={handleCalculo}
-                className="w-fit bg-neutral-800 text-white rounded font-bold py-1 px-3 self-end"
+                disabled={!verificarParcelaEmAberto() || !selectedDate}
+                className="w-fit bg-neutral-800 text-white rounded font-bold py-1 px-3 self-end disabled:bg-gray-300"
               >
                 Calcular
               </button>

@@ -54,12 +54,13 @@ export function VisualizaoCalculo({
   const [calculoPorParcela, setCalculoPorParcela] = useState<
     CalculoPorParcela[]
   >([])
+
   const getValorPresentePorParcela = () => {
     const taxaAdm = buscaTaxaPorContrato(contrato.contractNumber)?.taxaAdm
     const taxaTotal = buscaTaxaPorContrato(contrato.contractNumber)?.taxaTotal
     let taxaAnual: number
 
-    const calculoParcelas = parcelasSelecionadas.map((item) => {
+    const calculoParcelas = parcelasSelecionadas.map((item, _index, self) => {
       const tipoDeParcela = item.paymentTerm.id
       const diferencaDias = calcularDiferencaDias(dataAPagar, item.dueDate)
 
@@ -68,6 +69,18 @@ export function VisualizaoCalculo({
       }
 
       let valorPorParcela = 0
+
+      const parcelaDoMesDoPagamento = self.find((item) => {
+        const dueDate = new Date(item.dueDate)
+        const pagarDate = new Date(dataAPagar)
+
+        return (
+          dueDate.getFullYear() === pagarDate.getFullYear() &&
+          dueDate.getMonth() === pagarDate.getMonth()
+        )
+      })
+
+      const primeiraParcela = self[0]
 
       switch (tipoDeParcela.trim()) {
         case 'FP': {
@@ -101,7 +114,13 @@ export function VisualizaoCalculo({
         // Para tipos 'M1', 'M2', ..., 'M9' ou '10', '11', '12', etc.
         case tipoDeParcela.match(/^M\d+$/)?.input: // Regex para M seguido de um número
         case tipoDeParcela.match(/^\d{2,}$/)?.input: // Regex para números de 10 ou mais dígitos
-          valorPorParcela = item.originalAmount
+          if (parcelaDoMesDoPagamento) {
+            valorPorParcela = parcelaDoMesDoPagamento.correctedBalanceAmount
+
+            break
+          }
+          valorPorParcela = primeiraParcela.correctedBalanceAmount
+
           break
 
         default:
@@ -237,6 +256,12 @@ export function VisualizaoCalculo({
           </CardContent>
         </Card>
       </div>
+      <button
+        onClick={() => window.location.reload()}
+        className="w-fit bg-neutral-800 text-white rounded font-bold py-1 px-3 self-end disabled:bg-gray-300"
+      >
+        Fazer nova simulação
+      </button>
     </section>
   )
 }

@@ -60,22 +60,27 @@ export function Form() {
 
   const handleFetchContracts = async (formData: FormType) => {
     try {
-      const data = await fetch(`/api/customer-cpf?cpf=${formData.buscaCliente}`)
+      const documentType =
+        formData.buscaCliente.replace(/\D/g, '').length === 11 ? 'cpf' : 'cnpj'
+
+      const data = await fetch(
+        `/api/customer-cpf?${documentType}=${formData.buscaCliente.replace(/\D/g, '')}`,
+      )
 
       if (data) {
         const parsed = await data.json()
 
-        const { id, name, cpf } = parsed.results[0]
+        const cliente = parsed.results[0]
 
-        const contratos = await fetch(`/api/sales-contracts?id=${id}`)
+        const contratos = await fetch(`/api/sales-contracts?id=${cliente.id}`)
         const contratosParsed = await contratos.json()
 
-        if (name && cpf && id) {
+        if (cliente.name && cliente.id) {
           setClienteInfo({
-            id,
-            name,
-            documentNumber: cpf,
-            documentType: 'cpf',
+            id: cliente.id,
+            name: cliente.name,
+            documentNumber: cliente[documentType],
+            documentType,
           })
         }
 
