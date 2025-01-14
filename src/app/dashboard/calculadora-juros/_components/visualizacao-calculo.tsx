@@ -69,11 +69,20 @@ export function VisualizaoCalculo({
         taxaAnual = taxaTotal - taxaAdm
       }
 
-      let valorPorParcela
+      let valorPorParcela = 0
 
-      switch (tipoDeParcela) {
-        case 'FP': // Tipo de parcela FP
-          if (taxaAnual) {
+      switch (tipoDeParcela.trim()) {
+        case 'FP': {
+          const dataAPagarDate = new Date(dataAPagar)
+          const dataVencimento = new Date(item.dueDate)
+
+          const isMesAtual =
+            dataVencimento.getFullYear() === dataAPagarDate.getFullYear() &&
+            dataVencimento.getMonth() === dataAPagarDate.getMonth()
+
+          if (isMesAtual) {
+            valorPorParcela = item.balanceDue
+          } else if (taxaAnual) {
             const taxaDeJurosMensal = calcularTJM(taxaAnual)
             const mesesDeDiferenca = diferencaDias / 30
 
@@ -82,21 +91,25 @@ export function VisualizaoCalculo({
               mesesDeDiferenca,
               item.balanceDue,
             )
-            break
           }
+          break
+        }
 
+        case 'PP':
+        case 'M':
+          valorPorParcela = item.balanceDue * 1
           break
 
-        case 'PP': // Tipo de parcela PP
-          valorPorParcela = item.balanceDue * 1 // Exemplo de cálculo para PP
+        // Para tipos 'M1', 'M2', ..., 'M9' ou '10', '11', '12', etc.
+        case tipoDeParcela.match(/^M\d+$/)?.input: // Regex para M seguido de um número
+        case tipoDeParcela.match(/^\d{2,}$/)?.input: // Regex para números de 10 ou mais dígitos
+          valorPorParcela = primeiroBalanceDue
           break
 
-        default: // Parcelas de Loteamento
-          valorPorParcela = primeiroBalanceDue // Define o valor como o balanceDue do primeiro item
+        default:
+          valorPorParcela = item.balanceDue
           break
       }
-
-      console.log(calcularDiferencaDias(dataAPagar, item.dueDate))
 
       return {
         valorAnterior: item.balanceDue,
@@ -154,8 +167,16 @@ export function VisualizaoCalculo({
                 </span>
               </p>
               <p className="border-b w-full">
-                Valor Anterior:{' '}
+                Valor Total Anterior:{' '}
                 <span className="font-semibold">{`RS ${formatarValor(valor)}`}</span>
+              </p>
+              <p className="border-b w-full">
+                Valor Total Presente:{' '}
+                <span className="font-semibold">{`RS ${formatarValor(getvalorPresenteTotal())}`}</span>
+              </p>
+              <p className="border-b w-full">
+                Valor Desconto:{' '}
+                <span className="font-semibold">{`RS ${formatarValor(valor - getvalorPresenteTotal())}`}</span>
               </p>
               <p className="border-b w-full">
                 Data a Pagar:{' '}
@@ -179,6 +200,7 @@ export function VisualizaoCalculo({
                 <TableRow>
                   <TableHead>Valor Original</TableHead>
                   <TableHead>Valor Presente</TableHead>
+                  <TableHead>Valor Desconto</TableHead>
                   <TableHead>Vencimento</TableHead>
                   <TableHead>Pagamento</TableHead>
                   <TableHead>{`Período (dias)`}</TableHead>
@@ -197,6 +219,10 @@ export function VisualizaoCalculo({
                     <TableCell>
                       R$ {formatarValor(item.valorPresente)}
                     </TableCell>
+                    <TableCell>
+                      R${' '}
+                      {formatarValor(item.valorAnterior - item.valorPresente)}
+                    </TableCell>
                     <TableCell>{formatarData(item.dataVencimento)}</TableCell>
                     <TableCell>{formatarData(item.dataAPagar)}</TableCell>
                     <TableCell>
@@ -213,13 +239,6 @@ export function VisualizaoCalculo({
           </CardContent>
         </Card>
       </div>
-      <Card className="w-full flex items-center justify-center text-lg">
-        <CardHeader>
-          <CardTitle>
-            Valor Presente: R$ {formatarValor(getvalorPresenteTotal())}
-          </CardTitle>
-        </CardHeader>
-      </Card>
     </section>
   )
 }

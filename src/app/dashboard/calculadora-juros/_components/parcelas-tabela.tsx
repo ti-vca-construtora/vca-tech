@@ -122,6 +122,30 @@ export function ParcelasTabela({
     setCalculo(true)
   }
 
+  const updatedParcelas = sortByDueDateDesc(parcelas.results)
+    .map((parcela) => {
+      const hasFP = parcelas.results.some(
+        (item) => item.conditionTypeId === 'FP',
+      )
+      const hasPP = parcelas.results.some(
+        (item) => item.conditionTypeId === 'PP',
+      )
+
+      if (hasFP) {
+        // Se existe algum conditionTypeId 'FP', altera todos para 'FP'
+        return { ...parcela, conditionTypeId: 'FP' }
+      }
+
+      if (hasPP) {
+        // Se existe algum conditionTypeId 'PP', altera todos para 'PP'
+        return { ...parcela, conditionTypeId: 'PP' }
+      }
+
+      // Caso não tenha 'FP' ou 'PP', mantém o objeto como está
+      return parcela
+    })
+    .filter((parcela) => parcela.balanceDue !== 0)
+
   return (
     <div className="w-full h-full flex flex-col items-center justify-center gap-6 text-xs">
       {calculo ? (
@@ -157,10 +181,10 @@ export function ParcelasTabela({
               <span className="text-neutral-600">
                 Unidade: <span className="font-bold">{contrato.unit}</span>
               </span>
-              <span className="text-neutral-600">
+              {/* <span className="text-neutral-600">
                 Contrato ID:{' '}
                 <span className="font-bold">FALTA IMPLEMENTAR</span>
-              </span>
+              </span> */}
             </div>
           </div>
           <Table className="border p-2 rounded">
@@ -175,32 +199,28 @@ export function ParcelasTabela({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortByDueDateDesc(parcelas.results)
-                .filter((parcela) => parcela.balanceDue !== 0)
-                .map((parcela, index) => (
-                  <TableRow
-                    key={index}
-                    className={classNames(
-                      index % 2 === 0 && 'bg-neutral-100',
-                      index === 0 && 'bg-green-100',
-                    )}
-                  >
-                    <TableCell className="font-medium">
-                      {formatarData(parcela.dueDate)}
-                    </TableCell>
-                    <TableCell>
-                      R$ {formatarValor(parcela.balanceDue)}
-                    </TableCell>
-                    <TableCell>{parcela.conditionTypeId}</TableCell>
-                    <TableCell className="border text-center">
-                      <input
-                        type="checkbox"
-                        checked={isParcelaSelecionada(parcela)}
-                        onChange={() => handleSelectParcela(parcela, index)}
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))}
+              {updatedParcelas.map((parcela, index) => (
+                <TableRow
+                  key={index}
+                  className={classNames(
+                    index % 2 === 0 && 'bg-neutral-100',
+                    index === 0 && 'bg-green-100',
+                  )}
+                >
+                  <TableCell className="font-medium">
+                    {formatarData(parcela.dueDate)}
+                  </TableCell>
+                  <TableCell>R$ {formatarValor(parcela.balanceDue)}</TableCell>
+                  <TableCell>{parcela.conditionTypeId}</TableCell>
+                  <TableCell className="border text-center">
+                    <input
+                      type="checkbox"
+                      checked={isParcelaSelecionada(parcela)}
+                      onChange={() => handleSelectParcela(parcela, index)}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
           <div className="w-full flex justify-between items-start">

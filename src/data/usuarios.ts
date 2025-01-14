@@ -9,6 +9,12 @@ export const usuarios: Usuario[] = [
     user: 'userxrfa',
     senha: 'KLOp0hjDWW',
     token:
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+      'eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoidXNlcnhyZmEiLCJzZW5oYSI6IktMT3AwaGpEV1cifQ.jseUmUVdkVIrvZcwooktr7A9-O2DU82VixXA12Y68oE',
+  },
+  {
+    user: 'admin',
+    senha: 'ADMIN123',
+    token:
+      'eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoiYWRtaW4iLCJzZW5oYSI6IkFETUlOMTIzIn0.VUmuwycoYshwar4ilKQShhJeQKPHsD3Q5wuFt1nHt1o',
   },
 ]
