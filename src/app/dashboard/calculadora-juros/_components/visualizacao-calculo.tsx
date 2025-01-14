@@ -54,7 +54,7 @@ export function VisualizaoCalculo({
   const [calculoPorParcela, setCalculoPorParcela] = useState<
     CalculoPorParcela[]
   >([])
-  const getvalorPresentePorParcela = () => {
+  const getValorPresentePorParcela = () => {
     const taxaAdm = buscaTaxaPorContrato(contrato.contractNumber)?.taxaAdm
     const taxaTotal = buscaTaxaPorContrato(contrato.contractNumber)?.taxaTotal
     let taxaAnual: number
@@ -123,7 +123,7 @@ export function VisualizaoCalculo({
     setCalculoPorParcela(calculoParcelas)
   }
 
-  const getvalorPresenteTotal = () => {
+  const getValorPresenteTotal = () => {
     return calculoPorParcela.reduce(
       (soma, parcela) => soma + parcela.valorPresente,
       0,
@@ -131,7 +131,7 @@ export function VisualizaoCalculo({
   }
 
   useEffect(() => {
-    getvalorPresentePorParcela()
+    getValorPresentePorParcela()
   }, [])
 
   return (
@@ -172,11 +172,11 @@ export function VisualizaoCalculo({
               </p>
               <p className="border-b w-full">
                 Valor Total Presente:{' '}
-                <span className="font-semibold">{`RS ${formatarValor(getvalorPresenteTotal())}`}</span>
+                <span className="font-semibold">{`RS ${formatarValor(getValorPresenteTotal())}`}</span>
               </p>
               <p className="border-b w-full">
                 Valor Desconto:{' '}
-                <span className="font-semibold">{`RS ${formatarValor(valor - getvalorPresenteTotal())}`}</span>
+                <span className="font-semibold">{`RS ${formatarValor(valor - getValorPresenteTotal())}`}</span>
               </p>
               <p className="border-b w-full">
                 Data a Pagar:{' '}
