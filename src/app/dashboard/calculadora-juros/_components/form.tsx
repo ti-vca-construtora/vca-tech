@@ -13,7 +13,7 @@ const formSchema = z.object({
   buscaCliente: z
     .string()
     .min(11, 'Informe um CPF/CNPJ válido.')
-    .max(14, 'Informe um CPF/CNPJ válido.'),
+    .max(18, 'Informe um CPF/CNPJ válido.'),
 })
 
 type FormType = z.infer<typeof formSchema>
@@ -64,7 +64,7 @@ export function Form() {
         formData.buscaCliente.replace(/\D/g, '').length === 11 ? 'cpf' : 'cnpj'
 
       const data = await fetch(
-        `/api/customer-cpf?${documentType}=${formData.buscaCliente.replace(/\D/g, '')}`,
+        `/api/customer-cpf?documento=${formData.buscaCliente.replace(/\D/g, '')}`,
       )
 
       if (data) {

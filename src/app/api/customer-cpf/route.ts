@@ -6,16 +6,19 @@ const BASIC_HASH = process.env.NEXT_PUBLIC_HASH_BASIC
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    const cpf = searchParams.get('cpf')
+    const documento = searchParams.get('documento')
 
-    if (!cpf) {
-      return NextResponse.json({ error: 'CPF não fornecido' }, { status: 400 })
+    if (!documento) {
+      return NextResponse.json(
+        { error: 'Documento não fornecido' },
+        { status: 400 },
+      )
     }
 
-    const documento = cpf.length === 11 ? 'cpf' : 'cnpj'
+    const documentType = documento.length === 11 ? 'cpf' : 'cnpj'
 
     const response = await fetch(
-      `${API_URL}vca/public/api/v1/customers?${documento}=${cpf}`,
+      `${API_URL}vca/public/api/v1/customers?${documentType}=${documento}`,
       {
         method: 'GET',
         headers: {
