@@ -1,16 +1,16 @@
 import Link from 'next/link'
-import { CircleUser, Home, Menu, Package2 } from 'lucide-react'
+import { Home, Menu, Package2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+// import {
+//   DropdownMenu,
+//   DropdownMenuContent,
+//   DropdownMenuItem,
+//   DropdownMenuLabel,
+//   DropdownMenuSeparator,
+//   DropdownMenuTrigger,
+// } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Navigation } from './navigation'
 import { PiShareNetwork } from 'react-icons/pi'
@@ -32,13 +32,13 @@ export function Dashboard({ children }: DashboardProps) {
           </div>
           <div className="flex-1">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-              <Link
+              {/* <Link
                 href="/dashboard"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary font-semibold"
               >
                 <Home className="size-4" />
                 Dashboard
-              </Link>
+              </Link> */}
               <Link
                 href="/dashboard/setores"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary font-semibold"
@@ -48,7 +48,7 @@ export function Dashboard({ children }: DashboardProps) {
               </Link>
             </nav>
           </div>
-          <div className="mt-auto p-4">
+          {/* <div className="mt-auto p-4">
             <DropdownMenu>
               <div className="flex items-center gap-2">
                 <DropdownMenuTrigger asChild>
@@ -79,7 +79,7 @@ export function Dashboard({ children }: DashboardProps) {
                 <DropdownMenuItem>Sair</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
+          </div> */}
         </div>
       </div>
       <div className="flex flex-col">
@@ -112,7 +112,7 @@ export function Dashboard({ children }: DashboardProps) {
                   Dashboard
                 </Link>
               </nav>
-              <div className="mt-auto">
+              {/* <div className="mt-auto">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -133,7 +133,7 @@ export function Dashboard({ children }: DashboardProps) {
                     <DropdownMenuItem>Sair</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </div>
+              </div> */}
             </SheetContent>
           </Sheet>
           <div className="w-full h-full flex-1 px-4 lg:px-6 flex items-center justify-center">

@@ -1,9 +1,9 @@
 import Link from 'next/link'
 import { IconType } from 'react-icons/lib'
 import { GrMoney } from 'react-icons/gr'
-import { MdOutlineRealEstateAgent, MdAccountBalance } from 'react-icons/md'
-import { BsPeopleFill } from 'react-icons/bs'
-import { GoLaw } from 'react-icons/go'
+// import { MdOutlineRealEstateAgent, MdAccountBalance } from 'react-icons/md'
+// import { BsPeopleFill } from 'react-icons/bs'
+// import { GoLaw } from 'react-icons/go'
 
 type Setor = {
   title: string
@@ -17,26 +17,26 @@ const setoresData: Setor[] = [
     href: '/dashboard/setores/financeiro',
     Icon: GrMoney,
   },
-  {
-    title: 'Relacionamento',
-    href: '/app/relacionamento',
-    Icon: MdOutlineRealEstateAgent,
-  },
-  {
-    title: 'Jurídico',
-    href: '/app/relacionamento',
-    Icon: GoLaw,
-  },
-  {
-    title: 'RH',
-    href: '/app/relacionamento',
-    Icon: BsPeopleFill,
-  },
-  {
-    title: 'Contabilidade',
-    href: '/app/relacionamento',
-    Icon: MdAccountBalance,
-  },
+  // {
+  //   title: 'Relacionamento',
+  //   href: '/app/relacionamento',
+  //   Icon: MdOutlineRealEstateAgent,
+  // },
+  // {
+  //   title: 'Jurídico',
+  //   href: '/app/relacionamento',
+  //   Icon: GoLaw,
+  // },
+  // {
+  //   title: 'RH',
+  //   href: '/app/relacionamento',
+  //   Icon: BsPeopleFill,
+  // },
+  // {
+  //   title: 'Contabilidade',
+  //   href: '/app/relacionamento',
+  //   Icon: MdAccountBalance,
+  // },
 ]
 
 export default function Setores() {
