@@ -6,9 +6,18 @@ export function middleware(req: NextRequest) {
 
   console.log('Middleware executado para:', pathname)
 
-  // Ignorar rotas públicas
+  // Ignorar rotas públicas específicas, mas redirecionar caso o token exista
   if (pathname === '/login') {
-    console.log('Rota /login detectada, ignorando middleware.')
+    const token = req.cookies.get('vca-tech-authorize')?.value
+
+    if (token) {
+      console.log(
+        'Token encontrado na rota /login. Redirecionando para /dashboard.',
+      )
+      return NextResponse.redirect(new URL('/dashboard', req.url))
+    }
+
+    console.log('Acesso permitido à rota /login.')
     return NextResponse.next()
   }
 

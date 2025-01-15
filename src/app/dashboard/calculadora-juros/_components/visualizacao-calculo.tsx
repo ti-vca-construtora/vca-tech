@@ -64,13 +64,15 @@ export function VisualizaoCalculo({
     const taxaAdm = buscaTaxaPorContrato(contrato.contractNumber)?.taxaAdm
     const taxaTotal = buscaTaxaPorContrato(contrato.contractNumber)?.taxaTotal
     let taxaAnual: number
+    const primeiraParcela = parcelasSelecionadas[0]
 
     const parcelaDoMesDoPagamento = parcelas.data.find((item) => {
-      const dueDate = new Date(item.dueDate)
-      const pagarDate = new Date(dataAPagar)
+      const dueDate = new Date(`${item.dueDate}T03:00:00Z`)
+      const pagarDate = new Date(`${dataAPagar}T03:00:00Z`)
 
-      console.log('dueDate: ', dueDate)
-      console.log('pagarDate: ', pagarDate)
+      console.log(item.dueDate)
+      console.log(dataAPagar)
+      console.log(pagarDate)
 
       return (
         dueDate.getFullYear() === pagarDate.getFullYear() &&
@@ -78,7 +80,7 @@ export function VisualizaoCalculo({
       )
     })
 
-    const calculoParcelas = parcelasSelecionadas.map((item, _index, self) => {
+    const calculoParcelas = parcelasSelecionadas.map((item) => {
       const tipoDeParcela = item.paymentTerm.id
       const diferencaDias = calcularDiferencaDias(dataAPagar, item.dueDate)
 
@@ -87,8 +89,6 @@ export function VisualizaoCalculo({
       }
 
       let valorPorParcela = 0
-
-      const primeiraParcela = self[0]
 
       switch (tipoDeParcela.trim()) {
         case 'FP': {
