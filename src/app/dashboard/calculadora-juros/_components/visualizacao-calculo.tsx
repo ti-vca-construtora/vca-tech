@@ -13,6 +13,7 @@ import {
   calcularDiferencaDias,
   calcularTJM,
   calcularVPA,
+  dias360,
   exportJsonToExcel,
   formatarData,
   formatarValor,
@@ -99,7 +100,10 @@ export function VisualizaoCalculo({
       })
       .map((item) => {
         const tipoDeParcela = item.paymentTerm.id
-        const diferencaDias = calcularDiferencaDias(dataAPagar, item.dueDate)
+        const diferencaDias = dias360(
+          new Date(`${dataAPagar}T04:00:00Z`),
+          new Date(`${item.dueDate}T04:00:00Z`),
+        )
 
         if (taxaTotal && taxaAdm) {
           taxaAnual = taxaTotal - taxaAdm

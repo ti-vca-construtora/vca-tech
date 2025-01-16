@@ -36,10 +36,8 @@ export const calcularDiferencaDias = (
   const data1 = new Date(dataInicial)
   const data2 = new Date(dataFinal)
 
-  // Calcula a diferença em milissegundos
   const diferencaEmMilissegundos = Math.abs(Number(data2) - Number(data1))
 
-  // Converte a diferença para dias
   const diferencaEmDias = Math.ceil(
     diferencaEmMilissegundos / (1000 * 60 * 60 * 24),
   )
@@ -58,13 +56,45 @@ export const buscaTaxaPorContrato = (contrato: string) => {
   return contratos.find((item) => item.contrato === contrato)
 }
 
+export const dias360 = (dataInicial: Date, dataFinal: Date) => {
+  const [dia1, mes1, ano1] = [
+    dataInicial.getDate(),
+    dataInicial.getMonth() + 1,
+    dataInicial.getFullYear(),
+  ]
+  const [dia2, mes2, ano2] = [
+    dataFinal.getDate(),
+    dataFinal.getMonth() + 1,
+    dataFinal.getFullYear(),
+  ]
+
+  // Ajuste para o dia inicial
+  let d1 = dia1
+  if (d1 === 31 || (mes1 === 2 && (dia1 === 28 || dia1 === 29))) {
+    d1 = 30 // Converte fevereiro e dias 31 para 30
+  }
+
+  // Ajuste para o dia final
+  let d2 = dia2
+  if (d2 === 31 || (mes2 === 2 && (dia2 === 28 || dia2 === 29))) {
+    if (d1 === 30) {
+      d2 = 30 // Alinha dia final a 30 se dia inicial for 30
+    } else {
+      d2 = 30 // Converte dias finais de fevereiro ou 31 para 30
+    }
+  }
+
+  // Fórmula do método 30/360
+  return (ano2 - ano1) * 360 + (mes2 - mes1) * 30 + (d2 - d1)
+}
+
 export const calcularTJM = (TJA: number) => {
   return Math.pow(1 + TJA, 1 / 12) - 1
 }
 
 export const calcularVPA = (TJM: number, MD: number, VPO: number) => {
   const VPA = VPO / Math.pow(1 + TJM, MD)
-  return VPA - 1
+  return VPA
 }
 
 export const exportJsonToExcel = (json: CalculoPorParcela[]) => {
