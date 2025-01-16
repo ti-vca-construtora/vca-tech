@@ -70,9 +70,9 @@ export function VisualizaoCalculo({
       const dueDate = new Date(`${item.dueDate}T03:00:00Z`)
       const pagarDate = new Date(`${dataAPagar}T03:00:00Z`)
 
-      console.log(item.dueDate)
-      console.log(dataAPagar)
-      console.log(pagarDate)
+      // console.log(item.dueDate)
+      // console.log(dataAPagar)
+      // console.log(pagarDate)
 
       return (
         dueDate.getFullYear() === pagarDate.getFullYear() &&
@@ -80,70 +80,87 @@ export function VisualizaoCalculo({
       )
     })
 
-    const calculoParcelas = parcelasSelecionadas.map((item) => {
-      const tipoDeParcela = item.paymentTerm.id
-      const diferencaDias = calcularDiferencaDias(dataAPagar, item.dueDate)
+    const hasFP = parcelas.data.some(
+      (item) => item.paymentTerm.id.trim() === 'FP',
+    )
 
-      if (taxaTotal && taxaAdm) {
-        taxaAnual = taxaTotal - taxaAdm
-      }
+    const hasPP = parcelas.data.some(
+      (item) => item.paymentTerm.id.trim() === 'PP',
+    )
 
-      let valorPorParcela = 0
+    const conditionTypeId = hasFP ? 'FP' : hasPP ? 'PP' : null
 
-      switch (tipoDeParcela.trim()) {
-        case 'FP': {
-          const dataAPagarDate = new Date(dataAPagar)
-          const dataVencimento = new Date(item.dueDate)
+    const calculoParcelas = parcelasSelecionadas
+      .map((parcela) => {
+        if (conditionTypeId) {
+          return { ...parcela, paymentTerm: { id: conditionTypeId } }
+        }
+        return parcela
+      })
+      .map((item) => {
+        const tipoDeParcela = item.paymentTerm.id
+        const diferencaDias = calcularDiferencaDias(dataAPagar, item.dueDate)
 
-          const isMesAtual =
-            dataVencimento.getFullYear() === dataAPagarDate.getFullYear() &&
-            dataVencimento.getMonth() === dataAPagarDate.getMonth()
-
-          if (isMesAtual) {
-            valorPorParcela = item.correctedBalanceAmount
-          } else if (taxaAnual) {
-            const taxaDeJurosMensal = calcularTJM(taxaAnual)
-            const mesesDeDiferenca = diferencaDias / 30
-
-            valorPorParcela = calcularVPA(
-              taxaDeJurosMensal,
-              mesesDeDiferenca,
-              item.correctedBalanceAmount,
-            )
-          }
-          break
+        if (taxaTotal && taxaAdm) {
+          taxaAnual = taxaTotal - taxaAdm
         }
 
-        case 'PP':
-        case 'M':
-          valorPorParcela = item.correctedBalanceAmount * 1
-          break
+        let valorPorParcela = 0
 
-        // Para tipos 'M1', 'M2', ..., 'M9' ou '10', '11', '12', etc.
-        case tipoDeParcela.match(/^M\d+$/)?.input: // Regex para M seguido de um número
-        case tipoDeParcela.match(/^\d{2,}$/)?.input: // Regex para números de 10 ou mais dígitos
-          if (parcelaDoMesDoPagamento) {
-            valorPorParcela = parcelaDoMesDoPagamento.originalAmount
+        switch (tipoDeParcela.trim()) {
+          case 'FP': {
+            const dataAPagarDate = new Date(dataAPagar)
+            const dataVencimento = new Date(item.dueDate)
 
+            const isMesAtual =
+              dataVencimento.getFullYear() === dataAPagarDate.getFullYear() &&
+              dataVencimento.getMonth() === dataAPagarDate.getMonth()
+
+            if (isMesAtual) {
+              valorPorParcela = item.correctedBalanceAmount
+            } else if (taxaAnual) {
+              const taxaDeJurosMensal = calcularTJM(taxaAnual)
+              const mesesDeDiferenca = diferencaDias / 30
+
+              valorPorParcela = calcularVPA(
+                taxaDeJurosMensal,
+                mesesDeDiferenca,
+                item.correctedBalanceAmount,
+              )
+            }
             break
           }
-          valorPorParcela = primeiraParcela.correctedBalanceAmount
 
-          break
+          case 'PP':
+          case 'M':
+            valorPorParcela = item.correctedBalanceAmount * 1
+            break
 
-        default:
-          valorPorParcela = item.correctedBalanceAmount
-          break
-      }
+          // Para tipos 'M1', 'M2', ..., 'M9' ou '10', '11', '12', etc.
+          case tipoDeParcela.match(/^M\d+$/)?.input: // Regex para M seguido de um número
+          case tipoDeParcela.match(/^\d{2,}$/)?.input: // Regex para números de 10 ou mais dígitos
+            if (parcelaDoMesDoPagamento) {
+              valorPorParcela = parcelaDoMesDoPagamento.originalAmount
 
-      return {
-        valorAnterior: item.correctedBalanceAmount,
-        valorPresente: valorPorParcela,
-        dataAPagar,
-        dataVencimento: item.dueDate,
-        taxa: taxaAnual,
-      }
-    })
+              break
+            }
+            valorPorParcela = primeiraParcela.correctedBalanceAmount
+
+            break
+
+          default:
+            valorPorParcela = item.correctedBalanceAmount
+            break
+        }
+
+        return {
+          valorAnterior: item.correctedBalanceAmount,
+          valorPresente: valorPorParcela,
+          dataAPagar,
+          dataVencimento: item.dueDate,
+          taxa: taxaAnual,
+        }
+      })
 
     setCalculoPorParcela(calculoParcelas)
   }

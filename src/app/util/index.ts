@@ -63,7 +63,6 @@ export const calcularTJM = (TJA: number) => {
 }
 
 export const calcularVPA = (TJM: number, MD: number, VPO: number) => {
-  console.log(TJM, MD, VPO)
   const VPA = VPO / Math.pow(1 + TJM, MD)
   return VPA - 1
 }

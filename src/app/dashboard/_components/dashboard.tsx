@@ -14,10 +14,29 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Navigation } from './navigation'
 import { PiShareNetwork } from 'react-icons/pi'
+import { IconType } from 'react-icons/lib'
+
+import LogoVca from '../../../../public/assets/logo-vca.png'
+import Image from 'next/image'
 
 type DashboardProps = {
   children: React.ReactNode
 }
+
+type Aba = {
+  text: string
+  href: string
+  icon: IconType
+  className?: string
+}
+
+const abas: Aba[] = [
+  {
+    text: 'Setores',
+    href: '/dashboard/setores',
+    icon: PiShareNetwork,
+  },
+]
 
 export function Dashboard({ children }: DashboardProps) {
   return (
@@ -26,26 +45,21 @@ export function Dashboard({ children }: DashboardProps) {
         <div className="flex h-full flex-col gap-2 text-neutral-700 font-bold">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
             <Link href="/" className="flex items-center gap-2 font-semibold">
-              <Package2 className="h-6 w-6" />
-              <span className="">VCA Tech</span>
+              <Image width={160} src={LogoVca} alt="Logo da VCA Construtora" />
             </Link>
           </div>
           <div className="flex-1">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-              {/* <Link
-                href="/dashboard"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary font-semibold"
-              >
-                <Home className="size-4" />
-                Dashboard
-              </Link> */}
-              <Link
-                href="/dashboard/setores"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary font-semibold"
-              >
-                <PiShareNetwork className="size-4" />
-                Setores
-              </Link>
+              {abas.map((item, index) => (
+                <Link
+                  key={index}
+                  href={item.href}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary font-semibold"
+                >
+                  <item.icon className="size-4" />
+                  {item.text}
+                </Link>
+              ))}
             </nav>
           </div>
           {/* <div className="mt-auto p-4">

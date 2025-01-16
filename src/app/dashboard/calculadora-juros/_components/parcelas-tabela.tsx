@@ -149,25 +149,9 @@ export function ParcelasTabela({
 
   const parcelaVencida = verificarParcelaEmAberto()
 
-  const updateParcelas = sortByDueDateDesc(parcelas.data)
-    .map((parcela) => {
-      const hasFP = parcelas.data.some((item) => item.paymentTerm.id === 'FP')
-      const hasPP = parcelas.data.some((item) => item.paymentTerm.id === 'PP')
-
-      if (hasFP) {
-        // Se existe algum conditionTypeId 'FP', altera todos para 'FP'
-        return { ...parcela, conditionTypeId: 'FP' }
-      }
-
-      if (hasPP) {
-        // Se existe algum conditionTypeId 'PP', altera todos para 'PP'
-        return { ...parcela, conditionTypeId: 'PP' }
-      }
-
-      // Caso não tenha 'FP' ou 'PP', mantém o objeto como está
-      return parcela
-    })
-    .filter((parcela) => parcela.correctedBalanceAmount !== 0)
+  const updateParcelas = sortByDueDateDesc(parcelas.data).filter(
+    (parcela) => parcela.correctedBalanceAmount !== 0,
+  )
 
   return (
     <div className="w-full h-full flex flex-col items-center justify-center gap-6 text-xs">
