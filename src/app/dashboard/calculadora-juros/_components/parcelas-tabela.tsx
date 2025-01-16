@@ -64,6 +64,20 @@ export function ParcelasTabela({
     )
   }
 
+  const handleParcelasPorTipo = (tipo: string) => {
+    setParcelasSelecionadas(
+      parcelas.data
+        .filter((parcela) => parcela.correctedBalanceAmount !== 0)
+        .filter((parcela) => parcela.paymentTerm.id === tipo)
+        .map((item, index) => {
+          return {
+            ...item,
+            index,
+          }
+        }),
+    )
+  }
+
   const handleSelectParcela = (parcela: Parcela, index: number) => {
     setParcelasSelecionadas((prev) => {
       const parcelaJaSelecionada = prev.some(
@@ -153,6 +167,15 @@ export function ParcelasTabela({
     (parcela) => parcela.correctedBalanceAmount !== 0,
   )
 
+  const tiposDeParcela = Array.from(
+    new Set(
+      parcelas.data
+        .filter((parcela) => parcela.correctedBalanceAmount !== 0)
+        .map((parcela) => parcela.paymentTerm?.id?.trim())
+        .filter((id): id is string => !!id),
+    ),
+  )
+
   return (
     <div className="w-full h-full flex flex-col items-center justify-center gap-6 text-xs">
       {calculo ? (
@@ -197,17 +220,33 @@ export function ParcelasTabela({
               </span> */}
             </div>
           </div>
-          <button
-            onClick={handleSelectTodasParcelas}
-            className="w-fit bg-neutral-800 text-white rounded font-bold py-1 px-3 self-end"
-          >
-            {parcelasSelecionadas.length ===
-            parcelas.data.filter(
-              (parcela) => parcela.correctedBalanceAmount !== 0,
-            ).length
-              ? 'Desmarcar todas'
-              : 'Selecionar todas'}
-          </button>
+          <div className="flex flex-row-reverse items-center justify-center self-end gap-3">
+            <button
+              onClick={handleSelectTodasParcelas}
+              className="w-fit bg-neutral-800 text-white rounded font-bold py-1 px-3 self-end"
+            >
+              {parcelasSelecionadas.length ===
+              parcelas.data.filter(
+                (parcela) => parcela.correctedBalanceAmount !== 0,
+              ).length
+                ? 'Desmarcar todas'
+                : 'Selecionar todas'}
+            </button>
+            <div className="self-end flex items-center justify-center gap-2">
+              <select
+                defaultValue=""
+                onChange={(e) => handleParcelasPorTipo(e.target.value)}
+                className="w-fit bg-neutral-800 text-white rounded font-bold py-[3px] px-3 self-end"
+              >
+                <option value="">Selecionar parcelas pelo tipo</option>
+                {tiposDeParcela.map((item, index) => (
+                  <option key={index} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
           {parcelaVencida && (
             <div className="font-bold text-base text-red-500">
               ESTE CLIENTE POSSUI PARCELAS EM ABERTO.
