@@ -60,35 +60,35 @@ export function VisualizaoCalculo({
     CalculoPorParcela[]
   >([])
 
+  const parcelaDoMesDoPagamento = parcelas.data.find((item) => {
+    const dueDate = new Date(`${item.dueDate}T04:00:00Z`)
+    const pagarDate = new Date(`${dataAPagar}T04:00:00Z`)
+
+    // console.log(item.dueDate)
+    // console.log(dataAPagar)
+    // console.log(pagarDate)
+
+    return (
+      dueDate.getFullYear() === pagarDate.getFullYear() &&
+      dueDate.getMonth() === pagarDate.getMonth()
+    )
+  })
+
+  const hasFP = parcelas.data.some(
+    (item) => item.paymentTerm.id.trim() === 'FP',
+  )
+
+  const hasPP = parcelas.data.some(
+    (item) => item.paymentTerm.id.trim() === 'PP',
+  )
+
+  const conditionTypeId = hasFP ? 'FP' : hasPP ? 'PP' : null
+
   const getValorPresentePorParcela = () => {
     const taxaAdm = buscaTaxaPorContrato(contrato.contractNumber)?.taxaAdm
     const taxaTotal = buscaTaxaPorContrato(contrato.contractNumber)?.taxaTotal
     let taxaAnual: number
     const primeiraParcela = parcelasSelecionadas[0]
-
-    const parcelaDoMesDoPagamento = parcelas.data.find((item) => {
-      const dueDate = new Date(`${item.dueDate}T03:00:00Z`)
-      const pagarDate = new Date(`${dataAPagar}T03:00:00Z`)
-
-      // console.log(item.dueDate)
-      // console.log(dataAPagar)
-      // console.log(pagarDate)
-
-      return (
-        dueDate.getFullYear() === pagarDate.getFullYear() &&
-        dueDate.getMonth() === pagarDate.getMonth()
-      )
-    })
-
-    const hasFP = parcelas.data.some(
-      (item) => item.paymentTerm.id.trim() === 'FP',
-    )
-
-    const hasPP = parcelas.data.some(
-      (item) => item.paymentTerm.id.trim() === 'PP',
-    )
-
-    const conditionTypeId = hasFP ? 'FP' : hasPP ? 'PP' : null
 
     const calculoParcelas = parcelasSelecionadas
       .map((parcela) => {
@@ -109,8 +109,8 @@ export function VisualizaoCalculo({
 
         switch (tipoDeParcela.trim()) {
           case 'FP': {
-            const dataAPagarDate = new Date(dataAPagar)
-            const dataVencimento = new Date(item.dueDate)
+            const dataAPagarDate = new Date(`${dataAPagar}T04:00:00Z`)
+            const dataVencimento = new Date(`${item.dueDate}T04:00:00Z`)
 
             const isMesAtual =
               dataVencimento.getFullYear() === dataAPagarDate.getFullYear() &&
@@ -285,7 +285,7 @@ export function VisualizaoCalculo({
         onClick={() => exportJsonToExcel(calculoPorParcela)}
         className="w-48 bg-neutral-800 text-white rounded flex gap-2 items-center justify-center font-bold py-1 px-3 self-end disabled:bg-gray-300"
       >
-        Download CSV
+        Download XLSX
         <PiDownload className="text-" />
       </button>
       <button
