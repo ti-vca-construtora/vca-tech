@@ -37,19 +37,19 @@ export function Dashboard({ children }: DashboardProps) {
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <div className="hidden bg-muted/40 md:block">
         <div className="flex h-full flex-col text-neutral-700 font-bold">
-          <div className="flex items-center px-4 py-2 lg:h-[60px] bg-azul-vca">
+          <div className="flex items-center px-4 py-2 lg:h-[60px] bg-white">
             <Link href="/" className="flex items-center gap-2 font-semibold">
               <Image width={90} src={LogoVca} alt="Logo da VCA Construtora" />
             </Link>
           </div>
-          <div className="flex flex-col px-4 bg-azul-vca h-full py-6">
-            <span className="text-neutral-300">Menu</span>
-            <nav className="grid items-start text-sm font-medium text-neutral-200">
+          <div className="flex flex-col px-4 bg-white h-full py-6">
+            <span className="text-azul-vca">Menu</span>
+            <nav className="grid items-start text-sm font-medium text-azul-vca">
               {abas.map((item, index) => (
                 <Link
                   key={index}
                   href={item.href}
-                  className="flex items-center gap-3 rounded-lg py-2 transition-all hover:text-neutral-50 font-semibold"
+                  className="flex items-center gap-3 rounded-lg py-2 transition-all hover:text-verde-vca font-semibold"
                 >
                   <item.icon className="size-4" />
                   {item.text}
@@ -57,7 +57,7 @@ export function Dashboard({ children }: DashboardProps) {
               ))}
             </nav>
           </div>
-          <div className="mt-auto p-4 bg-azul-vca text-neutral-50">
+          <div className="mt-auto p-4 bg-white text-azul-vca">
             <UserInfo />
           </div>
         </div>
@@ -116,23 +116,23 @@ export function Dashboard({ children }: DashboardProps) {
               </div> */}
             </SheetContent>
           </Sheet>
-          <div className="w-full h-full flex-1 px-4 lg:px-6 flex items-center justify-center bg-azul-vca">
+          <div className="w-full h-full flex-1 px-4 lg:px-6 flex items-center justify-center bg-white">
             <Navigation />
           </div>
         </header>
-        <main className="flex flex-1 flex-col bg-azul-vca gap-4 p-4 lg:gap-6 lg:p-6">
-          <div className="flex items-center bg-white p-4 rounded-lg">
-            <h1 className="text-lg font-semibold md:text-xl">
+        <main className="flex flex-1 flex-col bg-white gap-4 p-4 lg:gap-6 lg:p-6">
+          <div className="flex items-center shadow-md bg-neutral-100 p-4 rounded-lg">
+            <h1 className="text-lg font-semibold md:text-xl text-azul-vca">
               Painel de Soluções
             </h1>
           </div>
           <div
-            className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm bg-white h-full max-h-[700px]"
+            className="flex flex-1 items-center justify-center rounded-lg shadow-md bg-neutral-100 h-full max-h-[690px]"
             x-chunk="dashboard-02-chunk-1"
           >
             {children}
           </div>
-          <div className="h-12 p-4 w-full bg-white rounded-lg flex gap-2 items-center justify-end">
+          <div className="h-12 p-4 w-fullrounded-lg flex gap-2 items-center justify-end">
             <span className="text-xs italic">Desenvolvido por: </span>
             <Image src={LogoVcaTech} width={100} alt="Logo do VCA Tech" />
           </div>

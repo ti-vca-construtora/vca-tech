@@ -114,16 +114,16 @@ export function Form() {
       {!showTable ? (
         <form
           onSubmit={handleSubmit(handleFetchContracts)}
-          className="border p-4 rounded flex flex-col gap-4"
+          className="shadow-md bg-neutral-50 p-4 rounded flex flex-col gap-4"
         >
           <div className="flex flex-col gap-1 w-full">
-            <label className="text-neutral-700" htmlFor="">
+            <label className="text-azul-vca font-semibold" htmlFor="">
               Informe o CPF/CNPJ:
             </label>
             <input
               {...register('buscaCliente')}
               placeholder="CPF/CNPJ"
-              className="border h-12 p-2 w-80 rounded shadow"
+              className="border h-12 p-2 w-80 rounded shadow-md"
               type="text"
             />
             {errors.buscaCliente?.message && (
@@ -134,7 +134,7 @@ export function Form() {
           </div>
           <div className="flex items-center gap-4">
             <button
-              className="bg-neutral-950 text-sm rounded text-white w-fit p-2"
+              className="bg-azul-claro-vca font-semibold text-sm rounded text-white w-fit p-2"
               type="submit"
             >
               Buscar Contratos

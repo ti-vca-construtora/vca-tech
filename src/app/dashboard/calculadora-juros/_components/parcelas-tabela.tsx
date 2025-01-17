@@ -189,32 +189,32 @@ export function ParcelasTabela({
         />
       ) : parcelas.data.length ? (
         <>
-          <div className="border rounded w-full p-2 flex justify-between items-start">
+          <div className="bg-neutral-50 shadow-md rounded w-full p-2 flex justify-between items-start">
             <div className="rounded p-2 flex flex-col gap-2">
-              <span className="text-neutral-600">
+              <span className="text-azul-vca">
                 Nome do Cliente:{' '}
                 <span className="font-bold">{cliente.name}</span>
               </span>
-              <span className="text-neutral-600">
+              <span className="text-azul-vca">
                 CPF/CNPJ:{' '}
                 <span className="font-bold">
                   {formatarCpfCnpj(cliente.documentNumber)}
                 </span>
               </span>
-              <span className="text-neutral-600">
+              <span className="text-azul-vca">
                 Empreendimento:{' '}
                 <span className="font-bold">{contrato.enterpriseName}</span>
               </span>
             </div>
             <div className="rounded p-2 flex flex-col gap-2">
-              <span className="text-neutral-600">
+              <span className="text-azul-vca">
                 Contrato:{' '}
                 <span className="font-bold">{contrato.contractNumber}</span>
               </span>
-              <span className="text-neutral-600">
+              <span className="text-azul-vca">
                 Unidade: <span className="font-bold">{contrato.unit}</span>
               </span>
-              {/* <span className="text-neutral-600">
+              {/* <span className="text-azul-vca">
                 Contrato ID:{' '}
                 <span className="font-bold">FALTA IMPLEMENTAR</span>
               </span> */}
@@ -223,7 +223,7 @@ export function ParcelasTabela({
           <div className="flex flex-row-reverse items-center justify-center self-end gap-3">
             <button
               onClick={handleSelectTodasParcelas}
-              className="w-fit bg-neutral-800 text-white rounded font-bold py-1 px-3 self-end"
+              className="w-fit bg-azul-claro-vca font-semibold text-white rounded py-1 px-3 self-end"
             >
               {parcelasSelecionadas.length ===
               parcelas.data.filter(
@@ -236,7 +236,7 @@ export function ParcelasTabela({
               <select
                 defaultValue=""
                 onChange={(e) => handleParcelasPorTipo(e.target.value)}
-                className="w-fit bg-neutral-800 text-white rounded font-bold py-[3px] px-3 self-end"
+                className="w-fit bg-azul-claro-vca font-semibold text-white rounded py-[3px] px-3 self-end"
               >
                 <option value="">Selecionar parcelas pelo tipo</option>
                 {tiposDeParcela.map((item, index) => (
@@ -252,7 +252,7 @@ export function ParcelasTabela({
               ESTE CLIENTE POSSUI PARCELAS EM ABERTO.
             </div>
           )}
-          <Table className="border p-2 rounded">
+          <Table className="shadow-md p-2 rounded bg-white">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[200px]">DATA VENCIMENTO</TableHead>
@@ -294,7 +294,7 @@ export function ParcelasTabela({
           </Table>
           <div className="w-full flex justify-between items-start">
             <div className="rounded flex items-center justify-center w-full text-xs gap-2">
-              <span className="text-neutral-600">
+              <span className="text-azul-vca">
                 Quantidade total de títulos:{' '}
                 <span className="font-bold">
                   {
@@ -306,19 +306,19 @@ export function ParcelasTabela({
               </span>
             </div>
           </div>
-          <div className="border rounded w-full p-2 flex justify-between items-start">
+          <div className="bg-white shadow-md rounded w-full p-2 flex justify-between items-start">
             <div className="rounded p-2 flex flex-col gap-2">
-              <span className="text-neutral-600">
+              <span className="text-azul-vca">
                 Títulos Selecionados:{' '}
                 <span className="font-bold">{parcelasSelecionadas.length}</span>
               </span>
-              <span className="text-neutral-600">
+              <span className="text-azul-vca">
                 Total das Parcelas:{' '}
                 <span className="font-bold">{`R$ ${formatarValor(Number(calcularTotalParcelasSelecionadas().toFixed(2)))}`}</span>
               </span>
             </div>
             <div className="rounded p-2 flex flex-col items-center gap-2">
-              <span className="text-neutral-600">
+              <span className="text-azul-vca">
                 Data a Pagar:{' '}
                 <input
                   id="date"
@@ -332,7 +332,7 @@ export function ParcelasTabela({
               <button
                 onClick={handleCalculo}
                 disabled={parcelaVencida || !selectedDate}
-                className="w-fit bg-neutral-800 text-white rounded font-bold py-1 px-3 self-end disabled:bg-gray-300"
+                className="w-fit bg-azul-claro-vca text-white rounded font-bold py-1 px-3 self-end disabled:bg-gray-300"
               >
                 Calcular
               </button>

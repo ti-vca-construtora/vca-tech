@@ -12,6 +12,8 @@ const config: Config = {
     extend: {
       colors: {
         'azul-vca': '#001d2f',
+        'verde-vca': '#68c900',
+        'azul-claro-vca': '#2b5584',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {

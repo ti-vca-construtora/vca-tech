@@ -23,14 +23,14 @@ const SolucoesCard = ({ titulo, descricao, Icon, href }: Solucoes) => {
   return (
     <Link
       href={`/dashboard/${href}`}
-      className="w-[600px] h-28 border rounded flex items-center gap-3 p-2"
+      className="w-[600px] h-28 shadow-md bg-neutral-50 text-azul-vca hover:text-verde-vca transition-colors rounded flex items-center gap-3 p-2"
     >
-      <div className="text-6xl border rounded p-4">
+      <div className="text-6xl shadow-md rounded p-4">
         <Icon />
       </div>
       <div className="flex flex-col gap-1">
-        <span className="font-bold text-neutral-700">{titulo}</span>
-        <span className="text-sm text-neutral-600">{descricao}</span>
+        <span className="font-bold">{titulo}</span>
+        <span className="text-sm">{descricao}</span>
       </div>
     </Link>
   )

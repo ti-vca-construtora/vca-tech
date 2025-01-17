@@ -49,7 +49,7 @@ export function UserInfo() {
       <div className="flex items-center gap-2">
         <DropdownMenuTrigger asChild>
           <Button variant="secondary" size="icon" className="rounded-full">
-            <CircleUser className="size-9" />
+            <CircleUser className="size-9 text-azul-vca" />
             <span className="sr-only">Toggle user menu</span>
           </Button>
         </DropdownMenuTrigger>

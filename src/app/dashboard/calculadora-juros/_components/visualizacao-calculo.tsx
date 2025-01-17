@@ -288,14 +288,14 @@ export function VisualizaoCalculo({
       <div className="flex items-center gap-2">
         <button
           onClick={() => exportJsonToExcel(calculoPorParcela)}
-          className="w-48 bg-neutral-800 text-white rounded flex gap-2 items-center justify-center font-bold py-1 px-3 self-end disabled:bg-gray-300"
+          className="w-48 bg-azul-claro-vca text-white rounded flex gap-2 items-center justify-center font-bold py-1 px-3 self-end disabled:bg-gray-300"
         >
           Download XLSX
           <PiDownload className="text-" />
         </button>
         <button
           onClick={() => window.location.reload()}
-          className="w-48 bg-neutral-800 text-white rounded font-bold py-1 px-3 self-end disabled:bg-gray-300"
+          className="w-48 bg-azul-claro-vca text-white rounded font-bold py-1 px-3 self-end disabled:bg-gray-300"
         >
           Fazer nova simulação
         </button>

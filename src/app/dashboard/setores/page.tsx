@@ -58,7 +58,7 @@ function SetorCard({ title, href, Icon }: Setor) {
   return (
     <Link
       href={href}
-      className="border rounded-md p-6 aspect-square size-44 text-lg font-bold flex flex-col gap-3 items-center justify-center"
+      className="shadow-md bg-neutral-50 text-azul-vca hover:text-verde-vca transition-colors rounded-md p-6 aspect-square size-44 text-lg font-bold flex flex-col gap-3 items-center justify-center"
     >
       <Icon className="size-24" />
       <span>{title}</span>
