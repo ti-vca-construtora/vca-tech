@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Alterar função para validar o payload completo de usuário
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
@@ -8,13 +7,20 @@ export function middleware(req: NextRequest) {
 
   // Ignorar rotas públicas específicas, mas redirecionar caso o token exista
   if (pathname === '/login') {
-    const token = req.cookies.get('vca-tech-authorize')?.value
+    const payload = req.cookies.get('vca-tech-authorize')?.value
 
-    if (token) {
-      console.log(
-        'Token encontrado na rota /login. Redirecionando para /dashboard.',
-      )
-      return NextResponse.redirect(new URL('/dashboard', req.url))
+    if (payload) {
+      try {
+        const { user, token } = JSON.parse(payload)
+        if (user && token) {
+          console.log(
+            'Token encontrado na rota /login. Redirecionando para /dashboard.',
+          )
+          return NextResponse.redirect(new URL('/dashboard', req.url))
+        }
+      } catch (error) {
+        console.error('Erro ao analisar o payload:', error)
+      }
     }
 
     console.log('Acesso permitido à rota /login.')
@@ -26,17 +32,29 @@ export function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // Obter o token do cookie
-  const token = req.cookies.get('vca-tech-authorize')?.value
-  console.log('Token encontrado:', token)
+  // Obter o payload do cookie
+  const payload = req.cookies.get('vca-tech-authorize')?.value
+  console.log('Payload encontrado:', payload)
 
-  if (!token) {
-    console.log('Token ausente ou inválido. Redirecionando para /login.')
+  if (!payload) {
+    console.log('Payload ausente ou inválido. Redirecionando para /login.')
     return NextResponse.redirect(new URL('/login', req.url))
   }
 
-  console.log('Token válido, acesso permitido à rota:', pathname)
-  return NextResponse.next()
+  try {
+    const { user, token } = JSON.parse(payload)
+
+    if (!user || !token) {
+      console.log('Payload incompleto. Redirecionando para /login.')
+      return NextResponse.redirect(new URL('/login', req.url))
+    }
+
+    console.log('Payload válido, acesso permitido à rota:', pathname)
+    return NextResponse.next()
+  } catch (error) {
+    console.error('Erro ao analisar o payload:', error)
+    return NextResponse.redirect(new URL('/login', req.url))
+  }
 }
 
 export const config = {

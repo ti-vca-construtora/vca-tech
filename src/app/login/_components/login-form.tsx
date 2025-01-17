@@ -28,6 +28,11 @@ const formSchema = z.object({
 
 type FormType = z.infer<typeof formSchema>
 
+type UserPayload = {
+  user: string
+  token: string
+}
+
 export function LoginForm() {
   const {
     register,
@@ -40,15 +45,17 @@ export function LoginForm() {
   const router = useRouter()
 
   // Substituir parâmentro de token pelo payload de usuário
-  const salvaAutorizacao = (token: string): void => {
-    Cookies.set('vca-tech-authorize', token, { expires: 7 })
+  const salvaAutorizacao = ({ user, token }: UserPayload): void => {
+    Cookies.set('vca-tech-authorize', JSON.stringify({ user, token }), {
+      expires: 7,
+    })
   }
 
   const handleLogin = (data: FormType) => {
     const user = usuarios.find((user) => user.user === data.user)
 
     if (user && user.senha === data.senha) {
-      salvaAutorizacao(user.token)
+      salvaAutorizacao({ user: user.user, token: user.token })
       router.push('/dashboard')
 
       return

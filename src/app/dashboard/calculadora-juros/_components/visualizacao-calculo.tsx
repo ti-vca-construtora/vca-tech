@@ -183,7 +183,7 @@ export function VisualizaoCalculo({
   return (
     <section className="flex flex-col gap-4 justify-between items-center w-full">
       <div className="flex gap-4 justify-between w-full items-center h-full">
-        <Card className="w-fit h-[600px]">
+        <Card className="w-fit h-[500px]">
           <CardHeader>
             <CardTitle className="text-lg">Informações</CardTitle>
             <CardDescription className="text-xs">
@@ -233,7 +233,7 @@ export function VisualizaoCalculo({
             </div>
           </CardContent>
         </Card>
-        <Card className="flex-grow h-[600px]">
+        <Card className="flex-grow h-[500px]">
           <CardHeader>
             <CardTitle className="text-lg">Base de Cálculo</CardTitle>
             <CardDescription className="text-xs">
@@ -285,19 +285,21 @@ export function VisualizaoCalculo({
           </CardContent>
         </Card>
       </div>
-      <button
-        onClick={() => exportJsonToExcel(calculoPorParcela)}
-        className="w-48 bg-neutral-800 text-white rounded flex gap-2 items-center justify-center font-bold py-1 px-3 self-end disabled:bg-gray-300"
-      >
-        Download XLSX
-        <PiDownload className="text-" />
-      </button>
-      <button
-        onClick={() => window.location.reload()}
-        className="w-48 bg-neutral-800 text-white rounded font-bold py-1 px-3 self-end disabled:bg-gray-300"
-      >
-        Fazer nova simulação
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => exportJsonToExcel(calculoPorParcela)}
+          className="w-48 bg-neutral-800 text-white rounded flex gap-2 items-center justify-center font-bold py-1 px-3 self-end disabled:bg-gray-300"
+        >
+          Download XLSX
+          <PiDownload className="text-" />
+        </button>
+        <button
+          onClick={() => window.location.reload()}
+          className="w-48 bg-neutral-800 text-white rounded font-bold py-1 px-3 self-end disabled:bg-gray-300"
+        >
+          Fazer nova simulação
+        </button>
+      </div>
     </section>
   )
 }

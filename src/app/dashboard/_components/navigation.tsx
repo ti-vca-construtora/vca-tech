@@ -48,15 +48,15 @@ export function Navigation() {
               className={classNames(
                 'font-normal',
                 index + 1 === self.length
-                  ? 'text-neutral-800 font-semibold'
-                  : 'text-neutral-400 font-normal',
+                  ? 'text-neutral-100 font-semibold'
+                  : 'text-neutral-200 font-normal',
               )}
               onClick={() => handleClick(itemPath)}
             >
               {formatarRota(item)}
             </button>
             {index + 1 === self.length || (
-              <IoIosArrowForward className="text-neutral-600" />
+              <IoIosArrowForward className="text-neutral-200" />
             )}
           </div>
         )

@@ -3,21 +3,15 @@ import { Home, Menu, Package2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 
-// import {
-//   DropdownMenu,
-//   DropdownMenuContent,
-//   DropdownMenuItem,
-//   DropdownMenuLabel,
-//   DropdownMenuSeparator,
-//   DropdownMenuTrigger,
-// } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Navigation } from './navigation'
 import { PiShareNetwork } from 'react-icons/pi'
 import { IconType } from 'react-icons/lib'
 
 import LogoVca from '../../../../public/assets/logo-vca.png'
+import LogoVcaTech from '../../../../public/assets/logo-vca-tech.jpeg'
 import Image from 'next/image'
+import { UserInfo } from './user-info'
 
 type DashboardProps = {
   children: React.ReactNode
@@ -41,20 +35,21 @@ const abas: Aba[] = [
 export function Dashboard({ children }: DashboardProps) {
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-      <div className="hidden border-r bg-muted/40 md:block">
-        <div className="flex h-full flex-col gap-2 text-neutral-700 font-bold">
-          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+      <div className="hidden bg-muted/40 md:block">
+        <div className="flex h-full flex-col text-neutral-700 font-bold">
+          <div className="flex items-center px-4 py-2 lg:h-[60px] bg-azul-vca">
             <Link href="/" className="flex items-center gap-2 font-semibold">
-              <Image width={160} src={LogoVca} alt="Logo da VCA Construtora" />
+              <Image width={90} src={LogoVca} alt="Logo da VCA Construtora" />
             </Link>
           </div>
-          <div className="flex-1">
-            <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+          <div className="flex flex-col px-4 bg-azul-vca h-full py-6">
+            <span className="text-neutral-300">Menu</span>
+            <nav className="grid items-start text-sm font-medium text-neutral-200">
               {abas.map((item, index) => (
                 <Link
                   key={index}
                   href={item.href}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary font-semibold"
+                  className="flex items-center gap-3 rounded-lg py-2 transition-all hover:text-neutral-50 font-semibold"
                 >
                   <item.icon className="size-4" />
                   {item.text}
@@ -62,38 +57,9 @@ export function Dashboard({ children }: DashboardProps) {
               ))}
             </nav>
           </div>
-          {/* <div className="mt-auto p-4">
-            <DropdownMenu>
-              <div className="flex items-center gap-2">
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="rounded-full"
-                  >
-                    <CircleUser className="size-9" />
-                    <span className="sr-only">Toggle user menu</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <div className="flex flex-col justify-center">
-                  <DropdownMenuLabel className="text-xs h-fit p-0">
-                    Nome de Usuário
-                  </DropdownMenuLabel>
-                  <DropdownMenuLabel className="text-xs text-neutral-500 font-normal h-fit p-0">
-                    email@vcaconstrutora.com.br
-                  </DropdownMenuLabel>
-                </div>
-              </div>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Configurações</DropdownMenuItem>
-                <DropdownMenuItem>Suporte</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Sair</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div> */}
+          <div className="mt-auto p-4 bg-azul-vca text-neutral-50">
+            <UserInfo />
+          </div>
         </div>
       </div>
       <div className="flex flex-col">
@@ -150,21 +116,25 @@ export function Dashboard({ children }: DashboardProps) {
               </div> */}
             </SheetContent>
           </Sheet>
-          <div className="w-full h-full flex-1 px-4 lg:px-6 flex items-center justify-center">
+          <div className="w-full h-full flex-1 px-4 lg:px-6 flex items-center justify-center bg-azul-vca">
             <Navigation />
           </div>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-          <div className="flex items-center">
-            <h1 className="text-lg font-semibold md:text-2xl">
+        <main className="flex flex-1 flex-col bg-azul-vca gap-4 p-4 lg:gap-6 lg:p-6">
+          <div className="flex items-center bg-white p-4 rounded-lg">
+            <h1 className="text-lg font-semibold md:text-xl">
               Painel de Soluções
             </h1>
           </div>
           <div
-            className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm"
+            className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm bg-white h-full max-h-[700px]"
             x-chunk="dashboard-02-chunk-1"
           >
             {children}
+          </div>
+          <div className="h-12 p-4 w-full bg-white rounded-lg flex gap-2 items-center justify-end">
+            <span className="text-xs italic">Desenvolvido por: </span>
+            <Image src={LogoVcaTech} width={100} alt="Logo do VCA Tech" />
           </div>
         </main>
       </div>
