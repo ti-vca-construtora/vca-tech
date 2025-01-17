@@ -43,7 +43,7 @@ export function Navigation() {
       {formattedPathname.map((item, index, self) => {
         const itemPath = `/${formattedPathname.slice(1, index + 1).join('/')}`
         return (
-          <div key={index} className="flex gap-1 items-center">
+          <div key={index} className="flex gap-1 items-center text-sm">
             <button
               className={classNames(
                 'font-normal',

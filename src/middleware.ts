@@ -14,9 +14,9 @@ export function middleware(req: NextRequest) {
         const { user, token } = JSON.parse(payload)
         if (user && token) {
           console.log(
-            'Token encontrado na rota /login. Redirecionando para /dashboard.',
+            'Token encontrado na rota /login. Redirecionando para /dashboard/setores.',
           )
-          return NextResponse.redirect(new URL('/dashboard', req.url))
+          return NextResponse.redirect(new URL('/dashboard/setores', req.url))
         }
       } catch (error) {
         console.error('Erro ao analisar o payload:', error)
