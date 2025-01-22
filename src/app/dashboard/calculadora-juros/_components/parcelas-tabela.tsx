@@ -114,7 +114,9 @@ export function ParcelasTabela({
     )
 
     if (validParcels.length === 0) {
-      return []
+      throw new Error(
+        'Nenhuma parcela válida com balanceDue diferente de 0 encontrada.',
+      )
     }
 
     // Encontrar a parcela mais próxima com balanceDue diferente de 0
@@ -224,9 +226,9 @@ export function ParcelasTabela({
               className="w-fit bg-azul-claro-vca font-semibold text-white rounded py-1 px-3 self-end"
             >
               {parcelasSelecionadas.length ===
-                parcelas.data.filter(
-                  (parcela) => parcela.correctedBalanceAmount !== 0,
-                ).length
+              parcelas.data.filter(
+                (parcela) => parcela.correctedBalanceAmount !== 0,
+              ).length
                 ? 'Desmarcar todas'
                 : 'Selecionar todas'}
             </button>
