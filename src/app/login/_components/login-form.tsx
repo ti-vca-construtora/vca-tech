@@ -97,7 +97,10 @@ export function LoginForm() {
               </span>
             )}
           </div>
-          <Button type="submit" className="w-full">
+          <Button
+            type="submit"
+            className="w-full bg-azul-claro-vca font-semibold"
+          >
             Login
           </Button>
         </form>
