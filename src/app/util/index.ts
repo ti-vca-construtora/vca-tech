@@ -189,8 +189,8 @@ export const generatePix = (
     key: pixArray[0].key, // or any PIX key
     name: pixArray[0].name,
     city: pixArray[0].city,
-    transactionId: pixArray[0].transactionId, // max 25 characters
-    message: pixArray[0].transactionId,
+    transactionId: pixArray[0].transactionId?.replaceAll(' ', ''), // max 25 characters
+    message: pixArray[0].transactionId?.replaceAll(' ', ''),
     cep: '45000000',
     value: pixArray[0].value || 0,
   })

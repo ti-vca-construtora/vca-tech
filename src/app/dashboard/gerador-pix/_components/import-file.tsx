@@ -88,6 +88,7 @@ export function ImportFile() {
       container.style.alignItems = 'center'
       container.style.justifyItems = 'center'
       container.style.width = 'fit-content'
+      container.style.height = 'fit-content'
 
       if (!qrCodeLink) {
         throw new Error('Link de imagem QR Code não fornecido')
@@ -146,7 +147,7 @@ export function ImportFile() {
           nomeBeneficiario: item['Nome do Beneficiario'],
           cidade: item['Cidade do Beneficiario'],
           valor: item[' Valor (opcional) ']?.toString(),
-          identificador: item.Identificador,
+          identificador: item.Identificador.trim(),
         }
 
         try {
@@ -156,7 +157,7 @@ export function ImportFile() {
             {
               name: transformedItem.nomeBeneficiario,
               key: transformedItem.key,
-              transactionId: transformedItem.identificador,
+              transactionId: transformedItem.identificador.trim(),
               city: transformedItem.cidade,
               value: Number(transformedItem.valor) || 0,
             },

@@ -35,7 +35,7 @@ export function IndividualForm() {
         {
           name: data.nomeBeneficiario,
           key: data.keyType === 'tel' ? `+55${data.key}` : data.key,
-          transactionId: data.identificador,
+          transactionId: data.identificador.trim(),
           city: data.cidade,
           value: Number(data.valor) || 0,
         },
@@ -46,7 +46,7 @@ export function IndividualForm() {
       setPixData({
         payload: response.payload(),
         qrCodeLink: qrCodeUrl,
-        identificador: data.identificador,
+        identificador: data.identificador.trim(),
       })
     } catch (error) {
       console.error(error)
