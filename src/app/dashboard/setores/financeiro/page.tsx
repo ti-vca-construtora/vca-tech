@@ -1,40 +1,23 @@
 import React from 'react'
-import { IconType } from 'react-icons/lib'
 import { CiCalculator1 } from 'react-icons/ci'
-import Link from 'next/link'
+// import { PiPixLogo } from 'react-icons/pi'
 
-type Solucoes = {
-  titulo: string
-  descricao: string
-  href: string
-  Icon: IconType
-}
+import { Solucoes, SolucoesCard } from '@/components/solucoes-card'
 
 const solucoesData: Solucoes[] = [
   {
     titulo: 'Calculadora de Antecipação de Parcelas',
     descricao: 'Efetua o cálculo de juros para antecipação de parcelas.',
     Icon: CiCalculator1,
-    href: 'calculadora-juros',
+    href: 'calculadora-juros?title=AVP - Calculadora de Juros de Parcelas',
   },
+  // {
+  //   titulo: 'Gerador de Pix',
+  //   descricao: 'Gera QR Codes individuais ou em massa identificáveis.',
+  //   Icon: PiPixLogo,
+  //   href: 'gerador-pix?title=Gerador de Pix',
+  // },
 ]
-
-const SolucoesCard = ({ titulo, descricao, Icon, href }: Solucoes) => {
-  return (
-    <Link
-      href={`/dashboard/${href}`}
-      className="w-[600px] h-28 shadow-md bg-neutral-50 text-azul-vca hover:text-verde-vca transition-colors rounded flex items-center gap-3 p-2"
-    >
-      <div className="text-6xl shadow-md rounded p-4">
-        <Icon />
-      </div>
-      <div className="flex flex-col gap-1">
-        <span className="font-bold">{titulo}</span>
-        <span className="text-sm">{descricao}</span>
-      </div>
-    </Link>
-  )
-}
 
 const Financeiro = () => {
   return (

@@ -18,7 +18,7 @@ import { formatarCpfCnpj, formatarData, formatarValor } from '@/app/util'
 import {
   IncomeByBillsApiResponse,
   Parcela,
-} from '@/app/api/income-by-bills/route'
+} from '@/app/api/avp/income-by-bills/route'
 
 type ParcelasTabelaProps = {
   cliente: Cliente

@@ -1,6 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { contratos } from '@/data/contratos'
 import { CalculoPorParcela } from '../dashboard/calculadora-juros/_components/visualizacao-calculo'
 import * as xlsx from 'xlsx'
+import { Cliente } from '../dashboard/calculadora-juros/_components/form'
+import { Contrato } from '../dashboard/calculadora-juros/_components/contratos-tabela'
+import { QrCodePix } from 'qrcode-pix'
 
 export const formatarData = (dataISO: string) => {
   const [ano, mes, dia] = dataISO.split('-')
@@ -97,26 +101,95 @@ export const calcularVPA = (TJM: number, MD: number, VPO: number) => {
   return VPA
 }
 
-export const exportJsonToExcel = (json: CalculoPorParcela[]) => {
-  const formattedArray = json.map((item) => {
-    return {
-      valorAnterior: formatarValor(item.valorAnterior),
-      valorPresente: formatarValor(item.valorPresente),
-      dataAPagar: formatarData(item.dataAPagar),
-      dataVencimento: formatarData(item.dataVencimento),
-      taxa: item.taxa || 'Sem taxa.',
-    }
-  })
+export const exportJsonToExcel = (
+  json: CalculoPorParcela[],
+  infoAdicional: Cliente & Contrato,
+) => {
+  const infoString = Object.entries(infoAdicional)
+    .map(([key, value]) => `${key}:${value}`)
+    .join('; ')
 
-  // Create a new workbook
+  const formattedArray = [
+    { info: infoString },
+    ...json.map((item) => {
+      return {
+        valorAnterior: formatarValor(item.valorAnterior),
+        valorPresente: formatarValor(item.valorPresente),
+        dataAPagar: formatarData(item.dataAPagar),
+        dataVencimento: formatarData(item.dataVencimento),
+        taxa: item.taxa || 'Sem taxa.',
+      }
+    }),
+  ]
+
   const workbook = xlsx.utils.book_new()
 
-  // Convert JSON data to a worksheet
-  const worksheet = xlsx.utils.json_to_sheet(formattedArray)
+  const worksheet = xlsx.utils.json_to_sheet(formattedArray, {
+    skipHeader: true,
+  })
 
-  // Append the worksheet to the workbook
   xlsx.utils.book_append_sheet(workbook, worksheet, 'Sheet1')
 
-  // Export the workbook as an Excel file
-  xlsx.writeFile(workbook, `${Date.now()}-data.xlsx`)
+  xlsx.writeFile(
+    workbook,
+    `${infoAdicional.name}-${infoAdicional.contractNumber}.xlsx`,
+  )
+}
+
+export const importExcelToJson = (filePath: string): any[] => {
+  // Lê o arquivo Excel
+  const workbook = xlsx.readFile(filePath)
+
+  // Verifica se a aba "dados" existe
+  const sheetName = workbook.SheetNames.find(
+    (name) => name.toLowerCase() === 'dados',
+  )
+
+  if (!sheetName) {
+    throw new Error('A aba "dados" não foi encontrada no arquivo Excel.')
+  }
+
+  // Lê os dados da aba "dados"
+  const worksheet = workbook.Sheets[sheetName]
+
+  // Converte a planilha para JSON, usando a primeira linha como chaves dinâmicas
+  const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: null })
+
+  return jsonData
+}
+
+interface QrCodePixParameters {
+  version: string
+  key: string
+  city: string
+  name: string
+  value?: number
+  transactionId?: string
+  message?: string
+  cep?: string
+  currency?: number // default: 986 ('R$')
+  countryCode?: string // default: 'BR'
+}
+
+interface QrCodePixResponse {
+  payload: () => string // payload for QrCode
+  base64: (options?: any) => Promise<string> // QrCode image base64
+}
+
+export const generatePix = (
+  pixArray: Omit<QrCodePixParameters, 'version'>[],
+): QrCodePixResponse => {
+  console.log(pixArray[0])
+  const qrCodePix = QrCodePix({
+    version: '01',
+    key: pixArray[0].key, // or any PIX key
+    name: pixArray[0].name,
+    city: pixArray[0].city,
+    transactionId: pixArray[0].transactionId, // max 25 characters
+    message: pixArray[0].transactionId,
+    cep: '45000000',
+    value: pixArray[0].value || 0,
+  })
+
+  return qrCodePix
 }

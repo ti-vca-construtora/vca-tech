@@ -8,7 +8,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Dispatch, SetStateAction } from 'react'
-import { IncomeByBillsApiResponse } from '@/app/api/income-by-bills/route'
+import { IncomeByBillsApiResponse } from '@/app/api/avp/income-by-bills/route'
 
 export type Contrato = {
   unit: string
@@ -41,7 +41,7 @@ export function ContratosTabela({
   ) => {
     try {
       const data = await fetch(
-        `/api/receivable-bills?customerId=${customerId}&contractNumber=${contractNumber}`,
+        `/api/avp/receivable-bills?customerId=${customerId}&contractNumber=${contractNumber}`,
       )
 
       if (!data.ok) {
@@ -61,7 +61,7 @@ export function ContratosTabela({
       const receivableBillId = filteredContratos[0].receivableBillId
 
       const billsData = await fetch(
-        `/api/income-by-bills?billId=${receivableBillId}`,
+        `/api/avp/income-by-bills?billId=${receivableBillId}`,
       )
 
       if (!billsData.ok) {

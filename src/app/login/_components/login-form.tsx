@@ -14,12 +14,16 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { usuarios } from '@/data/usuarios'
+import LogoVca from '../../../../public/assets/logo-vca.png'
+import LogoVcaTech from '../../../../public/assets/logo-vca-tech.jpeg'
+import Image from 'next/image'
 
 const formSchema = z.object({
   user: z.string().min(1, 'Utilize um nome de usuário válido!'),
@@ -44,7 +48,6 @@ export function LoginForm() {
   })
   const router = useRouter()
 
-  // Substituir parâmentro de token pelo payload de usuário
   const salvaAutorizacao = ({ user, token }: UserPayload): void => {
     Cookies.set('vca-tech-authorize', JSON.stringify({ user, token }), {
       expires: 7,
@@ -65,14 +68,21 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="mx-auto max-w-sm">
-      <CardHeader>
-        <CardTitle className="text-2xl">Login</CardTitle>
-        <CardDescription>
-          Utilize credenciais autorizadas para acessar
-        </CardDescription>
+    <Card className="w-[600px] bg-neutral-50 px-16 h-full flex flex-col justify-between">
+      <CardHeader className="flex flex-col gap-10">
+        <CardTitle className="self-center">
+          <Image width={250} src={LogoVca} alt="Logo da VCA Construtora" />
+        </CardTitle>
       </CardHeader>
       <CardContent>
+        <div className="w-full flex flex-col mb-10">
+          <CardTitle className="text-2xl self-center">
+            Plataforma de Soluções
+          </CardTitle>
+          <CardDescription className="self-center text-xs">
+            Utilize credenciais autorizadas para acessar
+          </CardDescription>
+        </div>
         <form onSubmit={handleSubmit(handleLogin)} className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="user">Usuário</Label>
@@ -86,8 +96,13 @@ export function LoginForm() {
           <div className="grid gap-2">
             <div className="flex items-center">
               <Label htmlFor="password">Senha</Label>
-              <Link href="#" className="ml-auto inline-block text-sm underline">
-                Equeceu sua senha?
+              <Link
+                href="https://teams.microsoft.com/l/chat/0/0?users=felipe.santos@vcaconstrutora.com.br
+ "
+                target="_blank"
+                className="ml-auto inline-block text-xs underline"
+              >
+                Esqueceu sua senha?
               </Link>
             </div>
             <Input {...register('senha')} type="password" required />
@@ -101,16 +116,25 @@ export function LoginForm() {
             type="submit"
             className="w-full bg-azul-claro-vca font-semibold"
           >
-            Login
+            Acessar
           </Button>
         </form>
-        <div className="mt-4 text-center text-sm">
+        <div className="mt-4 text-center text-xs">
           Não tem um acesso?{' '}
-          <Link href="#" className="underline">
+          <Link
+            target="_blank"
+            href="https://teams.microsoft.com/l/chat/0/0?users=felipe.santos@vcaconstrutora.com.br
+ "
+            className="underline"
+          >
             Solicite
           </Link>
         </div>
       </CardContent>
+      <CardFooter className="self-center flex gap-2 items-center justify-center">
+        <span className="italic text-xs">Desenvolvido por:</span>
+        <Image width={80} src={LogoVcaTech} alt="Logo do VCA Tech" />
+      </CardFooter>
     </Card>
   )
 }

@@ -18,13 +18,13 @@ const data = {
   navMain: [
     {
       title: 'Setores',
-      url: '/dashboard/setores',
+      url: '/dashboard/setores?title=Setores',
       icon: SquareTerminal,
       isActive: true,
       items: [
         {
           title: 'Financeiro',
-          url: '/dashboard/setores/financeiro',
+          url: '/dashboard/setores/financeiro?title=Painel de Soluções',
         },
       ],
     },

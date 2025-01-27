@@ -29,7 +29,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import classNames from 'classnames'
-import { IncomeByBillsApiResponse } from '@/app/api/income-by-bills/route'
+import { IncomeByBillsApiResponse } from '@/app/api/avp/income-by-bills/route'
 import { PiDownload } from 'react-icons/pi'
 
 type VisualizaoCalculo = {
@@ -287,7 +287,9 @@ export function VisualizaoCalculo({
       </div>
       <div className="flex items-center gap-2">
         <button
-          onClick={() => exportJsonToExcel(calculoPorParcela)}
+          onClick={() =>
+            exportJsonToExcel(calculoPorParcela, { ...cliente, ...contrato })
+          }
           className="w-48 bg-azul-claro-vca text-white rounded flex gap-2 items-center justify-center font-bold py-1 px-3 self-end disabled:bg-gray-300"
         >
           Download XLSX

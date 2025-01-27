@@ -12,6 +12,7 @@ import LogoVca from '../../../../public/assets/logo-vca.png'
 import Image from 'next/image'
 import { DashboardSidebar } from './sidebar'
 import { SidebarProvider } from '@/components/ui/sidebar'
+import { PageTitle } from '@/components/page-title'
 
 type DashboardProps = {
   children: React.ReactNode
@@ -60,11 +61,7 @@ export function Dashboard({ children }: DashboardProps) {
             </div>
           </header>
           <main className="flex flex-1 flex-col bg-white gap-4 p-4 lg:gap-6 lg:p-6">
-            <div className="flex items-center shadow-md bg-neutral-100 p-4 rounded-lg">
-              <h1 className="text-lg font-semibold md:text-xl text-azul-vca">
-                Painel de Soluções
-              </h1>
-            </div>
+            <PageTitle />
             <div
               className="flex flex-1 items-center justify-center rounded-lg shadow-md bg-neutral-100 h-full max-h-[690px]"
               x-chunk="dashboard-02-chunk-1"

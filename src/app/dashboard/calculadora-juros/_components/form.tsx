@@ -7,7 +7,7 @@ import * as z from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Contrato } from './contratos-tabela'
-import { IncomeByBillsApiResponse } from '@/app/api/income-by-bills/route'
+import { IncomeByBillsApiResponse } from '@/app/api/avp/income-by-bills/route'
 
 const formSchema = z.object({
   buscaCliente: z
@@ -64,7 +64,7 @@ export function Form() {
         formData.buscaCliente.replace(/\D/g, '').length === 11 ? 'cpf' : 'cnpj'
 
       const data = await fetch(
-        `/api/customer-cpf?documento=${formData.buscaCliente.replace(/\D/g, '')}`,
+        `/api/avp/customer-cpf?documento=${formData.buscaCliente.replace(/\D/g, '')}`,
       )
 
       if (data) {
@@ -72,7 +72,9 @@ export function Form() {
 
         const cliente = parsed.results[0]
 
-        const contratos = await fetch(`/api/sales-contracts?id=${cliente.id}`)
+        const contratos = await fetch(
+          `/api/avp/sales-contracts?id=${cliente.id}`,
+        )
         const contratosParsed = await contratos.json()
 
         if (cliente.name && cliente.id) {
