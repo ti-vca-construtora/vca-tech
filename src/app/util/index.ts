@@ -109,6 +109,10 @@ export const exportJsonToExcel = (
     .map(([key, value]) => `${key}:${value}`)
     .join('; ')
 
+  const taxaTotal =
+    contratos.find((contrato) => contrato.cliente === infoAdicional.name)
+      ?.taxaTotal || null
+
   const formattedArray = [
     { info: infoString },
     ...json.map((item) => {
@@ -117,7 +121,7 @@ export const exportJsonToExcel = (
         valorPresente: formatarValor(item.valorPresente),
         dataAPagar: formatarData(item.dataAPagar),
         dataVencimento: formatarData(item.dataVencimento),
-        taxa: item.taxa || 'Sem taxa.',
+        taxa: taxaTotal || 'Sem taxa.',
       }
     }),
   ]

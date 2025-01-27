@@ -1,6 +1,6 @@
 import React from 'react'
 import { CiCalculator1 } from 'react-icons/ci'
-// import { PiPixLogo } from 'react-icons/pi'
+import { PiPixLogo } from 'react-icons/pi'
 
 import { Solucoes, SolucoesCard } from '@/components/solucoes-card'
 
@@ -11,12 +11,12 @@ const solucoesData: Solucoes[] = [
     Icon: CiCalculator1,
     href: 'calculadora-juros?title=AVP - Calculadora de Juros de Parcelas',
   },
-  // {
-  //   titulo: 'Gerador de Pix',
-  //   descricao: 'Gera QR Codes individuais ou em massa identificáveis.',
-  //   Icon: PiPixLogo,
-  //   href: 'gerador-pix?title=Gerador de Pix',
-  // },
+  {
+    titulo: 'Gerador de Pix',
+    descricao: 'Gera QR Codes individuais ou em massa identificáveis.',
+    Icon: PiPixLogo,
+    href: 'gerador-pix?title=Gerador de Pix',
+  },
 ]
 
 const Financeiro = () => {
