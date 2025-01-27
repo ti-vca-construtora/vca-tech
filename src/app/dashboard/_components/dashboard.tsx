@@ -13,6 +13,7 @@ import Image from 'next/image'
 import { DashboardSidebar } from './sidebar'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { PageTitle } from '@/components/page-title'
+import { Suspense } from 'react'
 
 type DashboardProps = {
   children: React.ReactNode
@@ -61,7 +62,9 @@ export function Dashboard({ children }: DashboardProps) {
             </div>
           </header>
           <main className="flex flex-1 flex-col bg-white gap-4 p-4 lg:gap-6 lg:p-6">
-            <PageTitle />
+            <Suspense fallback={<div>Carregando...</div>}>
+              <PageTitle />
+            </Suspense>
             <div
               className="flex flex-1 items-center justify-center rounded-lg shadow-md bg-neutral-100 h-full max-h-[690px]"
               x-chunk="dashboard-02-chunk-1"
