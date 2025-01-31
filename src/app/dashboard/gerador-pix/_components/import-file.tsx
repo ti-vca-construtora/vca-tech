@@ -12,6 +12,7 @@ import { toPng } from 'html-to-image'
 import { generatePix } from '@/app/util'
 import { ZodError, ZodIssue } from 'zod'
 import { formSchema } from '../schema/pix-schema'
+import { toast } from 'sonner'
 
 type Info = {
   'Tipo de Chave': 'Celular/Telefone' | 'CPF/CNPJ' | 'E-mail' | 'Outro'
@@ -51,12 +52,24 @@ export function ImportFile() {
       )
 
       if (!sheetName) {
-        console.error('A aba "dados" não foi encontrada.')
+        toast('A aba dados não foi encontrada!', {
+          description:
+            'A planilha selecionada não possui a estrutura predefinida.',
+        })
+
         return
       }
 
       const worksheet = workbook.Sheets[sheetName]
       const jsonData = xlsx.utils.sheet_to_json(worksheet, { defval: null })
+
+      if (jsonData.length === 0) {
+        toast('Nenhuma linha foi encontrada!', {
+          description: 'Verifique se a planilha foi devidamente preenchida.',
+        })
+
+        return
+      }
 
       setInfo(jsonData as Info[])
     }
@@ -70,70 +83,7 @@ export function ImportFile() {
     return () => clearTimeout(timeout)
   }
 
-  const handleDownloadAllPixData = async () => {
-    const zip = new JSZip()
-    const pixDataArray = await handleInfoToPixData()
-
-    console.log('pixDataArray: ', pixDataArray)
-
-    for (let i = 0; i < pixDataArray.length; i++) {
-      const { payload, qrCodeLink, identificador } = pixDataArray[i]
-      console.log('Processando item:', i, payload, qrCodeLink)
-
-      const container = document.createElement('div')
-      container.style.backgroundColor = 'white'
-      container.style.padding = '20px'
-      container.style.display = 'flex'
-      container.style.flexDirection = 'column'
-      container.style.alignItems = 'center'
-      container.style.justifyItems = 'center'
-      container.style.width = 'fit-content'
-      container.style.height = 'fit-content'
-
-      if (!qrCodeLink) {
-        throw new Error('Link de imagem QR Code não fornecido')
-      }
-
-      const img = new Image()
-      img.src = qrCodeLink
-      img.alt = 'QR Code'
-      img.width = 200
-      img.height = 200
-
-      img.onload = () => console.log(`Imagem carregada para item ${i}`)
-      img.onerror = (err) =>
-        console.error(`Erro ao carregar imagem para item ${i}:`, err)
-
-      container.appendChild(img)
-
-      const text = document.createElement('span')
-      text.textContent = identificador
-      container.appendChild(text)
-
-      document.body.appendChild(container)
-
-      try {
-        const dataUrl = await toPng(container, { backgroundColor: 'white' })
-
-        const base64Data = dataUrl.split(',')[1]
-        zip.file(`pix-${i + 1}.png`, base64Data, { base64: true })
-      } catch (error) {
-        console.error(`Erro ao gerar PNG para o item ${i + 1}:`, error)
-      } finally {
-        document.body.removeChild(container)
-      }
-    }
-
-    zip.generateAsync({ type: 'blob' }).then((content) => {
-      const link = document.createElement('a')
-      link.href = URL.createObjectURL(content)
-      link.download = `pix-data-${Date.now()}.zip`
-      link.click()
-    })
-  }
-
   const handleInfoToPixData = async (): Promise<PixResult[]> => {
-    console.log(info)
     const results = await Promise.all(
       info.map(async (item): Promise<PixResult> => {
         const transformedItem = {
@@ -203,6 +153,78 @@ export function ImportFile() {
     return results
   }
 
+  const handleDownloadAllPixData = async () => {
+    const zip = new JSZip()
+    const pixDataArray = await handleInfoToPixData()
+
+    for (let i = 0; i < pixDataArray.length; i++) {
+      const { payload, qrCodeLink, identificador } = pixDataArray[i]
+      toast(`Processando item: ${i + 1}`, {
+        description: `Payload: ${payload}`,
+      })
+
+      const container = document.createElement('div')
+      container.style.backgroundColor = 'white'
+      container.style.padding = '20px'
+      container.style.display = 'flex'
+      container.style.flexDirection = 'column'
+      container.style.alignItems = 'center'
+      container.style.justifyItems = 'center'
+      container.style.width = 'fit-content'
+      container.style.height = 'fit-content'
+
+      if (!qrCodeLink) {
+        toast(`Link de imagem QR Code não fornecido para o item ${i + 1}!`, {
+          description: 'Verifique os dados informados na planilha.',
+        })
+
+        return
+      }
+
+      const img = new Image()
+      img.src = qrCodeLink
+      img.alt = 'QR Code'
+      img.width = 200
+      img.height = 200
+
+      img.onload = () => toast(`Imagem carregada para item ${i}`)
+      img.onerror = (err) =>
+        toast(`Erro ao carregar imagem para item ${i}:`, {
+          description: `Descrição do erro: ${err}`,
+        })
+
+      container.appendChild(img)
+
+      const text = document.createElement('span')
+      text.textContent = identificador
+      container.appendChild(text)
+
+      document.body.appendChild(container)
+
+      try {
+        const dataUrl = await toPng(container, { backgroundColor: 'white' })
+
+        const base64Data = dataUrl.split(',')[1]
+        zip.file(`${pixDataArray[i].identificador}.png`, base64Data, {
+          base64: true,
+        })
+      } catch (error) {
+        toast(`Erro ao gerar PNG para o item ${i + 1}:`, {
+          description: `Descrição do erro: ${error}`,
+        })
+      } finally {
+        document.body.removeChild(container)
+      }
+    }
+
+    zip.generateAsync({ type: 'blob' }).then((content) => {
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(content)
+      link.download = `pix-data-${Date.now()}.zip`
+      link.click()
+    })
+  }
+
   return (
     <div className="size-full shadow-md bg-white rounded-lg py-4 px-16 flex flex-col gap-4">
       <div>
@@ -212,7 +234,6 @@ export function ImportFile() {
         <div className="rounded-lg flex flex-col gap-6 p-4 bg-neutral-50 shadow-md size-full">
           <div className="bg-white shadow-md flex flex-col gap-2 rounded-lg w-full h-fit px-4 pt-4 pb-10">
             <span className="font-semibold">Importar planilha:</span>
-
             <span className="text-sm text-neutral-800">
               {'• A planilha deve estar no formato de arquivo .xlsx.'}
             </span>
@@ -241,7 +262,7 @@ export function ImportFile() {
                   type="file"
                   accept=".xlsx"
                   onChange={(e) => setFile(e.target.files![0])}
-                  className="text-xs"
+                  className="text-xs rounded-md p-2 bg-neutral-50 shadow-md"
                 />
                 <button
                   onClick={handleReadFile}

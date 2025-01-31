@@ -71,7 +71,7 @@ export function Dashboard({ children }: DashboardProps) {
             >
               {children}
             </div>
-            <div className="h-12 p-4 w-fullrounded-lg flex gap-2 items-center justify-end">
+            <div className="h-12 p-4 rounded-lg flex gap-2 items-center justify-end">
               <span className="text-xs italic">Desenvolvido por: </span>
               <Image src={LogoVcaTech} width={100} alt="Logo do VCA Tech" />
             </div>
