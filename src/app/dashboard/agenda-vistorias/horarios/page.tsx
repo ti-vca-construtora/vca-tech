@@ -1,5 +1,11 @@
+import DisponibilizarHorarios from './_components/disponibilizar-horarios'
+
 const Horarios = () => {
-  return <></>
+  return (
+    <>
+      <DisponibilizarHorarios />
+    </>
+  )
 }
 
 export default Horarios
