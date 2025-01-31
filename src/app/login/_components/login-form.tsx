@@ -22,7 +22,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { usuarios } from '@/data/usuarios'
 import LogoVca from '../../../../public/assets/logo-vca.png'
-import LogoVcaTech from '../../../../public/assets/logo-vca-tech.jpeg'
+import LogoVcaTech from '../../../../public/assets/logo-vca-tech.png'
 import Image from 'next/image'
 
 const formSchema = z.object({

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Navigation } from './navigation'
 
-import LogoVcaTech from '../../../../public/assets/logo-vca-tech.jpeg'
+import LogoVcaTech from '../../../../public/assets/logo-vca-tech.png'
 import LogoVca from '../../../../public/assets/logo-vca.png'
 
 import Image from 'next/image'
