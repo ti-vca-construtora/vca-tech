@@ -1,5 +1,5 @@
 const Horarios = () => {
-  return <></>;
-};
+  return <></>
+}
 
-export default Horarios;
+export default Horarios
