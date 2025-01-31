@@ -1,6 +1,6 @@
 import React from 'react'
 import { CiCalculator1 } from 'react-icons/ci'
-import { PiPixLogo, PiCalendarCheckDuotone } from 'react-icons/pi'
+import { PiPixLogo } from 'react-icons/pi'
 
 import { Solucoes, SolucoesCard } from '@/components/solucoes-card'
 
@@ -17,12 +17,12 @@ const solucoesData: Solucoes[] = [
     Icon: PiPixLogo,
     href: 'gerador-pix?title=Gerador de Pix',
   },
-  {
-    titulo: 'Agenda de Vistorias',
-    descricao: 'Configura e relaciona a agenda de vistorias do cliente.',
-    Icon: PiCalendarCheckDuotone,
-    href: 'agenda-vistorias?title=Agenda de Vistorias',
-  },
+  // {
+  //   titulo: 'Agenda de Vistorias',
+  //   descricao: 'Configura e relaciona a agenda de vistorias do cliente.',
+  //   Icon: PiCalendarCheckDuotone,
+  //   href: 'agenda-vistorias?title=Agenda de Vistorias',
+  // },
 ]
 
 const Financeiro = () => {
