@@ -5,39 +5,43 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 
+import { CalendarConfig } from './calendarconfig'
+import { TimeConfig } from './timeconfig'
+import { ReschedulingConfig } from './reschedulingconfig'
+import { CancellationConfig } from './cancellationconfig'
+
 export function DisponibilizarHorarios() {
   return (
-    <div className="min-w-72 bg-white px-4 rounded-xl mr-4">
+    <div className="min-w-72 bg-white px-4 rounded-xl mr-4 max-h-[640px] overflow-y-scroll scroll-hidden">
       <Accordion type="single" collapsible className="">
         <AccordionItem value="item-1">
           <AccordionTrigger>Configurar agenda</AccordionTrigger>
           <AccordionContent>
-            Disponibiliza dias para agendamento. par
+            <CalendarConfig />
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="item-2">
           <AccordionTrigger>Configurar horários</AccordionTrigger>
           <AccordionContent>
-            Configura horários disponíveis para agendamento. 10:30, 13:00,
-            15:30, etc ... Dias mínimos e máximos para o cliente agendar
+            <TimeConfig />
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="item-3">
           <AccordionTrigger>Remarcação</AccordionTrigger>
           <AccordionContent>
-            Configura parâmetros de remarcação de agenda.
+            <ReschedulingConfig />
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="item-4">
-          <AccordionTrigger>Remarcação e cancelamento</AccordionTrigger>
+          <AccordionTrigger>Cancelamento</AccordionTrigger>
           <AccordionContent>
-            Configura parâmetros de cancelamento de agenda.
+            <CancellationConfig />
           </AccordionContent>
         </AccordionItem>
         <AccordionItem value="item-5" className="border-none">
           <AccordionTrigger>Outra configurações</AccordionTrigger>
           <AccordionContent>
-            Outras configurações do agendamento.
+            Outras configurações de agendamento.
           </AccordionContent>
         </AccordionItem>
       </Accordion>
