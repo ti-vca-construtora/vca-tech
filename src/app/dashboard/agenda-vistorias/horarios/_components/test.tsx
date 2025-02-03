@@ -66,18 +66,22 @@ export function Calendar() {
               return (
                 <td
                   key={colIndex}
-                  className="cursor-pointer border text-center hover:bg-gray-200"
+                  className="cursor-pointer border py-4 px-3 text-center hover:bg-gray-200"
                 >
                   <ContextMenu>
-                    <ContextMenuTrigger className="w-full h-full flex justify-center items-center py-4 px-3">
+                    <ContextMenuTrigger className="w-full h-full flex justify-center items-center">
                       {timeSlot}
                     </ContextMenuTrigger>
                     <ContextMenuContent>
-                      <ContextMenuItem className="cursor-pointer">
-                        Disponibilizar
+                      <ContextMenuItem
+                        onClick={() => alert(`Editando ${timeSlot}`)}
+                      >
+                        Editar
                       </ContextMenuItem>
-                      <ContextMenuItem className="cursor-pointer">
-                        Indisponibilizar
+                      <ContextMenuItem
+                        onClick={() => alert(`Removendo ${timeSlot}`)}
+                      >
+                        Remover
                       </ContextMenuItem>
                     </ContextMenuContent>
                   </ContextMenu>
