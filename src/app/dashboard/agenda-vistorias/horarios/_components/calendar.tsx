@@ -87,7 +87,7 @@ export function Calendar() {
   }
 
   return (
-    <div>
+    <div className="max-w-screen-sm">
       <div className="flex flex-col p-2 justify-center items-center rounded-lg border bg-card text-card-foreground shadow-sm w-full h-auto">
         <div className="flex w-full justify-evenly items-center mb-5">
           {currentMonth > atualDate.getMonth() && (
