@@ -14,6 +14,7 @@ export type Contrato = {
   unit: string
   contractNumber: string
   enterpriseName: string
+  origem: string
 }
 
 type ContratosTabela = {
@@ -38,10 +39,11 @@ export function ContratosTabela({
   const handleFetchReceivableBills = async (
     customerId: string,
     contractNumber: string,
+    origem: string,
   ) => {
     try {
       const data = await fetch(
-        `/api/avp/receivable-bills?customerId=${customerId}&contractNumber=${contractNumber}`,
+        `/api/avp/receivable-bills?customerId=${customerId}&contractNumber=${contractNumber}&origem=${origem}`,
       )
 
       if (!data.ok) {
@@ -61,7 +63,7 @@ export function ContratosTabela({
       const receivableBillId = filteredContratos[0].receivableBillId
 
       const billsData = await fetch(
-        `/api/avp/income-by-bills?billId=${receivableBillId}`,
+        `/api/avp/income-by-bills?billId=${receivableBillId}&origem=${origem}`,
       )
 
       if (!billsData.ok) {
@@ -82,11 +84,16 @@ export function ContratosTabela({
 
   const handleClick = (contract: Contrato) => {
     console.log(contract)
-    handleFetchReceivableBills(customerId, contract.contractNumber)
+    handleFetchReceivableBills(
+      customerId,
+      contract.contractNumber,
+      contract.origem,
+    )
     setContratosInfo({
       contractNumber: contract.contractNumber,
       enterpriseName: contract.enterpriseName,
       unit: contract.unit,
+      origem: contract.origem,
     })
     action(true)
   }

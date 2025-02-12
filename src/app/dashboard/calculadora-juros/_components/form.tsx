@@ -31,6 +31,7 @@ type ContractItem = {
   salesContractUnits: {
     name: string
   }[]
+  origem: string
 }
 
 export function Form() {
@@ -39,6 +40,7 @@ export function Form() {
     contractNumber: '',
     enterpriseName: '',
     unit: '',
+    origem: '',
   })
   const [clienteInfo, setClienteInfo] = useState<Cliente>({
     id: '',
@@ -70,12 +72,14 @@ export function Form() {
       if (data) {
         const parsed = await data.json()
 
-        const cliente = parsed.results[0]
+        const cliente = parsed.cliente.results[0]
 
         const contratos = await fetch(
           `/api/avp/sales-contracts?id=${cliente.id}`,
         )
         const contratosParsed = await contratos.json()
+
+        console.log('Contratos Parsed: ', contratosParsed)
 
         if (cliente.name && cliente.id) {
           setClienteInfo({
@@ -86,13 +90,14 @@ export function Form() {
           })
         }
 
-        const filteredContratos = contratosParsed.results.map(
+        const filteredContratos = contratosParsed.contratos.map(
           (item: ContractItem) => {
             return {
               contractNumber: item.number,
               enterpriseName: item.enterpriseName,
               documentId: item.enterpriseName,
               unit: item.salesContractUnits[0].name,
+              origem: item.origem,
             }
           },
         )
