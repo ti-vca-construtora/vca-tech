@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/pdf/route.ts": {
+    "app/api/pdf/route.ts": {
       "runtime": "@vercel/node@4.0.0",
       "maxDuration": 30
     }
