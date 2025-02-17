@@ -1,5 +1,6 @@
 import puppeteer from 'puppeteer'
 import { NextResponse } from 'next/server'
+import chromium from '@sparticuz/chromium'
 
 export async function POST(req: Request) {
   try {
@@ -23,7 +24,17 @@ export async function POST(req: Request) {
       </html>
     `
 
-    const browser = await puppeteer.launch()
+    const browser = await puppeteer.launch({
+      executablePath:
+        process.env.NODE_ENV === 'production'
+          ? await chromium.executablePath()
+          : undefined,
+      headless:
+        process.env.NODE_ENV === 'production'
+          ? (chromium.headless as boolean | 'shell' | undefined)
+          : true,
+      args: process.env.NODE_ENV === 'production' ? chromium.args : [],
+    })
     const page = await browser.newPage()
 
     await page.setContent(fullHtml, {
