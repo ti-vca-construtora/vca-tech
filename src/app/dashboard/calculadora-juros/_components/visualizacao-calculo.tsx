@@ -14,10 +14,9 @@ import {
   calcularTJM,
   calcularVPA,
   dias360,
-  exportJsonToExcel,
   formatarData,
   formatarValor,
-} from '@/app/util'
+} from '@/util'
 import { useEffect, useState } from 'react'
 
 import {
@@ -30,7 +29,9 @@ import {
 } from '@/components/ui/table'
 import classNames from 'classnames'
 import { IncomeByBillsApiResponse } from '@/app/api/avp/income-by-bills/route'
-import { PiDownload } from 'react-icons/pi'
+
+import { GeradorPdf } from './gerador-pdf'
+import { Pdf } from './pdf'
 
 type VisualizaoCalculo = {
   valor: number
@@ -182,7 +183,10 @@ export function VisualizaoCalculo({
 
   return (
     <section className="flex flex-col gap-4 justify-between items-center w-full">
-      <div className="flex gap-4 justify-between w-full items-center h-full">
+      <div
+        id="downloadable"
+        className="flex gap-4 justify-between w-full items-center h-full"
+      >
         <Card className="w-fit h-[500px]">
           <CardHeader>
             <CardTitle className="text-lg">Informações</CardTitle>
@@ -286,15 +290,19 @@ export function VisualizaoCalculo({
         </Card>
       </div>
       <div className="flex items-center gap-2">
-        <button
-          onClick={() =>
-            exportJsonToExcel(calculoPorParcela, { ...cliente, ...contrato })
-          }
-          className="w-48 bg-azul-claro-vca text-white rounded flex gap-2 items-center justify-center font-bold py-1 px-3 self-end disabled:bg-gray-300"
-        >
-          Download XLSX
-          <PiDownload className="text-" />
-        </button>
+        <GeradorPdf
+          Component={Pdf}
+          props={{
+            cliente,
+            contrato,
+            dataAPagar,
+            parcelasSelecionadas,
+            valor,
+            calculoPorParcela,
+            getValorPresenteTotal,
+          }}
+          fileName={`${contrato.contractNumber}-${cliente.name}`}
+        />
         <button
           onClick={() => window.location.reload()}
           className="w-48 bg-azul-claro-vca text-white rounded font-bold py-1 px-3 self-end disabled:bg-gray-300"

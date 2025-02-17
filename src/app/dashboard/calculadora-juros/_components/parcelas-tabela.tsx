@@ -14,7 +14,7 @@ import { Cliente } from './form'
 import { Contrato } from './contratos-tabela'
 import { Loader2Icon } from 'lucide-react'
 import { VisualizaoCalculo } from './visualizacao-calculo'
-import { formatarCpfCnpj, formatarData, formatarValor } from '@/app/util'
+import { formatarCpfCnpj, formatarData, formatarValor } from '@/util'
 import {
   IncomeByBillsApiResponse,
   Parcela,

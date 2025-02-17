@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { contratos } from '@/data/contratos'
-import { CalculoPorParcela } from '../dashboard/calculadora-juros/_components/visualizacao-calculo'
+import { CalculoPorParcela } from '../app/dashboard/calculadora-juros/_components/visualizacao-calculo'
 import * as xlsx from 'xlsx'
-import { Cliente } from '../dashboard/calculadora-juros/_components/form'
-import { Contrato } from '../dashboard/calculadora-juros/_components/contratos-tabela'
+import { Cliente } from '../app/dashboard/calculadora-juros/_components/form'
+import { Contrato } from '../app/dashboard/calculadora-juros/_components/contratos-tabela'
 import { QrCodePix } from 'qrcode-pix'
 
 export const formatarData = (dataISO: string) => {
