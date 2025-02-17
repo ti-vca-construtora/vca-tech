@@ -1,8 +1,9 @@
 {
   "functions": {
     "api/pdf.ts": {
-      "runtime": "nodejs16.x",
-      "maxDuration": 30
+      "runtime": "@vercel/node@4.0.0",
+      "maxDuration": 30,
+      "memory": 3008
     }
   }
 }
