@@ -24,7 +24,11 @@ const data = {
       items: [
         {
           title: 'Financeiro',
-          url: '/dashboard/setores/financeiro?title=Painel de Soluções',
+          url: '/dashboard/setores/financeiro?title=Painel de Soluções - Financeiro',
+        },
+        {
+          title: 'Relacionamento',
+          url: '/dashboard/setores/relacionamento?title=Painel de Soluções - Relacionamento',
         },
       ],
     },

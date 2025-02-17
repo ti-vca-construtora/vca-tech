@@ -17,4 +17,10 @@ export const usuarios: Usuario[] = [
     token:
       'eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjoiYWRtaW4iLCJzZW5oYSI6IkFETUlOMTIzIn0.VUmuwycoYshwar4ilKQShhJeQKPHsD3Q5wuFt1nHt1o',
   },
+  {
+    user: 'relacionamento',
+    senha: 'Vca@2025',
+    token:
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoicmVsYWNpb25hbWVudG8iLCJwYXNzd29yZCI6IlZjYUAyMDI1In0.RBdF9QWVsiBRYZJhX4AYFRsvV1xvzNKm6PC2gUXmgKw',
+  },
 ]
