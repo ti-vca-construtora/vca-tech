@@ -1,6 +1,5 @@
 import puppeteer from 'puppeteer'
 import { NextResponse } from 'next/server'
-import chromium from '@sparticuz/chromium'
 
 export async function POST(req: Request) {
   try {
@@ -23,18 +22,15 @@ export async function POST(req: Request) {
         </body>
       </html>
     `
+    console.log('Iniciando Puppeteer...')
 
     const browser = await puppeteer.launch({
-      executablePath:
-        process.env.NODE_ENV === 'production'
-          ? await chromium.executablePath()
-          : undefined,
-      headless:
-        process.env.NODE_ENV === 'production'
-          ? (chromium.headless as boolean | 'shell' | undefined)
-          : true,
-      args: process.env.NODE_ENV === 'production' ? chromium.args : [],
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
     })
+
+    console.log('Puppeteer iniciado, criando página...')
+
     const page = await browser.newPage()
 
     await page.setContent(fullHtml, {
@@ -42,11 +38,15 @@ export async function POST(req: Request) {
       timeout: 10000,
     })
 
+    console.log('Gerando PDF...')
+
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
       margin: { top: 10, bottom: 10, left: 10, right: 10 },
     })
+
+    console.log('PDF gerado com sucesso!')
 
     await browser.close()
 
