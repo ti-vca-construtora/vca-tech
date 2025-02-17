@@ -42,6 +42,7 @@
     "@radix-ui/react-toggle-group": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.6",
     "@sparticuz/chromium": "^132.0.0",
+    "@sparticuz/chromium-min": "^132.0.0",
     "@vercel/node": "^5.1.7",
     "class-variance-authority": "^0.7.1",
     "classnames": "^2.5.1",

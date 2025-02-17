@@ -46,7 +46,7 @@ export function Pdf({
   return (
     <div
       id="downloadable"
-      className="flex flex-col gap-4 w-full items-center justify-center h-full p-6"
+      className="flex flex-col gap-4 w-full items-center justify-center h-full p-6 text-sm"
     >
       <img
         src={LOGO_BASE64}
