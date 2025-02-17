@@ -54,7 +54,7 @@ export async function POST(req: Request) {
 
     await page.setContent(fullHtml, {
       waitUntil: 'networkidle0',
-      timeout: 10000,
+      timeout: 30000,
     })
 
     console.log('Gerando PDF...')
