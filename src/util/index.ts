@@ -101,6 +101,7 @@ export const calcularVPA = (TJM: number, MD: number, VPO: number) => {
   return VPA
 }
 
+// Não está sendo utilizada
 export const exportJsonToExcel = (
   json: CalculoPorParcela[],
   infoAdicional: Cliente & Contrato,

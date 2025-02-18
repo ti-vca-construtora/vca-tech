@@ -23,6 +23,7 @@ import { ParcelaSelecionada } from './parcelas-tabela'
 import { CalculoPorParcela } from './visualizacao-calculo'
 
 import { LOGO_BASE64 } from '@/util/logo-base64'
+import { contratos } from '@/data/contratos'
 
 export type PdfProps = {
   valor: number
@@ -43,6 +44,10 @@ export function Pdf({
   getValorPresenteTotal,
   calculoPorParcela,
 }: PdfProps) {
+  const taxaTotal =
+    contratos.find((contrato) => contrato.cliente === cliente.name)
+      ?.taxaTotal || null
+
   return (
     <div
       id="downloadable"
@@ -143,7 +148,7 @@ export function Pdf({
                       item.dataVencimento,
                     )}
                   </TableCell>
-                  <TableCell>{item.taxa}</TableCell>
+                  <TableCell>{taxaTotal}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
