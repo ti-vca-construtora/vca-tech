@@ -49,7 +49,7 @@ export function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL('/login', req.url))
     }
 
-    console.log('Payload válido, acesso permitido à rota:', pathname)
+    console.log(`Acesso concedido ao usuário: ${user} à rota ${pathname}`)
     return NextResponse.next()
   } catch (error) {
     console.error('Erro ao analisar o payload:', error)
