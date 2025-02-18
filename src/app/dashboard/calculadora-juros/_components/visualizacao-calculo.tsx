@@ -66,25 +66,44 @@ export function VisualizaoCalculo({
     const dueDate = new Date(`${item.dueDate}T04:00:00Z`)
     const pagarDate = new Date(`${dataAPagar}T04:00:00Z`)
 
-    // console.log(item.dueDate)
-    // console.log(dataAPagar)
-    // console.log(pagarDate)
-
-    return (
+    const isSameMonthYear =
       dueDate.getFullYear() === pagarDate.getFullYear() &&
       dueDate.getMonth() === pagarDate.getMonth()
-    )
+
+    const hasValidPaymentTerm =
+      item.paymentTerm.id.trim().match(/^M\d+$/) ||
+      item.paymentTerm.id.trim().match(/^\d{2,}$/)
+
+    return isSameMonthYear && hasValidPaymentTerm
   })
 
   const hasFP = parcelas.data.some(
     (item) => item.paymentTerm.id.trim() === 'FP',
   )
 
-  const hasPP = parcelas.data.some(
-    (item) => item.paymentTerm.id.trim() === 'PP',
-  )
+  let hasPP = parcelas.data.some((item) => item.paymentTerm.id.trim() === 'PP')
+
+  if (hasPP) {
+    let hasM = parcelas.data.some(
+      (item) => item.paymentTerm.id.trim().match(/^M\d+$/)?.input,
+    )
+
+    hasM = parcelas.data.some(
+      (item) => item.paymentTerm.id.trim().match(/^\d{2,}$/)?.input,
+    )
+
+    if (hasM) {
+      hasPP = false
+    }
+  }
+
+  console.log('hasPP: ', hasPP)
 
   const conditionTypeId = hasFP ? 'FP' : hasPP ? 'PP' : null
+
+  console.log('conditionTypeID: ', conditionTypeId)
+
+  // TODO - Transformar em PP as diferentes de M1, M2...16 caso PP - OK
 
   const getValorPresentePorParcela = () => {
     const taxaAdm = buscaTaxaPorContrato(contrato.contractNumber)?.taxaAdm
@@ -142,8 +161,8 @@ export function VisualizaoCalculo({
             break
 
           // Para tipos 'M1', 'M2', ..., 'M9' ou '10', '11', '12', etc.
-          case tipoDeParcela.match(/^M\d+$/)?.input: // Regex para M seguido de um número
-          case tipoDeParcela.match(/^\d{2,}$/)?.input: // Regex para números de 10 ou mais dígitos
+          case tipoDeParcela.match(/^M\d+$/)?.input:
+          case tipoDeParcela.match(/^\d{2,}$/)?.input:
             if (parcelaDoMesDoPagamento) {
               valorPorParcela = parcelaDoMesDoPagamento.originalAmount
 
