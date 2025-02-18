@@ -25,6 +25,7 @@ export async function POST(req: Request) {
       </html>
     `
     console.log('Iniciando Puppeteer...')
+    console.time('Geração do PDF')
 
     let browser: Browser | BrowserCore
 
@@ -63,9 +64,11 @@ export async function POST(req: Request) {
       format: 'A4',
       printBackground: true,
       margin: { top: 10, bottom: 10, left: 10, right: 10 },
+      scale: 0.8,
     })
 
     console.log('PDF gerado com sucesso!')
+    console.timeEnd('Geração do PDF')
 
     await browser.close()
 
