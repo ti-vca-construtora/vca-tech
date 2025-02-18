@@ -29,6 +29,8 @@ export async function POST(req: Request) {
 
     let browser: Browser | BrowserCore
 
+    console.log('Environment: ', process.env.NODE_ENV)
+
     if (
       process.env.NODE_ENV === 'production' ||
       process.env.VERCEL_ENV === 'production'
@@ -54,8 +56,8 @@ export async function POST(req: Request) {
     const page = await browser.newPage()
 
     await page.setContent(fullHtml, {
-      waitUntil: 'networkidle0',
-      timeout: 30000,
+      waitUntil: 'load',
+      timeout: 15000,
     })
 
     console.log('Gerando PDF...')
