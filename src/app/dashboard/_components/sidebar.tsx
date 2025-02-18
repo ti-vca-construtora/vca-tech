@@ -1,11 +1,6 @@
 'use client'
 import * as React from 'react'
-import {
-  LayoutDashboard,
-  Loader2,
-  Settings2,
-  SquareTerminal,
-} from 'lucide-react'
+import { LayoutDashboard, Loader2, SquareTerminal } from 'lucide-react'
 import { NavMain } from '@/components/nav-main'
 import { NavUser } from '@/components/nav-user'
 import {
@@ -37,21 +32,21 @@ const data = {
         },
       ],
     },
-    {
-      title: 'Configurações',
-      url: '/dashboard/settings',
-      icon: Settings2,
-      items: [
-        {
-          title: 'Geral',
-          url: '/dashboard/settings/general',
-        },
-        {
-          title: 'Conta',
-          url: '/dashboard/settings/account',
-        },
-      ],
-    },
+    // {
+    //   title: 'Configurações',
+    //   url: '/dashboard/settings',
+    //   icon: Settings2,
+    //   items: [
+    //     {
+    //       title: 'Geral',
+    //       url: '/dashboard/settings/general',
+    //     },
+    //     {
+    //       title: 'Conta',
+    //       url: '/dashboard/settings/account',
+    //     },
+    //   ],
+    // },
   ],
   projects: [
     {
