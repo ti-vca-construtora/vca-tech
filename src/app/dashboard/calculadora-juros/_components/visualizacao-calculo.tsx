@@ -320,7 +320,7 @@ export function VisualizaoCalculo({
             calculoPorParcela,
             getValorPresenteTotal,
           }}
-          fileName={`${contrato.contractNumber}-${cliente.name}`}
+          fileName={`${contrato.contractNumber}-AVP`}
         />
         <button
           onClick={() => window.location.reload()}
