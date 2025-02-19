@@ -25,9 +25,17 @@ import LogoVca from '../../../../public/assets/logo-vca.png'
 import LogoVcaTech from '../../../../public/assets/logo-vca-tech.png'
 import Image from 'next/image'
 
+import ReCAPTCHA from 'react-google-recaptcha'
+
+const NEXT_PUBLIC_GOOGLE_SITE_KEY =
+  process.env.NEXT_PUBLIC_GOOGLE_SITE_KEY || ''
+
 const formSchema = z.object({
   user: z.string().min(1, 'Utilize um nome de usuário válido!'),
   senha: z.string().min(1, 'Utilize uma senha válida!'),
+  recaptcha: z.boolean().refine((captcha) => captcha === true, {
+    message: 'Validação reCAPTCHA necessária. Tente novamente.',
+  }),
 })
 
 type FormType = z.infer<typeof formSchema>
@@ -43,6 +51,7 @@ export function LoginForm() {
     formState: { errors },
     setError,
     handleSubmit,
+    setValue,
   } = useForm<FormType>({
     resolver: zodResolver(formSchema),
   })
@@ -109,6 +118,22 @@ export function LoginForm() {
             {errors.senha && (
               <span className="text-xs text-red-500">
                 {errors.senha.message}
+              </span>
+            )}
+          </div>
+          <div className="flex flex-col gap-2 items-center justify-center">
+            <ReCAPTCHA
+              onChange={() =>
+                setValue('recaptcha', true, { shouldValidate: true })
+              }
+              onExpired={() =>
+                setValue('recaptcha', false, { shouldValidate: true })
+              }
+              sitekey={NEXT_PUBLIC_GOOGLE_SITE_KEY}
+            />
+            {errors.recaptcha?.message && (
+              <span className="text-xs text-red-500">
+                {errors.recaptcha.message}
               </span>
             )}
           </div>
