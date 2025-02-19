@@ -326,6 +326,11 @@ export function ParcelasTabela({
                   className="font-bold"
                   value={selectedDate}
                   min={new Date().toISOString().split('T')[0]}
+                  max={
+                    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+                      .toISOString()
+                      .split('T')[0]
+                  }
                   onChange={(e) => setSelectedDate(e.target.value)}
                 />
               </span>
