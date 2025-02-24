@@ -1,9 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { contratos } from '@/data/contratos'
-import { CalculoPorParcela } from '../app/dashboard/calculadora-juros/_components/visualizacao-calculo'
 import * as xlsx from 'xlsx'
-import { Cliente } from '../app/dashboard/calculadora-juros/_components/form'
-import { Contrato } from '../app/dashboard/calculadora-juros/_components/contratos-tabela'
 import { QrCodePix } from 'qrcode-pix'
 
 export const formatarData = (dataISO: string) => {
@@ -102,43 +99,14 @@ export const calcularVPA = (TJM: number, MD: number, VPO: number) => {
 }
 
 // Não está sendo utilizada
-export const exportJsonToExcel = (
-  json: CalculoPorParcela[],
-  infoAdicional: Cliente & Contrato,
-) => {
-  const infoString = Object.entries(infoAdicional)
-    .map(([key, value]) => `${key}:${value}`)
-    .join('; ')
-
-  const taxaTotal =
-    contratos.find((contrato) => contrato.cliente === infoAdicional.name)
-      ?.taxaTotal || null
-
-  const formattedArray = [
-    { info: infoString },
-    ...json.map((item) => {
-      return {
-        valorAnterior: formatarValor(item.valorAnterior),
-        valorPresente: formatarValor(item.valorPresente),
-        dataAPagar: formatarData(item.dataAPagar),
-        dataVencimento: formatarData(item.dataVencimento),
-        taxa: taxaTotal || 'Sem taxa.',
-      }
-    }),
-  ]
-
+export const exportJsonToExcel = (json: any[], fileName: string) => {
   const workbook = xlsx.utils.book_new()
 
-  const worksheet = xlsx.utils.json_to_sheet(formattedArray, {
-    skipHeader: true,
-  })
+  const worksheet = xlsx.utils.json_to_sheet(json)
 
   xlsx.utils.book_append_sheet(workbook, worksheet, 'Sheet1')
 
-  xlsx.writeFile(
-    workbook,
-    `${infoAdicional.name}-${infoAdicional.contractNumber}.xlsx`,
-  )
+  xlsx.writeFile(workbook, `${fileName}.xlsx`)
 }
 
 export const importExcelToJson = (filePath: string): any[] => {

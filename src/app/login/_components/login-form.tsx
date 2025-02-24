@@ -3,11 +3,8 @@
 import * as z from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useRouter } from 'next/navigation'
 
 import Link from 'next/link'
-
-import Cookies from 'js-cookie'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -20,12 +17,12 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { usuarios } from '@/data/usuarios'
 import LogoVca from '../../../../public/assets/logo-vca.png'
 import LogoVcaTech from '../../../../public/assets/logo-vca-tech.png'
 import Image from 'next/image'
 
 import ReCAPTCHA from 'react-google-recaptcha'
+import { useUser } from '@/hooks/use-user'
 
 const NEXT_PUBLIC_GOOGLE_SITE_KEY =
   process.env.NEXT_PUBLIC_GOOGLE_SITE_KEY || ''
@@ -40,11 +37,6 @@ const formSchema = z.object({
 
 type FormType = z.infer<typeof formSchema>
 
-type UserPayload = {
-  user: string
-  token: string
-}
-
 export function LoginForm() {
   const {
     register,
@@ -55,21 +47,12 @@ export function LoginForm() {
   } = useForm<FormType>({
     resolver: zodResolver(formSchema),
   })
-  const router = useRouter()
-
-  const salvaAutorizacao = ({ user, token }: UserPayload): void => {
-    Cookies.set('vca-tech-authorize', JSON.stringify({ user, token }), {
-      expires: 7,
-    })
-  }
+  const { login } = useUser()
 
   const handleLogin = (data: FormType) => {
-    const user = usuarios.find((user) => user.user === data.user)
+    const isLogged = login({ username: data.user, password: data.senha })
 
-    if (user && user.senha === data.senha) {
-      salvaAutorizacao({ user: user.user, token: user.token })
-      router.push('/dashboard')
-
+    if (isLogged) {
       return
     }
 

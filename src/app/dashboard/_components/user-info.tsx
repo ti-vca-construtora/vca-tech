@@ -1,7 +1,5 @@
 'use client'
 
-import Cookies from 'js-cookie'
-
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -12,37 +10,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { CircleUser } from 'lucide-react'
+import { useUser } from '@/hooks/use-user'
 
 export function UserInfo() {
-  function logout(): void {
-    Cookies.remove('vca-tech-authorize')
-
-    window.location.href = '/login'
-  }
-
-  function getUserFromCookie(): string | null {
-    const payload = Cookies.get('vca-tech-authorize')
-
-    if (!payload) {
-      console.log('Cookie não encontrado.')
-      return null
-    }
-
-    try {
-      const { user } = JSON.parse(payload)
-      if (user) {
-        return user
-      } else {
-        console.log('Usuário não encontrado no payload do cookie.')
-        return null
-      }
-    } catch (error) {
-      console.error('Erro ao analisar o payload do cookie:', error)
-      return null
-    }
-  }
-
-  const user = getUserFromCookie()
+  const { logout, user } = useUser()
 
   return (
     <DropdownMenu>
@@ -55,7 +26,7 @@ export function UserInfo() {
         </DropdownMenuTrigger>
         <div className="flex flex-col justify-center">
           <DropdownMenuLabel className="text-xs h-fit p-0">
-            {user}
+            {user && user.user}
           </DropdownMenuLabel>
           {/* <DropdownMenuLabel className="text-xs font-normal h-fit p-0">
             email@vcaconstrutora.com.br

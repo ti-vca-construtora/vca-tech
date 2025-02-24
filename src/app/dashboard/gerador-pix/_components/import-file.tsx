@@ -9,7 +9,7 @@ import { BsFiletypeXlsx } from 'react-icons/bs'
 import { Loader2 } from 'lucide-react'
 import JSZip from 'jszip'
 import { toPng } from 'html-to-image'
-import { generatePix } from '@/util'
+import { exportJsonToExcel, generatePix } from '@/util'
 import { ZodError, ZodIssue } from 'zod'
 import { formSchema } from '../schema/pix-schema'
 import { toast } from 'sonner'
@@ -165,7 +165,7 @@ export function ImportFile() {
 
       const container = document.createElement('div')
       container.style.backgroundColor = 'white'
-      container.style.padding = '20px'
+      container.style.padding = '0px'
       container.style.display = 'flex'
       container.style.flexDirection = 'column'
       container.style.alignItems = 'center'
@@ -223,6 +223,11 @@ export function ImportFile() {
       link.download = `pix-data-${Date.now()}.zip`
       link.click()
     })
+
+    exportJsonToExcel(
+      pixDataArray.map((pix) => ({ payload: pix.payload })),
+      'copia-e-cola',
+    )
   }
 
   return (
