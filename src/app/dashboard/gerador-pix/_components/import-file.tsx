@@ -224,6 +224,7 @@ export function ImportFile() {
       link.click()
     })
 
+    // Adicionar link para download
     exportJsonToExcel(
       pixDataArray.map((pix) => ({ payload: pix.payload })),
       'copia-e-cola',

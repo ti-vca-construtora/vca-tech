@@ -3,6 +3,7 @@
 import { Usuario, usuarios } from '@/data/usuarios'
 import Cookies from 'js-cookie'
 import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 
 type UserPayload = {
   user: string
@@ -10,7 +11,7 @@ type UserPayload = {
 }
 
 type UseUser = {
-  user: Usuario
+  user: Usuario | null
   logout: () => void
   login: ({
     username,
@@ -22,6 +23,7 @@ type UseUser = {
 }
 
 export function useUser(): UseUser {
+  const [user, setUser] = useState<Usuario | null>(null)
   const router = useRouter()
 
   const login = ({
@@ -49,7 +51,7 @@ export function useUser(): UseUser {
     })
   }
 
-  function getUserFromCookie(): string | null {
+  function getUserFromCookie(): Usuario | null {
     const payload = Cookies.get('vca-tech-authorize')
 
     if (!payload) {
@@ -80,8 +82,16 @@ export function useUser(): UseUser {
     window.location.href = '/login'
   }
 
+  useEffect(() => {
+    const userFound = getUserFromCookie()
+
+    if (userFound) {
+      setUser(userFound)
+    }
+  }, [])
+
   return {
-    user: getUserFromCookie(),
+    user,
     logout,
     login,
   }
