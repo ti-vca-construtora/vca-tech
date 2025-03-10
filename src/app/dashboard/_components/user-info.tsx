@@ -26,7 +26,7 @@ export function UserInfo() {
         </DropdownMenuTrigger>
         <div className="flex flex-col justify-center">
           <DropdownMenuLabel className="text-xs h-fit p-0">
-            {user && user.user}
+            {user && user.email}
           </DropdownMenuLabel>
           {/* <DropdownMenuLabel className="text-xs font-normal h-fit p-0">
             email@vcaconstrutora.com.br

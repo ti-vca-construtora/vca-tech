@@ -5,14 +5,13 @@ export function middleware(req: NextRequest) {
 
   console.log('Middleware executado para:', pathname)
 
-  // Ignorar rotas públicas específicas, mas redirecionar caso o token exista
   if (pathname === '/login') {
     const payload = req.cookies.get('vca-tech-authorize')?.value
 
     if (payload) {
       try {
-        const { user, token } = JSON.parse(payload)
-        if (user && token) {
+        const { token } = JSON.parse(payload)
+        if (token) {
           console.log(
             'Token encontrado na rota /login. Redirecionando para /dashboard/setores.',
           )
@@ -32,7 +31,6 @@ export function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // Obter o payload do cookie
   const payload = req.cookies.get('vca-tech-authorize')?.value
   console.log('Payload encontrado:', payload)
 
@@ -42,14 +40,14 @@ export function middleware(req: NextRequest) {
   }
 
   try {
-    const { user, token } = JSON.parse(payload)
+    const { token } = JSON.parse(payload)
 
-    if (!user || !token) {
+    if (!token) {
       console.log('Payload incompleto. Redirecionando para /login.')
       return NextResponse.redirect(new URL('/login', req.url))
     }
 
-    console.log(`Acesso concedido ao usuário: ${user} à rota ${pathname}`)
+    console.log(`Acesso concedido ao usuário à rota ${pathname}`)
     return NextResponse.next()
   } catch (error) {
     console.error('Erro ao analisar o payload:', error)

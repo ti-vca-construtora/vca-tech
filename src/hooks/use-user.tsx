@@ -1,93 +1,141 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { Usuario, usuarios } from '@/data/usuarios'
 import Cookies from 'js-cookie'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { jwtDecode } from 'jwt-decode'
 
-type UserPayload = {
-  user: string
+const TECH_API_URL = process.env.NEXT_PUBLIC_TECH_API_URL
+
+type User = {
+  id: string
+  createdAt: Date
+  email: string
+  name?: string
+  role: string
+  permissions: any[]
+}
+
+type AuthPayload = {
   token: string
 }
 
 type UseUser = {
-  user: Usuario | null
+  user: User | null
   logout: () => void
   login: ({
-    username,
+    email,
     password,
   }: {
-    username: string
+    email: string
     password: string
-  }) => boolean
+  }) => Promise<boolean>
 }
 
 export function useUser(): UseUser {
-  const [user, setUser] = useState<Usuario | null>(null)
-  const router = useRouter()
+  const [user, setUser] = useState<User | null>(null)
 
-  const login = ({
-    username,
+  async function login({
+    email,
     password,
   }: {
-    username: string
+    email: string
     password: string
-  }) => {
-    const userFound = usuarios.find((user) => user.user === username)
+  }) {
+    try {
+      const response = await fetch(`${TECH_API_URL}/auth/login`, {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
 
-    if (userFound && userFound.senha === password) {
-      saveAuthCookie({ user: userFound.user, token: userFound.token })
-      router.push('/dashboard')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Erro de login')
+      }
+
+      const authResponse = await response.json()
+
+      saveAccessToken({ token: authResponse.access_token })
 
       return true
+    } catch (error) {
+      console.error('Login failed:', error)
+      return false
     }
-
-    return false
   }
 
-  function saveAuthCookie({ user, token }: UserPayload): void {
-    Cookies.set('vca-tech-authorize', JSON.stringify({ user, token }), {
+  function saveAccessToken({ token }: AuthPayload): void {
+    Cookies.set('vca-tech-authorize', JSON.stringify({ token }), {
       expires: 7,
     })
   }
 
-  function getUserFromCookie(): Usuario | null {
-    const payload = Cookies.get('vca-tech-authorize')
-
-    if (!payload) {
-      console.log('Cookie não encontrado.')
-      return null
-    }
-
+  async function getUserFromCookie(): Promise<User | null> {
     try {
-      const { user } = JSON.parse(payload)
+      const cookieValue = Cookies.get('vca-tech-authorize')
 
-      const userFound = usuarios.find((usuario) => usuario.user === user)
-
-      if (userFound) {
-        return userFound
-      } else {
-        console.log('Usuário não encontrado no payload do cookie.')
+      if (!cookieValue) {
+        console.log('Cookie não encontrado')
         return null
       }
+
+      let token: string
+      try {
+        const tokenData = JSON.parse(cookieValue)
+        token = tokenData.token
+      } catch (error) {
+        console.log('Definindo cookie como JSON puro: ', error)
+        token = cookieValue
+      }
+
+      if (!token) {
+        console.log('Token não encontrado')
+        return null
+      }
+
+      const decoded = jwtDecode<{ sub?: string }>(token)
+      const userId = decoded.sub
+
+      if (!userId) {
+        console.log('sub não encontrado no token')
+        return null
+      }
+
+      const response = await fetch(`${TECH_API_URL}/users/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`Erro na API: ${response.statusText}`)
+      }
+
+      const payload = await response.json()
+
+      return payload.data
     } catch (error) {
-      console.error('Erro ao analisar o payload do cookie:', error)
+      console.error('Erro ao processar autenticação:', error)
       return null
     }
   }
 
   function logout(): void {
     Cookies.remove('vca-tech-authorize')
-
+    setUser(null)
     window.location.href = '/login'
   }
 
   useEffect(() => {
-    const userFound = getUserFromCookie()
-
-    if (userFound) {
-      setUser(userFound)
+    const loadUser = async () => {
+      const userFound = await getUserFromCookie()
+      if (userFound) setUser(userFound)
     }
+
+    loadUser()
   }, [])
 
   return {

@@ -1,11 +1,6 @@
 'use client'
 import * as React from 'react'
-import {
-  LayoutDashboard,
-  Loader2,
-  Settings2,
-  SquareTerminal,
-} from 'lucide-react'
+import { LayoutDashboard, Loader2, SquareTerminal } from 'lucide-react'
 import { NavMain } from '@/components/nav-main'
 import { NavUser } from '@/components/nav-user'
 import {
@@ -37,21 +32,21 @@ const data = {
         },
       ],
     },
-    {
-      title: 'Configurações',
-      url: '/dashboard/settings',
-      icon: Settings2,
-      items: [
-        {
-          title: 'Geral',
-          url: '/dashboard/settings/general',
-        },
-        {
-          title: 'Conta',
-          url: '/dashboard/settings/account',
-        },
-      ],
-    },
+    // {
+    //   title: 'Configurações',
+    //   url: '/dashboard/settings',
+    //   icon: Settings2,
+    //   items: [
+    //     {
+    //       title: 'Geral',
+    //       url: '/dashboard/settings/general',
+    //     },
+    //     {
+    //       title: 'Conta',
+    //       url: '/dashboard/settings/account',
+    //     },
+    //   ],
+    // },
   ],
   projects: [
     {
@@ -80,10 +75,10 @@ export function DashboardSidebar({
         {user ? (
           <NavUser
             logout={logout}
-            user={{ name: user.user, email: user.email }}
+            user={{ name: user.name || 'Sem nome', email: user.email }}
           />
         ) : (
-          <Loader2 className="animation-spin duration-1000 text-neutral-500" />
+          <Loader2 className="animate-spin duration-300 text-neutral-500" />
         )}
       </SidebarFooter>
       <SidebarRail />

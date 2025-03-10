@@ -23,6 +23,7 @@ import Image from 'next/image'
 
 import ReCAPTCHA from 'react-google-recaptcha'
 import { useUser } from '@/hooks/use-user'
+import { useRouter } from 'next/navigation'
 
 const NEXT_PUBLIC_GOOGLE_SITE_KEY =
   process.env.NEXT_PUBLIC_GOOGLE_SITE_KEY || ''
@@ -48,15 +49,26 @@ export function LoginForm() {
     resolver: zodResolver(formSchema),
   })
   const { login } = useUser()
+  const router = useRouter()
 
-  const handleLogin = (data: FormType) => {
-    const isLogged = login({ username: data.user, password: data.senha })
+  const handleLogin = async (data: FormType) => {
+    try {
+      const isLogged = await login({ email: data.user, password: data.senha })
 
-    if (isLogged) {
-      return
+      if (isLogged) {
+        router.refresh()
+        router.push('/dashboard')
+        return
+      }
+
+      setError('senha', {
+        message: 'Credenciais inválidas',
+      })
+    } catch (error) {
+      setError('senha', {
+        message: error instanceof Error ? error.message : 'Erro inesperado',
+      })
     }
-
-    setError('senha', { message: 'Erro nas credenciais' })
   }
 
   return (

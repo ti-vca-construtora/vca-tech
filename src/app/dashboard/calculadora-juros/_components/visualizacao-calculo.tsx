@@ -78,7 +78,9 @@ export function VisualizaoCalculo({
   })
 
   const hasFP = parcelas.data.some(
-    (item) => item.paymentTerm.id.trim() === 'FP',
+    (item) =>
+      item.paymentTerm.id.trim() === 'FP' &&
+      Number(item.correctedBalanceAmount) > 0,
   )
 
   let hasPP = parcelas.data.some((item) => item.paymentTerm.id.trim() === 'PP')
