@@ -2,6 +2,9 @@
 import { contratos } from '@/data/contratos'
 import * as xlsx from 'xlsx'
 import { QrCodePix } from 'qrcode-pix'
+import { IncomeByBillsApiResponse } from '@/app/api/avp/income-by-bills/route'
+import { CurrentDebitBalanceApiResponse } from '@/app/api/avp/current-debit-balance/route'
+import { FetchHandler } from '@/app/dashboard/calculadora-juros/_components/contratos-tabela'
 
 export const formatarData = (dataISO: string) => {
   const [ano, mes, dia] = dataISO.split('-')
@@ -165,4 +168,103 @@ export const generatePix = (
   })
 
   return qrCodePix
+}
+
+type ReceivableBills = {
+  documentNumber: string
+}
+
+export const handleFetchReceivableBills: FetchHandler<
+  IncomeByBillsApiResponse
+> = async (
+  customerId,
+  contractNumber,
+  origem,
+  _document,
+  _documentType,
+  action,
+) => {
+  try {
+    const data = await fetch(
+      `/api/avp/receivable-bills?customerId=${customerId}&contractNumber=${contractNumber}&origem=${origem}`,
+    )
+
+    if (!data.ok) {
+      throw new Error('Erro ao buscar contratos')
+    }
+
+    const parsed = await data.json()
+
+    const filteredContratos = parsed.results.filter(
+      (item: ReceivableBills) => item.documentNumber === contractNumber,
+    )
+
+    if (!filteredContratos.length) {
+      throw new Error('Nenhum contrato correspondente encontrado')
+    }
+
+    const receivableBillId = filteredContratos[0].receivableBillId
+
+    const billsData = await fetch(
+      `/api/avp/income-by-bills?billId=${receivableBillId}&origem=${origem}`,
+    )
+
+    if (!billsData.ok) {
+      throw new Error('Erro ao buscar parcelas')
+    }
+
+    const parsedBillsData: IncomeByBillsApiResponse = await billsData.json()
+
+    if (action) action(parsedBillsData)
+  } catch (error: any | unknown) {
+    console.log(error.message)
+  }
+}
+
+export const handleFetchCurrentDebitBalance: FetchHandler<
+  CurrentDebitBalanceApiResponse
+> = async (
+  customerId,
+  contractNumber,
+  origem,
+  document,
+  documentType,
+  action,
+) => {
+  try {
+    const data = await fetch(
+      `/api/avp/receivable-bills?customerId=${customerId}&contractNumber=${contractNumber}&origem=${origem}`,
+    )
+
+    if (!data.ok) {
+      throw new Error('Erro ao buscar contratos')
+    }
+
+    const parsed = await data.json()
+
+    const filteredContratos = parsed.results.filter(
+      (item: ReceivableBills) => item.documentNumber === contractNumber,
+    )
+
+    if (!filteredContratos.length) {
+      throw new Error('Nenhum contrato correspondente encontrado')
+    }
+
+    const receivableBillId = filteredContratos[0].receivableBillId
+
+    const currentDebitBalance = await fetch(
+      `/api/avp/current-debit-balance?billId=${receivableBillId}&origem=${origem}&document=${document}&documentType=${documentType}`,
+    )
+
+    if (!currentDebitBalance.ok) {
+      throw new Error('Erro ao buscar parcelas')
+    }
+
+    const parsedCurrentDebitBalance: CurrentDebitBalanceApiResponse =
+      await currentDebitBalance.json()
+
+    if (action) action(parsedCurrentDebitBalance)
+  } catch (error: any | unknown) {
+    console.log(error.message)
+  }
 }

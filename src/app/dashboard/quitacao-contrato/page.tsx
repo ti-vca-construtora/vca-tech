@@ -1,8 +1,8 @@
 import { FormContainer } from './_components/form-container'
 
-export default function CalculadoraJuros() {
+export default function QuitacaoContrato() {
   return (
-    <div className="size-full flex p-6">
+    <div className="w-full h-full flex p-6">
       <FormContainer />
     </div>
   )

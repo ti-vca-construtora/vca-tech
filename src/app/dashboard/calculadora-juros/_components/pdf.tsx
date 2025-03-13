@@ -17,7 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import classNames from 'classnames'
-import { Cliente } from './form'
+import { Cliente } from '../../../../components/search-form'
 import { Contrato } from './contratos-tabela'
 import { ParcelaSelecionada } from './parcelas-tabela'
 import { CalculoPorParcela } from './visualizacao-calculo'

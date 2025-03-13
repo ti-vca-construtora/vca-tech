@@ -66,7 +66,7 @@ export function Dashboard({ children }: DashboardProps) {
               <PageTitle />
             </Suspense>
             <div
-              className="flex flex-1 items-center justify-center rounded-lg shadow-md bg-neutral-100 h-full max-h-[690px]"
+              className="flex flex-1 items-center justify-center rounded-lg shadow-md bg-neutral-100 h-full"
               x-chunk="dashboard-02-chunk-1"
             >
               {children}

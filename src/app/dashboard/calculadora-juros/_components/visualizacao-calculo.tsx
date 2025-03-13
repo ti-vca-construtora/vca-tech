@@ -6,7 +6,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Contrato } from './contratos-tabela'
-import { Cliente } from './form'
+import { Cliente } from '../../../../components/search-form'
 import { ParcelaSelecionada } from './parcelas-tabela'
 import {
   buscaTaxaPorContrato,
@@ -61,7 +61,6 @@ export function VisualizaoCalculo({
   const [calculoPorParcela, setCalculoPorParcela] = useState<
     CalculoPorParcela[]
   >([])
-
   const parcelaDoMesDoPagamento = parcelas.data.find((item) => {
     const dueDate = new Date(`${item.dueDate}T04:00:00Z`)
     const pagarDate = new Date(`${dataAPagar}T04:00:00Z`)
@@ -99,13 +98,7 @@ export function VisualizaoCalculo({
     }
   }
 
-  console.log('hasPP: ', hasPP)
-
   const conditionTypeId = hasFP ? 'FP' : hasPP ? 'PP' : null
-
-  console.log('conditionTypeID: ', conditionTypeId)
-
-  // TODO - Transformar em PP as diferentes de M1, M2...16 caso PP - OK
 
   const getValorPresentePorParcela = () => {
     const taxaAdm = buscaTaxaPorContrato(contrato.contractNumber)?.taxaAdm
@@ -199,15 +192,14 @@ export function VisualizaoCalculo({
   }
 
   useEffect(() => {
-    getValorPresentePorParcela()
-  }, [])
+    if (parcelasSelecionadas.length > 0 && dataAPagar) {
+      getValorPresentePorParcela()
+    }
+  }, [parcelasSelecionadas, dataAPagar, parcelas, contrato])
 
   return (
-    <section className="flex flex-col gap-4 justify-between items-center w-full">
-      <div
-        id="downloadable"
-        className="flex gap-4 justify-between w-full items-center h-full"
-      >
+    <section className="flex flex-col gap-4 justify-between items-center w-full text-xs">
+      <div className="flex gap-4 justify-between w-full items-center h-full">
         <Card className="w-fit h-[500px]">
           <CardHeader>
             <CardTitle className="text-lg">Informações</CardTitle>

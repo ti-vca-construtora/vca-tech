@@ -10,15 +10,16 @@ import {
 } from '@/components/ui/table'
 import classNames from 'classnames'
 import { useState } from 'react'
-import { Cliente } from './form'
+import { Cliente } from '../../../../components/search-form'
 import { Contrato } from './contratos-tabela'
 import { Loader2Icon } from 'lucide-react'
 import { VisualizaoCalculo } from './visualizacao-calculo'
-import { formatarCpfCnpj, formatarData, formatarValor } from '@/util'
+import { formatarData, formatarValor } from '@/util'
 import {
   IncomeByBillsApiResponse,
   Parcela,
 } from '@/app/api/avp/income-by-bills/route'
+import { ClienteInfo } from '@/components/cliente-info'
 
 type ParcelasTabelaProps = {
   cliente: Cliente
@@ -106,9 +107,8 @@ export function ParcelasTabela({
   }
 
   const sortByDueDateDesc = (array: Parcela[]) => {
-    if (array.length <= 1) return array // Retorna o array se houver 0 ou 1 item.
+    if (array.length <= 1) return array
 
-    // Filtrar as parcelas com balanceDue diferente de 0
     const validParcels = array.filter(
       (parcela) => parcela.correctedBalanceAmount !== 0,
     )
@@ -119,23 +119,11 @@ export function ParcelasTabela({
       )
     }
 
-    // Encontrar a parcela mais próxima com balanceDue diferente de 0
-    const closestParcel = validParcels.reduce((prev, curr) =>
-      new Date(prev.dueDate) < new Date(curr.dueDate) ? prev : curr,
-    )
-
-    // Separar a parcela mais próxima do restante
-    const remainingParcels = array.filter(
-      (parcela) => parcela !== closestParcel,
-    )
-
-    // Ordenar o restante em ordem decrescente
-    const sortedRemaining = remainingParcels.sort(
+    const sortedParcelas = array.sort(
       (a, b) => Number(new Date(b.dueDate)) - Number(new Date(a.dueDate)),
     )
 
-    // Retornar o array com a parcela mais próxima na primeira posição
-    return [closestParcel, ...sortedRemaining]
+    return sortedParcelas
   }
 
   const handleCalculo = () => {
@@ -189,37 +177,7 @@ export function ParcelasTabela({
         />
       ) : parcelas.data.length ? (
         <>
-          <div className="bg-neutral-50 shadow-md rounded w-full p-2 flex justify-between items-start">
-            <div className="rounded p-2 flex flex-col gap-2">
-              <span className="text-azul-vca">
-                Nome do Cliente:{' '}
-                <span className="font-bold">{cliente.name}</span>
-              </span>
-              <span className="text-azul-vca">
-                CPF/CNPJ:{' '}
-                <span className="font-bold">
-                  {formatarCpfCnpj(cliente.documentNumber)}
-                </span>
-              </span>
-              <span className="text-azul-vca">
-                Empreendimento:{' '}
-                <span className="font-bold">{contrato.enterpriseName}</span>
-              </span>
-            </div>
-            <div className="rounded p-2 flex flex-col gap-2">
-              <span className="text-azul-vca">
-                Contrato:{' '}
-                <span className="font-bold">{contrato.contractNumber}</span>
-              </span>
-              <span className="text-azul-vca">
-                Unidade: <span className="font-bold">{contrato.unit}</span>
-              </span>
-              {/* <span className="text-azul-vca">
-                Contrato ID:{' '}
-                <span className="font-bold">FALTA IMPLEMENTAR</span>
-              </span> */}
-            </div>
-          </div>
+          <ClienteInfo cliente={cliente} contrato={contrato} />
           <div className="flex flex-row-reverse items-center justify-center self-end gap-3">
             <button
               onClick={handleSelectTodasParcelas}
@@ -331,7 +289,10 @@ export function ParcelasTabela({
                       .toISOString()
                       .split('T')[0]
                   }
-                  onChange={(e) => setSelectedDate(e.target.value)}
+                  onChange={(e) => {
+                    console.log(e.target.value)
+                    setSelectedDate(e.target.value)
+                  }}
                 />
               </span>
               <button

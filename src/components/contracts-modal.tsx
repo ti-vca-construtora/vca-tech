@@ -7,30 +7,35 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { Contrato, ContratosTabela } from './contratos-tabela'
+import {
+  Contrato,
+  ContratosTabela,
+  FetchHandler,
+} from '../app/dashboard/calculadora-juros/_components/contratos-tabela'
 import { Dispatch, SetStateAction } from 'react'
 import { GoX } from 'react-icons/go'
-import { IncomeByBillsApiResponse } from '@/app/api/avp/income-by-bills/route'
 
-type Modal = {
+type ContractsModalProps<T> = {
   action: Dispatch<SetStateAction<boolean>>
-  setParcelas: Dispatch<SetStateAction<IncomeByBillsApiResponse>>
-  setContratosInfo: Dispatch<SetStateAction<Contrato>>
   contratos: Contrato[]
   document: {
     documentType: 'cpf' | 'cnpj'
     documentNumber: string
     customerId: string
   }
+  setContratosInfo: Dispatch<SetStateAction<Contrato>>
+  fetchHandler: FetchHandler<T>
+  setData: Dispatch<SetStateAction<T>>
 }
 
-export function Modal({
+export function ContractsModal<T>({
   action,
   contratos,
   document,
-  setParcelas,
   setContratosInfo,
-}: Modal) {
+  fetchHandler,
+  setData,
+}: ContractsModalProps<T>) {
   return (
     <AlertDialog>
       <AlertDialogTrigger
@@ -53,12 +58,15 @@ export function Modal({
             {document.documentNumber}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            <ContratosTabela
-              setContratosInfo={setContratosInfo}
-              setParcelas={setParcelas}
-              customerId={document.customerId}
-              contratos={contratos}
+            <ContratosTabela<T>
               action={action}
+              setContratosInfo={setContratosInfo}
+              contratos={contratos}
+              customerId={document.customerId}
+              fetchHandler={fetchHandler}
+              setData={setData}
+              document={document.documentNumber}
+              documentType={document.documentType}
             />
           </AlertDialogDescription>
         </AlertDialogHeader>

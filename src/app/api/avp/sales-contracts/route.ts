@@ -25,9 +25,6 @@ export async function GET(req: NextRequest) {
       },
     )
 
-    // Log da resposta original da API externa
-    console.log('Resposta da API:', responseVca)
-
     if (!responseVca.ok) {
       throw new Error('Erro ao buscar dados da API externa')
     }
@@ -42,9 +39,6 @@ export async function GET(req: NextRequest) {
         },
       },
     )
-
-    // Log da resposta original da API externa
-    console.log('Resposta da API:', responseLotear)
 
     if (!responseLotear.ok) {
       throw new Error('Erro ao buscar dados da API externa')

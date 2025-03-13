@@ -1,8 +1,8 @@
 'use client'
 import * as React from 'react'
-import { LayoutDashboard, Loader2, SquareTerminal } from 'lucide-react'
+import { LayoutDashboard, SquareTerminal } from 'lucide-react'
 import { NavMain } from '@/components/nav-main'
-import { NavUser } from '@/components/nav-user'
+// import { NavUser } from '@/components/nav-user'
 import {
   Sidebar,
   SidebarContent,
@@ -12,7 +12,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar'
 import { NavProjects } from '@/components/nav-projects'
-import { useUser } from '@/hooks/use-user'
+// import { useUser } from '@/hooks/use-user'
 
 const data = {
   navMain: [
@@ -22,6 +22,10 @@ const data = {
       icon: SquareTerminal,
       isActive: true,
       items: [
+        // {
+        //   title: 'Diretoria',
+        //   url: '/dashboard/setores/diretoria?title=Painel de Soluções - Diretoria',
+        // },
         {
           title: 'Financeiro',
           url: '/dashboard/setores/financeiro?title=Painel de Soluções - Financeiro',
@@ -60,7 +64,7 @@ const data = {
 export function DashboardSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
-  const { user, logout } = useUser()
+  // const { user, logout } = useUser()
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -72,14 +76,14 @@ export function DashboardSidebar({
         <NavMain items={data.navMain} />
       </SidebarContent>
       <SidebarFooter>
-        {user ? (
+        {/* {user ? (
           <NavUser
             logout={logout}
             user={{ name: user.name || 'Sem nome', email: user.email }}
           />
         ) : (
           <Loader2 className="animate-spin duration-300 text-neutral-500" />
-        )}
+        )} */}
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
