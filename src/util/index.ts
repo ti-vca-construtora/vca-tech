@@ -2,8 +2,11 @@
 import { contratos } from '@/data/contratos'
 import * as xlsx from 'xlsx'
 import { QrCodePix } from 'qrcode-pix'
+import {
+  CurrentDebitBalanceApiResponse,
+  CurrentDebitBalanceExternalApiResponse,
+} from '@/app/api/avp/current-debit-balance/route'
 import { IncomeByBillsApiResponse } from '@/app/api/avp/income-by-bills/route'
-import { CurrentDebitBalanceApiResponse } from '@/app/api/avp/current-debit-balance/route'
 import { FetchHandler } from '@/app/dashboard/calculadora-juros/_components/contratos-tabela'
 
 export const formatarData = (dataISO: string) => {
@@ -180,10 +183,7 @@ export const handleFetchReceivableBills: FetchHandler<
   customerId,
   contractNumber,
   origem,
-  _document,
-  _documentType,
-  action,
-) => {
+): Promise<IncomeByBillsApiResponse> => {
   try {
     const data = await fetch(
       `/api/avp/receivable-bills?customerId=${customerId}&contractNumber=${contractNumber}&origem=${origem}`,
@@ -213,11 +213,14 @@ export const handleFetchReceivableBills: FetchHandler<
       throw new Error('Erro ao buscar parcelas')
     }
 
-    const parsedBillsData: IncomeByBillsApiResponse = await billsData.json()
+    if (!billsData.ok) {
+      throw new Error('Erro ao buscar parcelas')
+    }
 
-    if (action) action(parsedBillsData)
+    return (await billsData.json()) as IncomeByBillsApiResponse
   } catch (error: any | unknown) {
-    console.log(error.message)
+    console.log(error instanceof Error ? error.message : 'Erro desconhecido')
+    return { data: [] }
   }
 }
 
@@ -227,10 +230,9 @@ export const handleFetchCurrentDebitBalance: FetchHandler<
   customerId,
   contractNumber,
   origem,
-  document,
-  documentType,
-  action,
-) => {
+  document?,
+  documentType?,
+): Promise<CurrentDebitBalanceApiResponse> => {
   try {
     const data = await fetch(
       `/api/avp/receivable-bills?customerId=${customerId}&contractNumber=${contractNumber}&origem=${origem}`,
@@ -260,11 +262,14 @@ export const handleFetchCurrentDebitBalance: FetchHandler<
       throw new Error('Erro ao buscar parcelas')
     }
 
-    const parsedCurrentDebitBalance: CurrentDebitBalanceApiResponse =
+    const currentDebitApiResponse: CurrentDebitBalanceExternalApiResponse =
       await currentDebitBalance.json()
 
-    if (action) action(parsedCurrentDebitBalance)
+    return {
+      data: currentDebitApiResponse.results,
+    }
   } catch (error: any | unknown) {
-    console.log(error.message)
+    console.log(error instanceof Error ? error.message : 'Erro desconhecido')
+    return { data: [] }
   }
 }

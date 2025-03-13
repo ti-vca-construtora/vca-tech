@@ -15,7 +15,12 @@ import {
 import { Dispatch, SetStateAction } from 'react'
 import { GoX } from 'react-icons/go'
 
-type ContractsModalProps<T> = {
+export type CombinedData<T, U> = {
+  incomeByBills: T
+  currentDebit: U
+}
+
+type ContractsModalProps<T, U = never> = {
   action: Dispatch<SetStateAction<boolean>>
   contratos: Contrato[]
   document: {
@@ -24,18 +29,25 @@ type ContractsModalProps<T> = {
     customerId: string
   }
   setContratosInfo: Dispatch<SetStateAction<Contrato>>
-  fetchHandler: FetchHandler<T>
-  setData: Dispatch<SetStateAction<T>>
+  fetchHandler?: FetchHandler<T>
+  setData?: Dispatch<SetStateAction<T>>
+  combinedHandlers?: {
+    incomeByBills: FetchHandler<T>
+    currentDebit: FetchHandler<U>
+  }
+  setCombinedData?: Dispatch<SetStateAction<CombinedData<T, U>>>
 }
 
-export function ContractsModal<T>({
+export function ContractsModal<T, U>({
   action,
   contratos,
   document,
   setContratosInfo,
   fetchHandler,
   setData,
-}: ContractsModalProps<T>) {
+  combinedHandlers,
+  setCombinedData,
+}: ContractsModalProps<T, U>) {
   return (
     <AlertDialog>
       <AlertDialogTrigger
@@ -58,13 +70,15 @@ export function ContractsModal<T>({
             {document.documentNumber}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            <ContratosTabela<T>
+            <ContratosTabela<T, U>
               action={action}
               setContratosInfo={setContratosInfo}
               contratos={contratos}
               customerId={document.customerId}
               fetchHandler={fetchHandler}
               setData={setData}
+              combinedHandlers={combinedHandlers}
+              setCombinedData={setCombinedData}
               document={document.documentNumber}
               documentType={document.documentType}
             />

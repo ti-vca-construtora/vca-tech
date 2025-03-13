@@ -1,3 +1,4 @@
+import { CombinedData } from '@/components/contracts-modal'
 import {
   Table,
   TableBody,
@@ -15,8 +16,7 @@ export type FetchHandler<T> = (
   origem: string,
   document?: string,
   documentType?: 'cpf' | 'cnpj',
-  action?: Dispatch<SetStateAction<T>>,
-) => Promise<void>
+) => Promise<T>
 
 export type Contrato = {
   unit: string
@@ -25,37 +25,68 @@ export type Contrato = {
   origem: string
 }
 
-type ContratosTabelaProps<T> = {
+type ContratosTabelaProps<T, U = never> = {
   action: Dispatch<SetStateAction<boolean>>
   setContratosInfo: Dispatch<SetStateAction<Contrato>>
   contratos: Contrato[]
   customerId: string
-  fetchHandler: FetchHandler<T>
+  fetchHandler?: FetchHandler<T>
+  setData?: Dispatch<SetStateAction<T>>
+  combinedHandlers?: {
+    incomeByBills: FetchHandler<T>
+    currentDebit: FetchHandler<U>
+  }
+  setCombinedData?: Dispatch<SetStateAction<CombinedData<T, U>>>
   document?: string
   documentType?: 'cpf' | 'cnpj'
-  setData: Dispatch<SetStateAction<T>>
 }
 
-export function ContratosTabela<T>({
+export function ContratosTabela<T, U>({
   action,
   setContratosInfo,
   contratos,
   customerId,
   fetchHandler,
+  setData,
+  combinedHandlers,
+  setCombinedData,
   document,
   documentType,
-  setData,
-}: ContratosTabelaProps<T>) {
+}: ContratosTabelaProps<T, U>) {
   const handleClick = async (contract: Contrato) => {
     try {
-      await fetchHandler(
-        customerId,
-        contract.contractNumber,
-        contract.origem,
-        document,
-        documentType,
-        setData,
-      )
+      if (combinedHandlers && setCombinedData) {
+        const [incomeData, debitData] = await Promise.all([
+          combinedHandlers.incomeByBills(
+            customerId,
+            contract.contractNumber,
+            contract.origem,
+            document,
+            documentType,
+          ),
+          combinedHandlers.currentDebit(
+            customerId,
+            contract.contractNumber,
+            contract.origem,
+            document,
+            documentType,
+          ),
+        ])
+
+        setCombinedData({
+          incomeByBills: incomeData,
+          currentDebit: debitData,
+        })
+      } else if (fetchHandler && setData) {
+        const data = await fetchHandler(
+          customerId,
+          contract.contractNumber,
+          contract.origem,
+          document,
+          documentType,
+        )
+        setData(data)
+      }
 
       setContratosInfo({
         contractNumber: contract.contractNumber,

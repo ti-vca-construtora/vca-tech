@@ -27,59 +27,62 @@ import {
 import classNames from 'classnames'
 import { CalculoPorParcela } from '../../calculadora-juros/_components/visualizacao-calculo'
 import { useEffect, useState } from 'react'
+import { IncomeByBillsApiResponse } from '@/app/api/avp/income-by-bills/route'
 
 type VisualizaoCalculoProps = {
   currentDebit: CurrentDebitBalanceApiResponse
+  incomeByBills: IncomeByBillsApiResponse
   contrato: Contrato
   cliente: Cliente
-  valor: number
+  valorVencidas: number
+  valorFuturas: number
 }
 
 export function VisualizaoCalculo({
   currentDebit,
+  incomeByBills,
   contrato,
   cliente,
-  valor,
+  valorVencidas,
+  valorFuturas,
 }: VisualizaoCalculoProps) {
   const [calculoPorParcela, setCalculoPorParcela] = useState<
     CalculoPorParcela[]
   >([])
+  const parcelaDoMesDoPagamento = incomeByBills.data.find((item) => {
+    const dueDate = new Date(`${item.dueDate}T04:00:00Z`)
+    const pagarDate = new Date(
+      `${new Date().toISOString().split('T')[0]}T04:00:00Z`,
+    )
 
-  const parcelaDoMesDoPagamento =
-    currentDebit.results[0].payableInstallments.find((item) => {
-      const dueDate = new Date(`${item.dueDate}T04:00:00Z`)
-      const pagarDate = new Date(
-        `${new Date().toISOString().split('T')[0]}T04:00:00Z`,
-      )
+    const isSameMonthYear =
+      dueDate.getFullYear() === pagarDate.getFullYear() &&
+      dueDate.getMonth() === pagarDate.getMonth()
 
-      const isSameMonthYear =
-        dueDate.getFullYear() === pagarDate.getFullYear() &&
-        dueDate.getMonth() === pagarDate.getMonth()
+    const hasValidPaymentTerm =
+      item.paymentTerm.id.trim().match(/^M\d+$/) ||
+      item.paymentTerm.id.trim().match(/^\d{2,}$/)
 
-      const hasValidPaymentTerm =
-        item.indexerName.trim().match(/^M\d+$/) ||
-        item.indexerName.trim().match(/^\d{2,}$/)
+    return isSameMonthYear && hasValidPaymentTerm
+  })
 
-      return isSameMonthYear && hasValidPaymentTerm
-    })
-
-  // MODIFICAR ORIGNAL VALUE
-  const hasFP = currentDebit.results[0].payableInstallments.some(
+  const hasFP = incomeByBills.data.some(
     (item) =>
-      item.indexerName.trim() === 'FP' && Number(item.adjustedValue) > 0,
+      item.paymentTerm.id.trim() === 'FP' &&
+      Number(item.correctedBalanceAmount) > 0,
   )
 
-  let hasPP = currentDebit.results[0].payableInstallments.some(
-    (item) => item.indexerName.trim() === 'PP',
+  let hasPP = incomeByBills.data.some(
+    (item) => item.paymentTerm.id.trim() === 'PP',
   )
 
   if (hasPP) {
-    let hasM = currentDebit.results[0].payableInstallments.some(
-      (item) => item.indexerName.trim().match(/^M\d+$/)?.input,
+    let hasM = incomeByBills.data.some(
+      (item) => item.paymentTerm.id.trim().match(/^M\d+$/)?.input,
     )
 
-    hasM = currentDebit.results[0].payableInstallments.some(
-      (item) => item.indexerName.trim().match(/^\d{2,}$/)?.input,
+    hasM = incomeByBills.data.some(
+      (item) => item.paymentTerm.id.trim().match(/^\d{2,}$/)?.input,
     )
 
     if (hasM) {
@@ -95,9 +98,9 @@ export function VisualizaoCalculo({
 
     let taxaAnual: number
 
-    const primeiraParcela = currentDebit.results[0].payableInstallments[0]
+    const primeiraParcela = incomeByBills.data[0]
 
-    const calculoParcelas = currentDebit.results[0].payableInstallments
+    const calculoParcelas = incomeByBills.data
       .map((parcela) => {
         if (conditionTypeId) {
           return { ...parcela, paymentTerm: { id: conditionTypeId } }
@@ -105,7 +108,7 @@ export function VisualizaoCalculo({
         return parcela
       })
       .map((item) => {
-        const tipoDeParcela = item.indexerName
+        const tipoDeParcela = item.paymentTerm.id
         const diferencaDias = dias360(
           new Date(`${new Date().toISOString().split('T')[0]}T04:00:00Z`),
           new Date(`${item.dueDate}T04:00:00Z`),
@@ -129,7 +132,7 @@ export function VisualizaoCalculo({
               dataVencimento.getMonth() === dataAPagarDate.getMonth()
 
             if (isMesAtual) {
-              valorPorParcela = item.adjustedValue
+              valorPorParcela = item.correctedBalanceAmount
             } else if (taxaAnual) {
               const taxaDeJurosMensal = calcularTJM(taxaAnual)
               const mesesDeDiferenca = diferencaDias / 30
@@ -137,7 +140,7 @@ export function VisualizaoCalculo({
               valorPorParcela = calcularVPA(
                 taxaDeJurosMensal,
                 mesesDeDiferenca,
-                item.adjustedValue,
+                item.correctedBalanceAmount,
               )
             }
             break
@@ -145,77 +148,85 @@ export function VisualizaoCalculo({
 
           case 'PP':
           case 'M':
-            valorPorParcela = item.adjustedValue * 1
+            valorPorParcela = item.correctedBalanceAmount * 1
             break
 
           // Para tipos 'M1', 'M2', ..., 'M9' ou '10', '11', '12', etc.
           case tipoDeParcela.match(/^M\d+$/)?.input:
           case tipoDeParcela.match(/^\d{2,}$/)?.input:
             if (parcelaDoMesDoPagamento) {
-              valorPorParcela = parcelaDoMesDoPagamento.adjustedValue
+              valorPorParcela = parcelaDoMesDoPagamento.originalAmount
 
               break
             }
-            valorPorParcela = primeiraParcela.adjustedValue
+            valorPorParcela = primeiraParcela.correctedBalanceAmount
 
             break
 
           default:
-            valorPorParcela = item.adjustedValue
+            valorPorParcela = item.correctedBalanceAmount
             break
         }
 
         return {
-          valorAnterior: item.adjustedValue,
+          valorAnterior: item.correctedBalanceAmount,
           valorPresente: valorPorParcela,
           dataAPagar: new Date().toISOString().split('T')[0],
           dataVencimento: item.dueDate,
           taxa: taxaAnual,
+          indexador: item.paymentTerm.id,
         }
       })
 
     setCalculoPorParcela(calculoParcelas)
   }
 
-  const calculaValorPresenteTotal = () => {
+  const calculaValorTotalPresenteVencidas = () => {
     let total = 0
 
-    if (currentDebit.results[0].dueInstallments) {
-      total += currentDebit.results[0].dueInstallments.reduce(
-        (total, parcela) => {
-          const valorNumerico = parseFloat(
-            parcela.adjustedValue.toString().replace(',', '.').trim(),
-          )
+    if (currentDebit.data[0].dueInstallments) {
+      total += currentDebit.data[0].dueInstallments.reduce((total, parcela) => {
+        const valorString = (parcela.adjustedValue + parcela.additionalValue)
+          .toString()
+          .replace(',', '.')
 
-          return total + (isNaN(valorNumerico) ? 0 : valorNumerico)
-        },
-        0,
-      )
-    }
+        const valorNumerico = parseFloat(valorString) || 0
 
-    if (currentDebit.results[0].payableInstallments) {
-      total += currentDebit.results[0].payableInstallments.reduce(
-        (total, parcela) => {
-          const valorNumerico = parseFloat(
-            parcela.adjustedValue.toString().replace(',', '.').trim(),
-          )
-
-          return total + (isNaN(valorNumerico) ? 0 : valorNumerico)
-        },
-        0,
-      )
+        return total + valorNumerico
+      }, 0)
     }
 
     return total
   }
 
+  const calculaValorTotalPresenteFuturas = () => {
+    return calculoPorParcela.reduce(
+      (soma, parcela) => soma + (parcela.valorPresente || 0),
+      0,
+    )
+  }
+
+  const valorTotalGeral = () => {
+    return (
+      calculaValorTotalPresenteVencidas() + calculaValorTotalPresenteFuturas()
+    )
+  }
+
+  const calculaQuantidadeTitulosVencidos = () => {
+    return currentDebit.data[0].dueInstallments
+      ? currentDebit.data[0].dueInstallments.length
+      : 0
+  }
+
+  const calculaQuantidadeTotalTitulos = () => {
+    return calculoPorParcela.length + calculaQuantidadeTitulosVencidos()
+  }
+
   useEffect(() => {
-    if (currentDebit.results[0].payableInstallments) {
+    if (incomeByBills.data.length > 0) {
       getValorPresentePorParcela()
     }
-  }, [currentDebit.results[0].payableInstallments, contrato])
-
-  console.log(calculoPorParcela)
+  }, [incomeByBills.data, contrato])
 
   return (
     <div className="flex gap-4 justify-between w-full items-center h-full text-xs">
@@ -226,45 +237,92 @@ export function VisualizaoCalculo({
             Informações relacionadas ao cliente, contrato e parcelas
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-2">
-            <p className="border-b w-full">
-              Cliente: <span className="font-semibold">{cliente.name}</span>
-            </p>
-            <p className="border-b w-full">
-              Empreendimento:{' '}
-              <span className="font-semibold">{contrato.enterpriseName}</span>
-            </p>
-            <p className="border-b w-full">
-              Contrato:{' '}
-              <span className="font-semibold">{contrato.contractNumber}</span>
-            </p>
-            <p className="border-b w-full">
-              Unidade: <span className="font-semibold">{contrato.unit}</span>
-            </p>
-            <p className="border-b w-full">
-              Quantidade de Títulos:{' '}
+        <CardContent className="h-full">
+          <div className="flex flex-col gap-2 h-full">
+            <div className="flex flex-col gap-2">
+              <span className="font-bold">Informações de contrato</span>
+              <p className="border-b w-full">
+                Cliente: <span className="font-semibold">{cliente.name}</span>
+              </p>
+              <p className="border-b w-full">
+                Empreendimento:{' '}
+                <span className="font-semibold">{contrato.enterpriseName}</span>
+              </p>
+              <p className="border-b w-full">
+                Contrato:{' '}
+                <span className="font-semibold">{contrato.contractNumber}</span>
+              </p>
+              <p className="border-b w-full">
+                Unidade: <span className="font-semibold">{contrato.unit}</span>
+              </p>
+              <p className="border-b w-full">
+                Data a Pagar:{' '}
+                <span className="font-semibold">
+                  {formatarData(new Date().toISOString().split('T')[0])}
+                </span>
+              </p>
+              <p className="border-b w-full">
+                Quantidade total de títulos:{' '}
+                <span className="font-semibold">
+                  {calculaQuantidadeTotalTitulos()}
+                </span>
+              </p>
+            </div>
+            <span className="font-bold mt-2">Subtotal parcelas vencidas</span>
+            {currentDebit.data[0].dueInstallments ? (
+              <div className="flex flex-col gap-2">
+                <p className="border-b w-full">
+                  Quantidade de títulos:{' '}
+                  <span className="font-semibold">
+                    {calculaQuantidadeTitulosVencidos()}
+                  </span>
+                </p>
+                <p className="border-b w-full">
+                  Valor Total Anterior:{' '}
+                  <span className="font-semibold">{`R$ ${formatarValor(valorVencidas)}`}</span>
+                </p>
+                <p className="border-b w-full">
+                  Valor Total Presente:{' '}
+                  <span className="font-semibold">{`R$ ${formatarValor(calculaValorTotalPresenteVencidas())}`}</span>
+                </p>
+                <p className="border-b w-full">
+                  Valor Acrescido:{' '}
+                  <span className="font-semibold">{`R$ ${formatarValor(calculaValorTotalPresenteVencidas() - valorVencidas)}`}</span>
+                </p>
+              </div>
+            ) : (
+              <span>Não há parcelas vencidas.</span>
+            )}
+            <span className="font-bold mt-2">Subtotal parcelas futuras</span>
+            {calculoPorParcela.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                <p className="border-b w-full">
+                  Quantidade de títulos:{' '}
+                  <span className="font-semibold">
+                    {calculoPorParcela.length}
+                  </span>
+                </p>
+                <p className="border-b w-full">
+                  Valor Total Anterior:{' '}
+                  <span className="font-semibold">{`R$ ${formatarValor(valorFuturas)}`}</span>
+                </p>
+                <p className="border-b w-full">
+                  Valor Total Presente:{' '}
+                  <span className="font-semibold">{`R$ ${formatarValor(calculaValorTotalPresenteFuturas())}`}</span>
+                </p>
+                <p className="border-b w-full">
+                  Valor Descontado:{' '}
+                  <span className="font-semibold">{`R$ ${formatarValor(calculaValorTotalPresenteFuturas() - valorFuturas)}`}</span>
+                </p>
+              </div>
+            ) : (
+              <span>Não há parcelas futuras.</span>
+            )}
+            <span className="font-bold mt-4 text-base">Total</span>
+            <p className="border-b w-full text-base">
+              Valor:{' '}
               <span className="font-semibold">
-                {currentDebit.results[0].dueInstallments &&
-                  currentDebit.results[0].dueInstallments.length}
-              </span>
-            </p>
-            <p className="border-b w-full">
-              Valor Total Anterior:{' '}
-              <span className="font-semibold">{`RS ${formatarValor(valor)}`}</span>
-            </p>
-            <p className="border-b w-full">
-              Valor Total Presente:{' '}
-              <span className="font-semibold">{`RS ${formatarValor(calculaValorPresenteTotal())}`}</span>
-            </p>
-            <p className="border-b w-full">
-              Valor Acréscimo:{' '}
-              <span className="font-semibold">{`RS ${formatarValor(calculaValorPresenteTotal() - valor)}`}</span>
-            </p>
-            <p className="border-b w-full">
-              Data a Pagar:{' '}
-              <span className="font-semibold">
-                {formatarData(new Date().toISOString().split('T')[0])}
+                {`R$ ${formatarValor(Number(valorTotalGeral().toFixed(2)))}`}
               </span>
             </p>
           </div>
@@ -279,7 +337,7 @@ export function VisualizaoCalculo({
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            {currentDebit.results[0].dueInstallments ? (
+            {currentDebit.data[0].dueInstallments ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -287,51 +345,42 @@ export function VisualizaoCalculo({
                     <TableHead>Valor Presente</TableHead>
                     <TableHead>Valor Acréscimo</TableHead>
                     <TableHead>Vencimento</TableHead>
-                    <TableHead>Pagamento</TableHead>
+                    <TableHead>Indexador</TableHead>
                     <TableHead>{`Período (dias)`}</TableHead>
                     <TableHead>{`Taxa (%)`}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {currentDebit.results[0].dueInstallments.map(
-                    (item, index) => (
-                      <TableRow
-                        className={classNames(
-                          index % 2 === 0 && 'bg-neutral-100',
+                  {currentDebit.data[0].dueInstallments.map((item, index) => (
+                    <TableRow
+                      className={classNames(
+                        index % 2 === 0 && 'bg-neutral-100',
+                      )}
+                      key={index}
+                    >
+                      <TableCell>
+                        R$ {formatarValor(item.adjustedValue)}
+                      </TableCell>
+                      <TableCell>
+                        R${' '}
+                        {formatarValor(
+                          item.additionalValue + item.adjustedValue,
                         )}
-                        key={index}
-                      >
-                        <TableCell>
-                          R$ {formatarValor(item.originalValue)}
-                        </TableCell>
-                        <TableCell>
-                          R${' '}
-                          {formatarValor(
-                            item.additionalValue + item.adjustedValue,
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          R${' '}
-                          {formatarValor(
-                            item.additionalValue +
-                              item.adjustedValue -
-                              item.originalValue,
-                          )}
-                        </TableCell>
-                        <TableCell>{formatarData(item.dueDate)}</TableCell>
-                        <TableCell>
-                          {formatarData(new Date().toISOString().split('T')[0])}
-                        </TableCell>
-                        <TableCell>
-                          {calcularDiferencaDias(
-                            new Date().toLocaleDateString(),
-                            item.dueDate,
-                          )}
-                        </TableCell>
-                        <TableCell>Sem taxa</TableCell>
-                      </TableRow>
-                    ),
-                  )}
+                      </TableCell>
+                      <TableCell>
+                        R$ {formatarValor(item.additionalValue)}
+                      </TableCell>
+                      <TableCell>{formatarData(item.dueDate)}</TableCell>
+                      <TableCell>{item.indexerName}</TableCell>
+                      <TableCell>
+                        {calcularDiferencaDias(
+                          new Date().toISOString().split('T')[0],
+                          item.dueDate,
+                        )}
+                      </TableCell>
+                      <TableCell>Sem taxa</TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             ) : (
@@ -341,13 +390,13 @@ export function VisualizaoCalculo({
         </Card>
         <Card className="flex-grow h-full text-xs">
           <CardHeader>
-            <CardTitle className="text-lg">Parcelas Válidas</CardTitle>
+            <CardTitle className="text-lg">Parcelas Futuras</CardTitle>
             <CardDescription className="text-xs">
               Parcelas com data de vencimento posterior a data atual
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            {currentDebit.results[0].payableInstallments ? (
+            {calculoPorParcela.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -355,51 +404,40 @@ export function VisualizaoCalculo({
                     <TableHead>Valor Presente</TableHead>
                     <TableHead>Valor Desconto</TableHead>
                     <TableHead>Vencimento</TableHead>
-                    <TableHead>Pagamento</TableHead>
+                    <TableHead>Indexador</TableHead>
                     <TableHead>{`Período (dias)`}</TableHead>
                     <TableHead>{`Taxa (%)`}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {currentDebit.results[0].payableInstallments.map(
-                    (item, index) => (
-                      <TableRow
-                        className={classNames(
-                          index % 2 === 0 && 'bg-neutral-100',
+                  {calculoPorParcela.map((item, index) => (
+                    <TableRow
+                      className={classNames(
+                        index % 2 === 0 && 'bg-neutral-100',
+                      )}
+                      key={index}
+                    >
+                      <TableCell>
+                        R$ {formatarValor(item.valorAnterior)}
+                      </TableCell>
+                      <TableCell>
+                        R$ {formatarValor(item.valorPresente)}
+                      </TableCell>
+                      <TableCell>
+                        R${' '}
+                        {formatarValor(item.valorAnterior - item.valorPresente)}
+                      </TableCell>
+                      <TableCell>{formatarData(item.dataVencimento)}</TableCell>
+                      <TableCell>{item.indexador}</TableCell>
+                      <TableCell>
+                        {calcularDiferencaDias(
+                          new Date().toISOString().split('T')[0],
+                          item.dataVencimento,
                         )}
-                        key={index}
-                      >
-                        <TableCell>
-                          R$ {formatarValor(item.originalValue)}
-                        </TableCell>
-                        <TableCell>
-                          R${' '}
-                          {formatarValor(
-                            item.additionalValue + item.adjustedValue,
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          R${' '}
-                          {formatarValor(
-                            item.additionalValue +
-                              item.adjustedValue -
-                              item.originalValue,
-                          )}
-                        </TableCell>
-                        <TableCell>{formatarData(item.dueDate)}</TableCell>
-                        <TableCell>
-                          {formatarData(new Date().toISOString().split('T')[0])}
-                        </TableCell>
-                        <TableCell>
-                          {calcularDiferencaDias(
-                            new Date().toLocaleDateString(),
-                            item.dueDate,
-                          )}
-                        </TableCell>
-                        <TableCell>Sem taxa</TableCell>
-                      </TableRow>
-                    ),
-                  )}
+                      </TableCell>
+                      <TableCell>{item.taxa}</TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             ) : (

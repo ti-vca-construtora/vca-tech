@@ -39,7 +39,7 @@ interface PayableInstallment extends InstallmentBase {
   dueDate: string
 }
 
-interface CurrentDebit {
+export interface CurrentDebit {
   billReceivableId: number
   documentId: string
   paidInstallments: PaidInstallment[]
@@ -47,13 +47,17 @@ interface CurrentDebit {
   payableInstallments: PayableInstallment[]
 }
 
-export interface CurrentDebitBalanceApiResponse {
+export interface CurrentDebitBalanceExternalApiResponse {
   resultSetMetadata: {
     count: number
     offset: number
     limit: number
   }
   results: CurrentDebit[]
+}
+
+export interface CurrentDebitBalanceApiResponse {
+  data: CurrentDebit[]
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
@@ -114,7 +118,8 @@ export async function GET(req: NextRequest) {
       throw new Error('Erro ao buscar dados da API externa')
     }
 
-    const data: CurrentDebitBalanceApiResponse = await response.json()
+    const data: CurrentDebitBalanceExternalApiResponse = await response.json()
+
     return NextResponse.json(data)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any | unknown) {

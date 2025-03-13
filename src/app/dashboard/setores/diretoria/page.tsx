@@ -1,13 +1,13 @@
 import React from 'react'
 
 import { Solucoes, SolucoesCard } from '@/components/solucoes-card'
-import { PiCalculator } from 'react-icons/pi'
+import { LiaFileContractSolid } from 'react-icons/lia'
 
 const solucoesData: Solucoes[] = [
   {
     titulo: 'Simulação de Quitação de Contrato',
     descricao: 'Efetua o cálculo de juros para quitação de contrato.',
-    Icon: PiCalculator,
+    Icon: LiaFileContractSolid,
     href: 'quitacao-contrato?title=Simulação de Quitação de Contrato',
   },
 ]

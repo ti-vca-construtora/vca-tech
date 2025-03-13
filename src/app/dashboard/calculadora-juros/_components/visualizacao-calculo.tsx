@@ -48,6 +48,7 @@ export type CalculoPorParcela = {
   dataAPagar: string
   dataVencimento: string
   taxa: number
+  indexador?: string
 }
 
 export function VisualizaoCalculo({
