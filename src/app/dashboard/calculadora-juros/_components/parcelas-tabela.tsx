@@ -114,9 +114,7 @@ export function ParcelasTabela({
     )
 
     if (validParcels.length === 0) {
-      throw new Error(
-        'Nenhuma parcela válida com balanceDue diferente de 0 encontrada.',
-      )
+      return []
     }
 
     const sortedParcelas = array.sort(
@@ -210,46 +208,54 @@ export function ParcelasTabela({
               ESTE CLIENTE POSSUI PARCELAS EM ABERTO.
             </div>
           )}
-          <Table className="shadow-md p-2 rounded bg-white">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[200px]">DATA VENCIMENTO</TableHead>
-                <TableHead className="w-[200px]">VALOR</TableHead>
-                <TableHead className="w-[200px]">ID CONDIÇÃO</TableHead>
-                <TableHead className="w-[200px]">NOME INDEXADOR </TableHead>
-                <TableHead className="w-[150px] text-center">
-                  SELECIONAR
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {updateParcelas.map((parcela, index) => (
-                <TableRow
-                  key={index}
-                  className={classNames(
-                    index % 2 === 0 && 'bg-neutral-100',
-                    index === 0 && 'bg-green-100',
-                  )}
-                >
-                  <TableCell className="font-medium">
-                    {formatarData(parcela.dueDate)}
-                  </TableCell>
-                  <TableCell>
-                    R$ {formatarValor(parcela.correctedBalanceAmount)}
-                  </TableCell>
-                  <TableCell>{parcela.paymentTerm.id}</TableCell>
-                  <TableCell>{parcela.indexerName}</TableCell>
-                  <TableCell className="border text-center">
-                    <input
-                      type="checkbox"
-                      checked={isParcelaSelecionada(parcela)}
-                      onChange={() => handleSelectParcela(parcela, index)}
-                    />
-                  </TableCell>
+          {updateParcelas.length > 0 ? (
+            <Table className="shadow-md p-2 rounded bg-white">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[200px]">DATA VENCIMENTO</TableHead>
+                  <TableHead className="w-[200px]">VALOR</TableHead>
+                  <TableHead className="w-[200px]">ID CONDIÇÃO</TableHead>
+                  <TableHead className="w-[200px]">NOME INDEXADOR </TableHead>
+                  <TableHead className="w-[150px] text-center">
+                    SELECIONAR
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {updateParcelas.map((parcela, index) => (
+                  <TableRow
+                    key={index}
+                    className={classNames(
+                      index % 2 === 0 && 'bg-neutral-100',
+                      index === 0 && 'bg-green-100',
+                    )}
+                  >
+                    <TableCell className="font-medium">
+                      {formatarData(parcela.dueDate)}
+                    </TableCell>
+                    <TableCell>
+                      R$ {formatarValor(parcela.correctedBalanceAmount)}
+                    </TableCell>
+                    <TableCell>{parcela.paymentTerm.id}</TableCell>
+                    <TableCell>{parcela.indexerName}</TableCell>
+                    <TableCell className="border text-center">
+                      <input
+                        type="checkbox"
+                        checked={isParcelaSelecionada(parcela)}
+                        onChange={() => handleSelectParcela(parcela, index)}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="size-full flex items-center justify-center">
+              <span className="font-bold text-red-500 text-base">
+                Este cliente não possui parcelas com valor maior que 0.
+              </span>
+            </div>
+          )}
           <div className="w-full flex justify-between items-start">
             <div className="rounded flex items-center justify-center w-full text-xs gap-2">
               <span className="text-azul-vca">
