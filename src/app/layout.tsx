@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { Montserrat } from 'next/font/google'
 import { Toaster } from '@/components/ui/sonner'
+import { AuthProvider } from '@/contexts/auth-context.context'
 
 const montserrat = Montserrat({ subsets: ['latin'] })
 
@@ -18,8 +19,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${montserrat.className} antialiased`}>
-        {children}
-        <Toaster />
+        <AuthProvider>
+          {children}
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   )

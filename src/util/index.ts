@@ -7,7 +7,7 @@ import {
   CurrentDebitBalanceExternalApiResponse,
 } from '@/app/api/avp/current-debit-balance/route'
 import { IncomeByBillsApiResponse } from '@/app/api/avp/income-by-bills/route'
-import { FetchHandler } from '@/app/dashboard/calculadora-juros/_components/contratos-tabela'
+import { FetchHandler } from '@/app/dashboard/(solucoes)/calculadora-juros/_components/contratos-tabela'
 
 export const formatarData = (dataISO: string) => {
   const [ano, mes, dia] = dataISO.split('-')

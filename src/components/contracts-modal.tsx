@@ -11,7 +11,7 @@ import {
   Contrato,
   ContratosTabela,
   FetchHandler,
-} from '../app/dashboard/calculadora-juros/_components/contratos-tabela'
+} from '../app/dashboard/(solucoes)/calculadora-juros/_components/contratos-tabela'
 import { Dispatch, SetStateAction } from 'react'
 import { GoX } from 'react-icons/go'
 

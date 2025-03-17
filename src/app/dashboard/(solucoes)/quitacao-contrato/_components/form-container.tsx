@@ -5,7 +5,7 @@ import {
   SearchForm,
   Contrato,
   Cliente,
-} from '../../../../components/search-form'
+} from '../../../../../components/search-form'
 import { CombinedData, ContractsModal } from '@/components/contracts-modal'
 import {
   handleFetchCurrentDebitBalance,
