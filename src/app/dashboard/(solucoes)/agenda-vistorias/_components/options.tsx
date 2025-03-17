@@ -9,6 +9,8 @@ const solucoesData: Solucoes[] = [
     descricao: 'Disponibiliza a unidade para a vistoria.',
     Icon: PiHouseLineLight,
     href: 'agenda-vistorias/unidades?title=Disponibilizar unidades',
+    area: 'entregas',
+    permission: 'disponibilizar-unidades',
   },
   {
     titulo: 'Disponibilizar horários',
@@ -16,6 +18,8 @@ const solucoesData: Solucoes[] = [
       'Disponibiliza horários para que o cliente realize agendamentos.',
     Icon: PiCalendar,
     href: 'agenda-vistorias/horarios?title=Configurar horários',
+    area: 'entregas',
+    permission: 'disponibilizar-horarios',
   },
 ]
 
@@ -29,6 +33,8 @@ const AgendamentoTools = () => {
           Icon={item.Icon}
           key={index}
           href={item.href}
+          area={item.area}
+          permission={item.permission}
         />
       ))}
     </div>

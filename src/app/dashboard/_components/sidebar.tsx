@@ -64,7 +64,7 @@ const data = {
 export function DashboardSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
-  const { user, logout } = useUser()
+  const { user, logout, isLoading } = useUser()
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -76,7 +76,7 @@ export function DashboardSidebar({
         <NavMain items={data.navMain} />
       </SidebarContent>
       <SidebarFooter>
-        {user ? (
+        {!isLoading && user ? (
           <NavUser
             logout={logout}
             user={{ name: user.name || 'Sem nome', email: user.email }}
