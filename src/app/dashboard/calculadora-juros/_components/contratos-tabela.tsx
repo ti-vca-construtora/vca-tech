@@ -1,3 +1,4 @@
+import { CombinedData } from '@/components/contracts-modal'
 import {
   Table,
   TableBody,
@@ -8,90 +9,97 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Dispatch, SetStateAction } from 'react'
-import { IncomeByBillsApiResponse } from '@/app/api/avp/income-by-bills/route'
+
+export type FetchHandler<T> = (
+  customerId: string,
+  contractNumber: string,
+  origem: string,
+  document?: string,
+  documentType?: 'cpf' | 'cnpj',
+) => Promise<T>
 
 export type Contrato = {
   unit: string
   contractNumber: string
   enterpriseName: string
+  origem: string
 }
 
-type ContratosTabela = {
+type ContratosTabelaProps<T, U = never> = {
   action: Dispatch<SetStateAction<boolean>>
-  setParcelas: Dispatch<SetStateAction<IncomeByBillsApiResponse>>
   setContratosInfo: Dispatch<SetStateAction<Contrato>>
-  customerId: string
   contratos: Contrato[]
+  customerId: string
+  fetchHandler?: FetchHandler<T>
+  setData?: Dispatch<SetStateAction<T>>
+  combinedHandlers?: {
+    incomeByBills: FetchHandler<T>
+    currentDebit: FetchHandler<U>
+  }
+  setCombinedData?: Dispatch<SetStateAction<CombinedData<T, U>>>
+  document?: string
+  documentType?: 'cpf' | 'cnpj'
 }
 
-type ReceivableBills = {
-  documentNumber: string
-}
-
-export function ContratosTabela({
+export function ContratosTabela<T, U>({
   action,
-  setParcelas,
   setContratosInfo,
   contratos,
   customerId,
-}: ContratosTabela) {
-  const handleFetchReceivableBills = async (
-    customerId: string,
-    contractNumber: string,
-  ) => {
+  fetchHandler,
+  setData,
+  combinedHandlers,
+  setCombinedData,
+  document,
+  documentType,
+}: ContratosTabelaProps<T, U>) {
+  const handleClick = async (contract: Contrato) => {
     try {
-      const data = await fetch(
-        `/api/avp/receivable-bills?customerId=${customerId}&contractNumber=${contractNumber}`,
-      )
+      if (combinedHandlers && setCombinedData) {
+        const [incomeData, debitData] = await Promise.all([
+          combinedHandlers.incomeByBills(
+            customerId,
+            contract.contractNumber,
+            contract.origem,
+            document,
+            documentType,
+          ),
+          combinedHandlers.currentDebit(
+            customerId,
+            contract.contractNumber,
+            contract.origem,
+            document,
+            documentType,
+          ),
+        ])
 
-      if (!data.ok) {
-        throw new Error('Erro ao buscar contratos')
+        setCombinedData({
+          incomeByBills: incomeData,
+          currentDebit: debitData,
+        })
+      } else if (fetchHandler && setData) {
+        const data = await fetchHandler(
+          customerId,
+          contract.contractNumber,
+          contract.origem,
+          document,
+          documentType,
+        )
+        setData(data)
       }
 
-      const parsed = await data.json()
+      setContratosInfo({
+        contractNumber: contract.contractNumber,
+        enterpriseName: contract.enterpriseName,
+        unit: contract.unit,
+        origem: contract.origem,
+      })
 
-      const filteredContratos = parsed.results.filter(
-        (item: ReceivableBills) => item.documentNumber === contractNumber,
-      )
-
-      if (!filteredContratos.length) {
-        throw new Error('Nenhum contrato correspondente encontrado')
-      }
-
-      const receivableBillId = filteredContratos[0].receivableBillId
-
-      const billsData = await fetch(
-        `/api/avp/income-by-bills?billId=${receivableBillId}`,
-      )
-
-      if (!billsData.ok) {
-        throw new Error('Erro ao buscar parcelas')
-      }
-
-      const parsedBillsData: IncomeByBillsApiResponse = await billsData.json()
-
-      console.log('Novo retorno de API: ', parsedBillsData)
-
-      setParcelas(parsedBillsData)
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any | unknown) {
-      console.log(error.message)
+      action(true)
+    } catch (error) {
+      console.error('Erro ao buscar dados:', error)
     }
   }
-
-  const handleClick = (contract: Contrato) => {
-    console.log(contract)
-    handleFetchReceivableBills(customerId, contract.contractNumber)
-    setContratosInfo({
-      contractNumber: contract.contractNumber,
-      enterpriseName: contract.enterpriseName,
-      unit: contract.unit,
-    })
-    action(true)
-  }
-
-  console.log(contratos)
 
   return (
     <Table>

@@ -1,5 +1,8 @@
-import React from 'react'
-import { PiHouseLineLight, PiCalendar } from 'react-icons/pi'
+import {
+  PiBuildingApartmentLight,
+  PiCalendar,
+  PiHouseLineLight,
+} from 'react-icons/pi'
 
 import { Solucoes, SolucoesCard } from '@/components/solucoes-card'
 
@@ -16,6 +19,12 @@ const solucoesData: Solucoes[] = [
       'Disponibiliza horários para que o cliente realize agendamentos.',
     Icon: PiCalendar,
     href: 'agenda-vistorias/horarios?title=Configurar horários',
+  },
+  {
+    titulo: 'Empreendimentos',
+    descricao: 'Gerencia empreendimentos.',
+    Icon: PiBuildingApartmentLight,
+    href: 'agenda-vistorias/empreendimentos?title=Gerenciar empreendimentos',
   },
 ]
 

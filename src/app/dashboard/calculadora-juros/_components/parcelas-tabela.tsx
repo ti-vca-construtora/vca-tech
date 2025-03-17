@@ -10,15 +10,16 @@ import {
 } from '@/components/ui/table'
 import classNames from 'classnames'
 import { useState } from 'react'
-import { Cliente } from './form'
+import { Cliente } from '../../../../components/search-form'
 import { Contrato } from './contratos-tabela'
 import { Loader2Icon } from 'lucide-react'
 import { VisualizaoCalculo } from './visualizacao-calculo'
-import { formatarCpfCnpj, formatarData, formatarValor } from '@/app/util'
+import { formatarData, formatarValor } from '@/util'
 import {
   IncomeByBillsApiResponse,
   Parcela,
 } from '@/app/api/avp/income-by-bills/route'
+import { ClienteInfo } from '@/components/cliente-info'
 
 type ParcelasTabelaProps = {
   cliente: Cliente
@@ -106,36 +107,21 @@ export function ParcelasTabela({
   }
 
   const sortByDueDateDesc = (array: Parcela[]) => {
-    if (array.length <= 1) return array // Retorna o array se houver 0 ou 1 item.
+    if (array.length <= 1) return array
 
-    // Filtrar as parcelas com balanceDue diferente de 0
     const validParcels = array.filter(
       (parcela) => parcela.correctedBalanceAmount !== 0,
     )
 
     if (validParcels.length === 0) {
-      throw new Error(
-        'Nenhuma parcela válida com balanceDue diferente de 0 encontrada.',
-      )
+      return []
     }
 
-    // Encontrar a parcela mais próxima com balanceDue diferente de 0
-    const closestParcel = validParcels.reduce((prev, curr) =>
-      new Date(prev.dueDate) < new Date(curr.dueDate) ? prev : curr,
-    )
-
-    // Separar a parcela mais próxima do restante
-    const remainingParcels = array.filter(
-      (parcela) => parcela !== closestParcel,
-    )
-
-    // Ordenar o restante em ordem decrescente
-    const sortedRemaining = remainingParcels.sort(
+    const sortedParcelas = array.sort(
       (a, b) => Number(new Date(b.dueDate)) - Number(new Date(a.dueDate)),
     )
 
-    // Retornar o array com a parcela mais próxima na primeira posição
-    return [closestParcel, ...sortedRemaining]
+    return sortedParcelas
   }
 
   const handleCalculo = () => {
@@ -189,37 +175,7 @@ export function ParcelasTabela({
         />
       ) : parcelas.data.length ? (
         <>
-          <div className="bg-neutral-50 shadow-md rounded w-full p-2 flex justify-between items-start">
-            <div className="rounded p-2 flex flex-col gap-2">
-              <span className="text-azul-vca">
-                Nome do Cliente:{' '}
-                <span className="font-bold">{cliente.name}</span>
-              </span>
-              <span className="text-azul-vca">
-                CPF/CNPJ:{' '}
-                <span className="font-bold">
-                  {formatarCpfCnpj(cliente.documentNumber)}
-                </span>
-              </span>
-              <span className="text-azul-vca">
-                Empreendimento:{' '}
-                <span className="font-bold">{contrato.enterpriseName}</span>
-              </span>
-            </div>
-            <div className="rounded p-2 flex flex-col gap-2">
-              <span className="text-azul-vca">
-                Contrato:{' '}
-                <span className="font-bold">{contrato.contractNumber}</span>
-              </span>
-              <span className="text-azul-vca">
-                Unidade: <span className="font-bold">{contrato.unit}</span>
-              </span>
-              {/* <span className="text-azul-vca">
-                Contrato ID:{' '}
-                <span className="font-bold">FALTA IMPLEMENTAR</span>
-              </span> */}
-            </div>
-          </div>
+          <ClienteInfo cliente={cliente} contrato={contrato} />
           <div className="flex flex-row-reverse items-center justify-center self-end gap-3">
             <button
               onClick={handleSelectTodasParcelas}
@@ -252,46 +208,54 @@ export function ParcelasTabela({
               ESTE CLIENTE POSSUI PARCELAS EM ABERTO.
             </div>
           )}
-          <Table className="shadow-md p-2 rounded bg-white">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[200px]">DATA VENCIMENTO</TableHead>
-                <TableHead className="w-[200px]">VALOR</TableHead>
-                <TableHead className="w-[200px]">ID CONDIÇÃO</TableHead>
-                <TableHead className="w-[200px]">NOME INDEXADOR </TableHead>
-                <TableHead className="w-[150px] text-center">
-                  SELECIONAR
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {updateParcelas.map((parcela, index) => (
-                <TableRow
-                  key={index}
-                  className={classNames(
-                    index % 2 === 0 && 'bg-neutral-100',
-                    index === 0 && 'bg-green-100',
-                  )}
-                >
-                  <TableCell className="font-medium">
-                    {formatarData(parcela.dueDate)}
-                  </TableCell>
-                  <TableCell>
-                    R$ {formatarValor(parcela.correctedBalanceAmount)}
-                  </TableCell>
-                  <TableCell>{parcela.paymentTerm.id}</TableCell>
-                  <TableCell>{parcela.indexerName}</TableCell>
-                  <TableCell className="border text-center">
-                    <input
-                      type="checkbox"
-                      checked={isParcelaSelecionada(parcela)}
-                      onChange={() => handleSelectParcela(parcela, index)}
-                    />
-                  </TableCell>
+          {updateParcelas.length > 0 ? (
+            <Table className="shadow-md p-2 rounded bg-white">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[200px]">DATA VENCIMENTO</TableHead>
+                  <TableHead className="w-[200px]">VALOR</TableHead>
+                  <TableHead className="w-[200px]">ID CONDIÇÃO</TableHead>
+                  <TableHead className="w-[200px]">NOME INDEXADOR </TableHead>
+                  <TableHead className="w-[150px] text-center">
+                    SELECIONAR
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {updateParcelas.map((parcela, index) => (
+                  <TableRow
+                    key={index}
+                    className={classNames(
+                      index % 2 === 0 && 'bg-neutral-100',
+                      index === 0 && 'bg-green-100',
+                    )}
+                  >
+                    <TableCell className="font-medium">
+                      {formatarData(parcela.dueDate)}
+                    </TableCell>
+                    <TableCell>
+                      R$ {formatarValor(parcela.correctedBalanceAmount)}
+                    </TableCell>
+                    <TableCell>{parcela.paymentTerm.id}</TableCell>
+                    <TableCell>{parcela.indexerName}</TableCell>
+                    <TableCell className="border text-center">
+                      <input
+                        type="checkbox"
+                        checked={isParcelaSelecionada(parcela)}
+                        onChange={() => handleSelectParcela(parcela, index)}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="size-full flex items-center justify-center">
+              <span className="font-bold text-red-500 text-base">
+                Este cliente não possui parcelas com valor maior que 0.
+              </span>
+            </div>
+          )}
           <div className="w-full flex justify-between items-start">
             <div className="rounded flex items-center justify-center w-full text-xs gap-2">
               <span className="text-azul-vca">
@@ -326,7 +290,15 @@ export function ParcelasTabela({
                   className="font-bold"
                   value={selectedDate}
                   min={new Date().toISOString().split('T')[0]}
-                  onChange={(e) => setSelectedDate(e.target.value)}
+                  max={
+                    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+                      .toISOString()
+                      .split('T')[0]
+                  }
+                  onChange={(e) => {
+                    console.log(e.target.value)
+                    setSelectedDate(e.target.value)
+                  }}
                 />
               </span>
               <button

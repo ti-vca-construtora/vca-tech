@@ -7,30 +7,47 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { Contrato, ContratosTabela } from './contratos-tabela'
+import {
+  Contrato,
+  ContratosTabela,
+  FetchHandler,
+} from '../app/dashboard/calculadora-juros/_components/contratos-tabela'
 import { Dispatch, SetStateAction } from 'react'
 import { GoX } from 'react-icons/go'
-import { IncomeByBillsApiResponse } from '@/app/api/avp/income-by-bills/route'
 
-type Modal = {
+export type CombinedData<T, U> = {
+  incomeByBills: T
+  currentDebit: U
+}
+
+type ContractsModalProps<T, U = never> = {
   action: Dispatch<SetStateAction<boolean>>
-  setParcelas: Dispatch<SetStateAction<IncomeByBillsApiResponse>>
-  setContratosInfo: Dispatch<SetStateAction<Contrato>>
   contratos: Contrato[]
   document: {
     documentType: 'cpf' | 'cnpj'
     documentNumber: string
     customerId: string
   }
+  setContratosInfo: Dispatch<SetStateAction<Contrato>>
+  fetchHandler?: FetchHandler<T>
+  setData?: Dispatch<SetStateAction<T>>
+  combinedHandlers?: {
+    incomeByBills: FetchHandler<T>
+    currentDebit: FetchHandler<U>
+  }
+  setCombinedData?: Dispatch<SetStateAction<CombinedData<T, U>>>
 }
 
-export function Modal({
+export function ContractsModal<T, U>({
   action,
   contratos,
   document,
-  setParcelas,
   setContratosInfo,
-}: Modal) {
+  fetchHandler,
+  setData,
+  combinedHandlers,
+  setCombinedData,
+}: ContractsModalProps<T, U>) {
   return (
     <AlertDialog>
       <AlertDialogTrigger
@@ -53,12 +70,17 @@ export function Modal({
             {document.documentNumber}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            <ContratosTabela
-              setContratosInfo={setContratosInfo}
-              setParcelas={setParcelas}
-              customerId={document.customerId}
-              contratos={contratos}
+            <ContratosTabela<T, U>
               action={action}
+              setContratosInfo={setContratosInfo}
+              contratos={contratos}
+              customerId={document.customerId}
+              fetchHandler={fetchHandler}
+              setData={setData}
+              combinedHandlers={combinedHandlers}
+              setCombinedData={setCombinedData}
+              document={document.documentNumber}
+              documentType={document.documentType}
             />
           </AlertDialogDescription>
         </AlertDialogHeader>

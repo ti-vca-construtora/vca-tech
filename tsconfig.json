@@ -21,6 +21,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/dashboard/agenda-vistorias/horarios/_components/disponibilizar-horarios.tsx"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/dashboard/agenda-vistorias/horarios/_components/disponibilizar-horarios.tsx", "src/scripts.mjs"],
   "exclude": ["node_modules"]
 }

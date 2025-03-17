@@ -6,7 +6,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Contrato } from './contratos-tabela'
-import { Cliente } from './form'
+import { Cliente } from '../../../../components/search-form'
 import { ParcelaSelecionada } from './parcelas-tabela'
 import {
   buscaTaxaPorContrato,
@@ -14,10 +14,9 @@ import {
   calcularTJM,
   calcularVPA,
   dias360,
-  exportJsonToExcel,
   formatarData,
   formatarValor,
-} from '@/app/util'
+} from '@/util'
 import { useEffect, useState } from 'react'
 
 import {
@@ -30,7 +29,9 @@ import {
 } from '@/components/ui/table'
 import classNames from 'classnames'
 import { IncomeByBillsApiResponse } from '@/app/api/avp/income-by-bills/route'
-import { PiDownload } from 'react-icons/pi'
+
+import { GeradorPdf } from './gerador-pdf'
+import { Pdf } from './pdf'
 
 type VisualizaoCalculo = {
   valor: number
@@ -47,6 +48,7 @@ export type CalculoPorParcela = {
   dataAPagar: string
   dataVencimento: string
   taxa: number
+  indexador?: string
 }
 
 export function VisualizaoCalculo({
@@ -60,28 +62,42 @@ export function VisualizaoCalculo({
   const [calculoPorParcela, setCalculoPorParcela] = useState<
     CalculoPorParcela[]
   >([])
-
   const parcelaDoMesDoPagamento = parcelas.data.find((item) => {
     const dueDate = new Date(`${item.dueDate}T04:00:00Z`)
     const pagarDate = new Date(`${dataAPagar}T04:00:00Z`)
 
-    // console.log(item.dueDate)
-    // console.log(dataAPagar)
-    // console.log(pagarDate)
-
-    return (
+    const isSameMonthYear =
       dueDate.getFullYear() === pagarDate.getFullYear() &&
       dueDate.getMonth() === pagarDate.getMonth()
-    )
+
+    const hasValidPaymentTerm =
+      item.paymentTerm.id.trim().match(/^M\d+$/) ||
+      item.paymentTerm.id.trim().match(/^\d{2,}$/)
+
+    return isSameMonthYear && hasValidPaymentTerm
   })
 
   const hasFP = parcelas.data.some(
-    (item) => item.paymentTerm.id.trim() === 'FP',
+    (item) =>
+      item.paymentTerm.id.trim() === 'FP' &&
+      Number(item.correctedBalanceAmount) > 0,
   )
 
-  const hasPP = parcelas.data.some(
-    (item) => item.paymentTerm.id.trim() === 'PP',
-  )
+  let hasPP = parcelas.data.some((item) => item.paymentTerm.id.trim() === 'PP')
+
+  if (hasPP) {
+    let hasM = parcelas.data.some(
+      (item) => item.paymentTerm.id.trim().match(/^M\d+$/)?.input,
+    )
+
+    hasM = parcelas.data.some(
+      (item) => item.paymentTerm.id.trim().match(/^\d{2,}$/)?.input,
+    )
+
+    if (hasM) {
+      hasPP = false
+    }
+  }
 
   const conditionTypeId = hasFP ? 'FP' : hasPP ? 'PP' : null
 
@@ -141,8 +157,8 @@ export function VisualizaoCalculo({
             break
 
           // Para tipos 'M1', 'M2', ..., 'M9' ou '10', '11', '12', etc.
-          case tipoDeParcela.match(/^M\d+$/)?.input: // Regex para M seguido de um número
-          case tipoDeParcela.match(/^\d{2,}$/)?.input: // Regex para números de 10 ou mais dígitos
+          case tipoDeParcela.match(/^M\d+$/)?.input:
+          case tipoDeParcela.match(/^\d{2,}$/)?.input:
             if (parcelaDoMesDoPagamento) {
               valorPorParcela = parcelaDoMesDoPagamento.originalAmount
 
@@ -177,11 +193,13 @@ export function VisualizaoCalculo({
   }
 
   useEffect(() => {
-    getValorPresentePorParcela()
-  }, [])
+    if (parcelasSelecionadas.length > 0 && dataAPagar) {
+      getValorPresentePorParcela()
+    }
+  }, [parcelasSelecionadas, dataAPagar, parcelas, contrato])
 
   return (
-    <section className="flex flex-col gap-4 justify-between items-center w-full">
+    <section className="flex flex-col gap-4 justify-between items-center w-full text-xs">
       <div className="flex gap-4 justify-between w-full items-center h-full">
         <Card className="w-fit h-[500px]">
           <CardHeader>
@@ -286,15 +304,19 @@ export function VisualizaoCalculo({
         </Card>
       </div>
       <div className="flex items-center gap-2">
-        <button
-          onClick={() =>
-            exportJsonToExcel(calculoPorParcela, { ...cliente, ...contrato })
-          }
-          className="w-48 bg-azul-claro-vca text-white rounded flex gap-2 items-center justify-center font-bold py-1 px-3 self-end disabled:bg-gray-300"
-        >
-          Download XLSX
-          <PiDownload className="text-" />
-        </button>
+        <GeradorPdf
+          Component={Pdf}
+          props={{
+            cliente,
+            contrato,
+            dataAPagar,
+            parcelasSelecionadas,
+            valor,
+            calculoPorParcela,
+            getValorPresenteTotal,
+          }}
+          fileName={`${contrato.contractNumber}-AVP`}
+        />
         <button
           onClick={() => window.location.reload()}
           className="w-48 bg-azul-claro-vca text-white rounded font-bold py-1 px-3 self-end disabled:bg-gray-300"

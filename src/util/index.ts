@@ -1,10 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { contratos } from '@/data/contratos'
-import { CalculoPorParcela } from '../dashboard/calculadora-juros/_components/visualizacao-calculo'
 import * as xlsx from 'xlsx'
-import { Cliente } from '../dashboard/calculadora-juros/_components/form'
-import { Contrato } from '../dashboard/calculadora-juros/_components/contratos-tabela'
 import { QrCodePix } from 'qrcode-pix'
+import {
+  CurrentDebitBalanceApiResponse,
+  CurrentDebitBalanceExternalApiResponse,
+} from '@/app/api/avp/current-debit-balance/route'
+import { IncomeByBillsApiResponse } from '@/app/api/avp/income-by-bills/route'
+import { FetchHandler } from '@/app/dashboard/calculadora-juros/_components/contratos-tabela'
 
 export const formatarData = (dataISO: string) => {
   const [ano, mes, dia] = dataISO.split('-')
@@ -101,43 +104,15 @@ export const calcularVPA = (TJM: number, MD: number, VPO: number) => {
   return VPA
 }
 
-export const exportJsonToExcel = (
-  json: CalculoPorParcela[],
-  infoAdicional: Cliente & Contrato,
-) => {
-  const infoString = Object.entries(infoAdicional)
-    .map(([key, value]) => `${key}:${value}`)
-    .join('; ')
-
-  const taxaTotal =
-    contratos.find((contrato) => contrato.cliente === infoAdicional.name)
-      ?.taxaTotal || null
-
-  const formattedArray = [
-    { info: infoString },
-    ...json.map((item) => {
-      return {
-        valorAnterior: formatarValor(item.valorAnterior),
-        valorPresente: formatarValor(item.valorPresente),
-        dataAPagar: formatarData(item.dataAPagar),
-        dataVencimento: formatarData(item.dataVencimento),
-        taxa: taxaTotal || 'Sem taxa.',
-      }
-    }),
-  ]
-
+// Não está sendo utilizada
+export const exportJsonToExcel = (json: any[], fileName: string) => {
   const workbook = xlsx.utils.book_new()
 
-  const worksheet = xlsx.utils.json_to_sheet(formattedArray, {
-    skipHeader: true,
-  })
+  const worksheet = xlsx.utils.json_to_sheet(json)
 
   xlsx.utils.book_append_sheet(workbook, worksheet, 'Sheet1')
 
-  xlsx.writeFile(
-    workbook,
-    `${infoAdicional.name}-${infoAdicional.contractNumber}.xlsx`,
-  )
+  xlsx.writeFile(workbook, `${fileName}.xlsx`)
 }
 
 export const importExcelToJson = (filePath: string): any[] => {
@@ -196,4 +171,105 @@ export const generatePix = (
   })
 
   return qrCodePix
+}
+
+type ReceivableBills = {
+  documentNumber: string
+}
+
+export const handleFetchReceivableBills: FetchHandler<
+  IncomeByBillsApiResponse
+> = async (
+  customerId,
+  contractNumber,
+  origem,
+): Promise<IncomeByBillsApiResponse> => {
+  try {
+    const data = await fetch(
+      `/api/avp/receivable-bills?customerId=${customerId}&contractNumber=${contractNumber}&origem=${origem}`,
+    )
+
+    if (!data.ok) {
+      throw new Error('Erro ao buscar contratos')
+    }
+
+    const parsed = await data.json()
+
+    const filteredContratos = parsed.results.filter(
+      (item: ReceivableBills) => item.documentNumber === contractNumber,
+    )
+
+    if (!filteredContratos.length) {
+      throw new Error('Nenhum contrato correspondente encontrado')
+    }
+
+    const receivableBillId = filteredContratos[0].receivableBillId
+
+    const billsData = await fetch(
+      `/api/avp/income-by-bills?billId=${receivableBillId}&origem=${origem}`,
+    )
+
+    if (!billsData.ok) {
+      throw new Error('Erro ao buscar parcelas')
+    }
+
+    if (!billsData.ok) {
+      throw new Error('Erro ao buscar parcelas')
+    }
+
+    return (await billsData.json()) as IncomeByBillsApiResponse
+  } catch (error: any | unknown) {
+    console.log(error instanceof Error ? error.message : 'Erro desconhecido')
+    return { data: [] }
+  }
+}
+
+export const handleFetchCurrentDebitBalance: FetchHandler<
+  CurrentDebitBalanceApiResponse
+> = async (
+  customerId,
+  contractNumber,
+  origem,
+  document?,
+  documentType?,
+): Promise<CurrentDebitBalanceApiResponse> => {
+  try {
+    const data = await fetch(
+      `/api/avp/receivable-bills?customerId=${customerId}&contractNumber=${contractNumber}&origem=${origem}`,
+    )
+
+    if (!data.ok) {
+      throw new Error('Erro ao buscar contratos')
+    }
+
+    const parsed = await data.json()
+
+    const filteredContratos = parsed.results.filter(
+      (item: ReceivableBills) => item.documentNumber === contractNumber,
+    )
+
+    if (!filteredContratos.length) {
+      throw new Error('Nenhum contrato correspondente encontrado')
+    }
+
+    const receivableBillId = filteredContratos[0].receivableBillId
+
+    const currentDebitBalance = await fetch(
+      `/api/avp/current-debit-balance?billId=${receivableBillId}&origem=${origem}&document=${document}&documentType=${documentType}`,
+    )
+
+    if (!currentDebitBalance.ok) {
+      throw new Error('Erro ao buscar parcelas')
+    }
+
+    const currentDebitApiResponse: CurrentDebitBalanceExternalApiResponse =
+      await currentDebitBalance.json()
+
+    return {
+      data: currentDebitApiResponse.results,
+    }
+  } catch (error: any | unknown) {
+    console.log(error instanceof Error ? error.message : 'Erro desconhecido')
+    return { data: [] }
+  }
 }

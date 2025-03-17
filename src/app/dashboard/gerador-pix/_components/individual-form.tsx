@@ -2,7 +2,7 @@
 
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { generatePix } from '@/app/util'
+import { generatePix } from '@/util'
 import { useState } from 'react'
 import * as qrcode from 'qrcode'
 import { toPng } from 'html-to-image'
