@@ -1,6 +1,6 @@
 /* eslint-disable camelcase */
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { createJSONStorage, persist } from 'zustand/middleware'
 import Cookies from 'js-cookie'
 import { jwtDecode } from 'jwt-decode'
 
@@ -14,20 +14,22 @@ type ApiResponseWithPagination = {
   currentPage: number
 }
 
-type User = {
+export type User = {
   id: string
+  name?: string
   email: string
   role: 'MASTER' | 'ADMIN' | 'USER'
   permissions: Array<{ area: string; permissions: string[] }>
 }
 
-type AuthState = {
+export type AuthState = {
   user: User | null
   isLoading: boolean
   loadUser: () => Promise<void>
   login: (email: string, password: string) => Promise<boolean>
   logout: () => void
   hasPermission: (area: string, permission: string) => boolean
+  getToken: () => string | null
   getAllUsers: (
     token: string,
     page?: number,
@@ -136,10 +138,36 @@ export const useAuthStore = create<AuthState>()(
           (p) => p.area === area && p.permissions.includes(permission),
         )
       },
+
+      getToken(): string | null {
+        const cookieValue = Cookies.get('vca-tech-auth')
+
+        if (!cookieValue) {
+          console.log('Cookie não encontrado')
+          return null
+        }
+
+        let token: string
+        try {
+          const tokenData = JSON.parse(cookieValue)
+          token = tokenData.token
+        } catch (error) {
+          console.log('Definindo cookie como JSON puro: ', error)
+          token = cookieValue
+        }
+
+        if (!token) {
+          console.log('Token não encontrado')
+          return null
+        }
+
+        return token
+      },
     }),
     {
       name: 'auth-storage',
       partialize: (state) => ({ user: state.user }),
+      storage: createJSONStorage(() => localStorage),
     },
   ),
 )

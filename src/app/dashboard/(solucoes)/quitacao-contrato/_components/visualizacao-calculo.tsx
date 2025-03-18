@@ -1,5 +1,5 @@
 import { CurrentDebitBalanceApiResponse } from '@/app/api/avp/current-debit-balance/route'
-import { Cliente, Contrato } from '@/components/search-form'
+import { Cliente } from '@/components/search-form'
 import {
   Card,
   CardContent,
@@ -28,6 +28,7 @@ import classNames from 'classnames'
 import { CalculoPorParcela } from '../../calculadora-juros/_components/visualizacao-calculo'
 import { useEffect, useState } from 'react'
 import { IncomeByBillsApiResponse } from '@/app/api/avp/income-by-bills/route'
+import { Contrato } from '../../calculadora-juros/_components/contratos-tabela'
 
 type VisualizaoCalculoProps = {
   currentDebit: CurrentDebitBalanceApiResponse
@@ -61,7 +62,8 @@ export function VisualizaoCalculo({
 
     const hasValidPaymentTerm =
       item.paymentTerm.id.trim().match(/^M\d+$/) ||
-      item.paymentTerm.id.trim().match(/^\d{2,}$/)
+      item.paymentTerm.id.trim().match(/^\d{2,}$/) ||
+      item.paymentTerm.id.trim() === 'MH'
 
     return isSameMonthYear && hasValidPaymentTerm
   })
@@ -154,6 +156,7 @@ export function VisualizaoCalculo({
           // Para tipos 'M1', 'M2', ..., 'M9' ou '10', '11', '12', etc.
           case tipoDeParcela.match(/^M\d+$/)?.input:
           case tipoDeParcela.match(/^\d{2,}$/)?.input:
+          case 'MH':
             if (parcelaDoMesDoPagamento) {
               valorPorParcela = parcelaDoMesDoPagamento.originalAmount
 

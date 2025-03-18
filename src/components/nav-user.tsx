@@ -15,20 +15,21 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from '@/components/ui/sidebar'
 import { CaretSortIcon } from '@radix-ui/react-icons'
+import { useUser } from '@/hooks/use-user'
+import { memo, useMemo } from 'react'
 
-type NavUserProps = {
-  user: {
-    name: string
-    email: string
-  }
-  logout: () => void
-}
+const NavUserContent = memo(() => {
+  const { user, logout, isLoading } = useUser()
 
-export function NavUser({ user, logout }: NavUserProps) {
-  const { isMobile } = useSidebar()
+  const userDetails = useMemo(
+    () => ({
+      name: user?.name || 'Usuário',
+      email: user?.email || 'Carregando...',
+    }),
+    [user?.name, user?.email],
+  )
 
   return (
     <SidebarMenu>
@@ -43,15 +44,20 @@ export function NavUser({ user, logout }: NavUserProps) {
                 <User2 />
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">{user.name}</span>
-                <span className="truncate text-xs">{user.email}</span>
+                <span className="truncate font-semibold">
+                  {!isLoading ? userDetails.name : 'Carregando...'}
+                </span>
+                <span className="truncate text-xs">
+                  {!isLoading ? userDetails.email : ' '}
+                </span>
               </div>
               <CaretSortIcon className="ml-auto size-4" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
+
           <DropdownMenuContent
             className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-            side={isMobile ? 'bottom' : 'right'}
+            side={'right'}
             align="end"
             sideOffset={4}
           >
@@ -61,19 +67,27 @@ export function NavUser({ user, logout }: NavUserProps) {
                   <User2 />
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{user.name}</span>
-                  <span className="truncate text-xs">{user.email}</span>
+                  <span className="truncate font-semibold">
+                    {userDetails.name}
+                  </span>
+                  <span className="truncate text-xs">{userDetails.email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={logout}>
               <LogOut />
-              Log out
+              Sair
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
   )
+})
+
+NavUserContent.displayName = 'NavUser'
+
+export function NavUser() {
+  return <NavUserContent />
 }

@@ -72,7 +72,8 @@ export function VisualizaoCalculo({
 
     const hasValidPaymentTerm =
       item.paymentTerm.id.trim().match(/^M\d+$/) ||
-      item.paymentTerm.id.trim().match(/^\d{2,}$/)
+      item.paymentTerm.id.trim().match(/^\d{2,}$/) ||
+      item.paymentTerm.id.trim() === 'MH'
 
     return isSameMonthYear && hasValidPaymentTerm
   })
@@ -159,6 +160,7 @@ export function VisualizaoCalculo({
           // Para tipos 'M1', 'M2', ..., 'M9' ou '10', '11', '12', etc.
           case tipoDeParcela.match(/^M\d+$/)?.input:
           case tipoDeParcela.match(/^\d{2,}$/)?.input:
+          case 'MH':
             if (parcelaDoMesDoPagamento) {
               valorPorParcela = parcelaDoMesDoPagamento.originalAmount
 
