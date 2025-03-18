@@ -93,19 +93,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   function saveAccessToken({ token }: AuthPayload): void {
-    Cookies.set('vca-tech-authorize', JSON.stringify({ token }), {
+    Cookies.set('vca-tech-auth', JSON.stringify({ token }), {
       expires: 7,
     })
   }
 
   function logout(): void {
-    Cookies.remove('vca-tech-authorize')
+    Cookies.remove('vca-tech-auth')
     setUser(null)
     window.location.href = '/login'
   }
 
   function getToken(): string | null {
-    const cookieValue = Cookies.get('vca-tech-authorize')
+    const cookieValue = Cookies.get('vca-tech-auth')
 
     if (!cookieValue) {
       console.log('Cookie não encontrado')
@@ -171,7 +171,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 async function getUserFromCookie(): Promise<User | null> {
   try {
-    const cookieValue = Cookies.get('vca-tech-authorize')
+    const cookieValue = Cookies.get('vca-tech-auth')
 
     if (!cookieValue) {
       console.log('Cookie não encontrado')

@@ -6,7 +6,7 @@ export function middleware(req: NextRequest) {
   console.log('Middleware executado para:', pathname)
 
   if (pathname === '/login') {
-    const payload = req.cookies.get('vca-tech-authorize')?.value
+    const payload = req.cookies.get('vca-tech-auth')?.value
 
     if (payload) {
       try {
@@ -31,7 +31,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  const payload = req.cookies.get('vca-tech-authorize')?.value
+  const payload = req.cookies.get('vca-tech-auth')?.value
   console.log('Payload encontrado:', payload)
 
   if (!payload) {
