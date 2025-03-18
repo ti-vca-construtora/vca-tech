@@ -6,7 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { User } from '@/contexts/auth-context.context'
+import { User } from '@/store/auth-store'
 import { MoreHorizontalIcon } from 'lucide-react'
 
 type UsersTableProps = {
