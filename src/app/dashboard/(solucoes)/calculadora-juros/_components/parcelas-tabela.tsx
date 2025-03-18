@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/table'
 import classNames from 'classnames'
 import { useState } from 'react'
-import { Cliente } from '../../../../components/search-form'
+import { Cliente } from '../../../../../components/search-form'
 import { Contrato } from './contratos-tabela'
 import { Loader2Icon } from 'lucide-react'
 import { VisualizaoCalculo } from './visualizacao-calculo'

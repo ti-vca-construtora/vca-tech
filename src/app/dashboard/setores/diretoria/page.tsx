@@ -1,3 +1,5 @@
+'use client'
+
 import React from 'react'
 
 import { Solucoes, SolucoesCard } from '@/components/solucoes-card'
@@ -9,6 +11,8 @@ const solucoesData: Solucoes[] = [
     descricao: 'Efetua o cálculo de juros para quitação de contrato.',
     Icon: LiaFileContractSolid,
     href: 'quitacao-contrato?title=Simulação de Quitação de Contrato',
+    area: 'diretoria',
+    permission: 'quitacao-contrato',
   },
 ]
 
@@ -22,6 +26,8 @@ const Diretoria = () => {
           Icon={item.Icon}
           key={index}
           href={item.href}
+          area={item.area}
+          permission={item.permission}
         />
       ))}
     </div>

@@ -22,17 +22,15 @@ import LogoVcaTech from '../../../../public/assets/logo-vca-tech.png'
 import Image from 'next/image'
 
 import ReCAPTCHA from 'react-google-recaptcha'
-// import { useUser } from '@/hooks/use-user'
 import { useRouter } from 'next/navigation'
-import { usuarios } from '@/data/usuarios'
 
-import Cookies from 'js-cookie'
+import { useUser } from '@/hooks/use-user'
 
 const NEXT_PUBLIC_GOOGLE_SITE_KEY =
   process.env.NEXT_PUBLIC_GOOGLE_SITE_KEY || ''
 
 const formSchema = z.object({
-  user: z.string().min(1, 'Informe um usuário válido!'),
+  email: z.string().email('Informe um e-mail válido!'),
   senha: z.string().min(1, 'Utilize uma senha válida!'),
   recaptcha: z.boolean().refine((captcha) => captcha === true, {
     message: 'Validação reCAPTCHA necessária. Tente novamente.',
@@ -40,11 +38,6 @@ const formSchema = z.object({
 })
 
 type FormType = z.infer<typeof formSchema>
-
-type UserPayload = {
-  user: string
-  token: string
-}
 
 export function LoginForm() {
   const {
@@ -56,46 +49,27 @@ export function LoginForm() {
   } = useForm<FormType>({
     resolver: zodResolver(formSchema),
   })
-  // const { login } = useUser()
+  const { login } = useUser()
   const router = useRouter()
 
-  // const handleLogin = async (data: FormType) => {
-  //   try {
-  //     const isLogged = await login({ email: data.email, password: data.senha })
+  const handleLogin = async (data: FormType) => {
+    try {
+      const isLogged = await login({ email: data.email, password: data.senha })
 
-  //     if (isLogged) {
-  //       router.refresh()
-  //       router.push('/dashboard')
-  //       return
-  //     }
+      if (isLogged) {
+        router.refresh()
+        router.push('/dashboard')
+        return
+      }
 
-  //     setError('senha', {
-  //       message: 'Credenciais inválidas',
-  //     })
-  //   } catch (error) {
-  //     setError('senha', {
-  //       message: error instanceof Error ? error.message : 'Erro inesperado',
-  //     })
-  //   }
-  // }
-
-  const salvaAutorizacao = ({ user, token }: UserPayload): void => {
-    Cookies.set('vca-tech-authorize', JSON.stringify({ user, token }), {
-      expires: 7,
-    })
-  }
-
-  const handleLogin = (data: FormType) => {
-    const user = usuarios.find((user) => user.user === data.user)
-
-    if (user && user.senha === data.senha) {
-      salvaAutorizacao({ user: user.user, token: user.token })
-      router.push('/dashboard')
-
-      return
+      setError('senha', {
+        message: 'Credenciais inválidas',
+      })
+    } catch (error) {
+      setError('senha', {
+        message: error instanceof Error ? error.message : 'Erro inesperado',
+      })
     }
-
-    setError('senha', { message: 'Erro nas credenciais' })
   }
 
   return (
@@ -116,15 +90,15 @@ export function LoginForm() {
         </div>
         <form onSubmit={handleSubmit(handleLogin)} className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="user">Usuário</Label>
+            <Label htmlFor="email">E-mail</Label>
             <Input
-              {...register('user')}
-              placeholder="Nome de usuário"
+              {...register('email')}
+              placeholder="email@vcaconstrutora.com.br"
               required
             />
-            {errors.user && (
+            {errors.email && (
               <span className="text-xs text-red-500">
-                {errors.user.message}
+                {errors.email.message}
               </span>
             )}
           </div>

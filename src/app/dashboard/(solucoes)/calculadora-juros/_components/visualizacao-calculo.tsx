@@ -6,7 +6,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Contrato } from './contratos-tabela'
-import { Cliente } from '../../../../components/search-form'
+import { Cliente } from '../../../../../components/search-form'
 import { ParcelaSelecionada } from './parcelas-tabela'
 import {
   buscaTaxaPorContrato,

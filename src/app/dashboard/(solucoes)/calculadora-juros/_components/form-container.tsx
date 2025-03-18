@@ -5,8 +5,8 @@ import {
   SearchForm,
   Contrato,
   Cliente,
-} from '../../../../components/search-form'
-import { ContractsModal } from '../../../../components/contracts-modal'
+} from '../../../../../components/search-form'
+import { ContractsModal } from '../../../../../components/contracts-modal'
 import { ParcelasTabela } from './parcelas-tabela'
 import { IncomeByBillsApiResponse } from '@/app/api/avp/income-by-bills/route'
 import { handleFetchReceivableBills } from '@/util'

@@ -1,3 +1,5 @@
+'use client'
+
 import React from 'react'
 import { CiCalculator1 } from 'react-icons/ci'
 
@@ -9,6 +11,8 @@ const solucoesData: Solucoes[] = [
     descricao: 'Efetua o cálculo de juros para antecipação de parcelas.',
     Icon: CiCalculator1,
     href: 'calculadora-juros?title=AVP - Calculadora de Juros de Parcelas',
+    area: 'financeiro',
+    permission: 'avp',
   },
 ]
 
@@ -22,6 +26,8 @@ const Relacionamento = () => {
           Icon={item.Icon}
           key={index}
           href={item.href}
+          area={item.area}
+          permission={item.permission}
         />
       ))}
     </div>

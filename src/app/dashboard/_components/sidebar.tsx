@@ -1,6 +1,6 @@
 'use client'
 import * as React from 'react'
-import { LayoutDashboard, SquareTerminal } from 'lucide-react'
+import { LayoutDashboard, Loader2, SquareTerminal } from 'lucide-react'
 import { NavMain } from '@/components/nav-main'
 import { NavUser } from '@/components/nav-user'
 import {
@@ -64,7 +64,7 @@ const data = {
 export function DashboardSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
-  const { logout } = useUser()
+  const { user, logout } = useUser()
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -76,10 +76,14 @@ export function DashboardSidebar({
         <NavMain items={data.navMain} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser
-          logout={logout}
-          user={{ name: '', email: 'email@vcaconstrutora.com.br' }}
-        />
+        {user ? (
+          <NavUser
+            logout={logout}
+            user={{ name: user.name || 'Sem nome', email: user.email }}
+          />
+        ) : (
+          <Loader2 className="animate-spin duration-300 text-neutral-500" />
+        )}
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
