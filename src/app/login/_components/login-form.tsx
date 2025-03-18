@@ -54,7 +54,7 @@ export function LoginForm() {
 
   const handleLogin = async (data: FormType) => {
     try {
-      const isLogged = await login({ email: data.email, password: data.senha })
+      const isLogged = await login(data.email, data.senha)
 
       if (isLogged) {
         router.refresh()

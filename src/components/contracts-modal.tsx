@@ -74,7 +74,6 @@ export function ContractsModal<T, U>({
               action={action}
               setContratosInfo={setContratosInfo}
               contratos={contratos}
-              customerId={document.customerId}
               fetchHandler={fetchHandler}
               setData={setData}
               combinedHandlers={combinedHandlers}

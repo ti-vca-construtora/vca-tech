@@ -1,21 +1,20 @@
 'use client'
 
-import { AuthContext } from '@/contexts/auth-context.context'
-import { useContext } from 'react'
+import { useRouter } from 'next/navigation'
+
+import { useAuthStore } from '@/store/auth-store'
 
 export function useUser() {
-  const context = useContext(AuthContext)
+  const store = useAuthStore()
+  const router = useRouter()
 
-  if (!context) {
-    throw new Error('useUser must be used within an AuthProvider')
+  const enhancedLogout = () => {
+    store.logout()
+    router.push('/login')
   }
 
   return {
-    user: context.user,
-    isLoading: context.isLoading,
-    login: context.login,
-    logout: context.logout,
-    getToken: context.getToken,
-    getAllUsers: context.getAllUsers,
+    ...store,
+    logout: enhancedLogout,
   }
 }
