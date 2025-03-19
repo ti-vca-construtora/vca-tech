@@ -12,6 +12,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@api/cvcrm": "file:.api/apis/cvcrm",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.1",
     "@radix-ui/react-alert-dialog": "^1.1.2",
@@ -84,7 +85,7 @@
   "devDependencies": {
     "@rocketseat/eslint-config": "^2.2.2",
     "@types/js-cookie": "^3.0.6",
-    "@types/node": "^20",
+    "@types/node": "^20.17.24",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^18",
     "@types/react-dom": "^18",
