@@ -1,3 +1,5 @@
+'use client'
+
 import {
   PiBuildingApartmentLight,
   PiCalendar,
@@ -29,6 +31,8 @@ const solucoesData: Solucoes[] = [
     descricao: 'Gerencia empreendimentos.',
     Icon: PiBuildingApartmentLight,
     href: 'agenda-vistorias/empreendimentos?title=Gerenciar empreendimentos',
+    area: 'entregas',
+    permission: 'gerenciar-empreendimentos',
   },
 ]
 
