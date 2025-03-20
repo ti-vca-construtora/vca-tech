@@ -1,11 +1,26 @@
+'use client'
+
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
+import { useEffect } from 'react'
+import CriarSlotsBulk from './fnc-criaSlotsBulk'
+import vrfCriaSlot from './fnc-verificaUltSlot'
 
 export function Calendar() {
+  const verificaCriacaodeSlot = async () => {
+    const vrf = await vrfCriaSlot()
+    console.log(vrf)
+  }
+
+  useEffect(() => {
+    console.log(verificaCriacaodeSlot())
+    CriarSlotsBulk()
+  }, [])
+
   const atualDate = new Date()
   const currentMonth = atualDate.getMonth()
   const currentYear = atualDate.getFullYear()

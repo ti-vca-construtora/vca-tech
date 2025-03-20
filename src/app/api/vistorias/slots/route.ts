@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_TECH_API_URL
-const API_ENDPOINT = 'developments'
+const API_ENDPOINT = 'inspection-slots'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const page = searchParams.get('page')
   const pageSize = searchParams.get('pageSize')
   const id = searchParams.get('id')
-  const isActive = searchParams.get('isActive')
+  const isEnabled = searchParams.get('isEnabled')
+  const fromDate = searchParams.get('fromDate')
 
   let getUrl = `${API_BASE_URL}/${API_ENDPOINT}?page=${page}&pageSize=${pageSize}`
 
@@ -16,8 +17,12 @@ export async function GET(req: NextRequest) {
     getUrl = `${API_BASE_URL}/${API_ENDPOINT}/${id}`
   }
 
-  if (isActive) {
-    getUrl = `${API_BASE_URL}/${API_ENDPOINT}?page=${page}&pageSize=${pageSize}&isActive=${isActive}`
+  if (isEnabled) {
+    getUrl = `${API_BASE_URL}/${API_ENDPOINT}?page=${page}&pageSize=${pageSize}&isEnabled=${isEnabled}`
+  }
+
+  if (fromDate) {
+    getUrl = `${API_BASE_URL}/${API_ENDPOINT}?fromDate=${fromDate}`
   }
 
   const res = await fetch(getUrl, {
@@ -33,7 +38,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const body = await req.json()
 
-  const res = await fetch(`${API_BASE_URL}/${API_ENDPOINT}`, {
+  const res = await fetch(`${API_BASE_URL}/${API_ENDPOINT}/bulk`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
