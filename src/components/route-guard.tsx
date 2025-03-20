@@ -1,34 +1,33 @@
 'use client'
 
-import { useEffect } from 'react'
+import { memo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { usePermissions } from '@/hooks/use-permissions'
-import { useUser } from '@/hooks/use-user'
+import { useAuthStore } from '@/store/auth-store'
 
-type RouteGuardProps = {
-  children: React.ReactNode
-  requiredArea: string
-  requiredPermission: string
-}
+export const RouteGuard = memo(
+  ({
+    children,
+    requiredArea,
+    requiredPermission,
+  }: {
+    children: React.ReactNode
+    requiredArea: string
+    requiredPermission: string
+  }) => {
+    const router = useRouter()
+    const { user, isLoading, hasPermission } = useAuthStore()
 
-export const RouteGuard = ({
-  children,
-  requiredArea,
-  requiredPermission,
-}: RouteGuardProps) => {
-  const router = useRouter()
-  const { hasPermission } = usePermissions()
-  const { user } = useUser()
+    useEffect(() => {
+      if (!isLoading && !hasPermission(requiredArea, requiredPermission)) {
+        router.push('/dashboard/unauthorized')
+      }
+    }, [user, isLoading, router, requiredArea, requiredPermission])
 
-  useEffect(() => {
-    if (user && !hasPermission(requiredArea, requiredPermission)) {
-      router.replace('/dashboard/unauthorized')
-    }
-  }, [user, hasPermission, requiredArea, requiredPermission, router])
+    if (isLoading) return <div>Carregando...</div>
+    if (!hasPermission(requiredArea, requiredPermission)) return null
 
-  if (!user || !hasPermission(requiredArea, requiredPermission)) {
-    return null
-  }
+    return <>{children}</>
+  },
+)
 
-  return <>{children}</>
-}
+RouteGuard.displayName = 'RouteGuard'

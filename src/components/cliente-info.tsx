@@ -1,5 +1,6 @@
 import { formatarCpfCnpj } from '@/util'
-import { Cliente, Contrato } from './search-form'
+import { Cliente } from './search-form'
+import { Contrato } from '@/app/dashboard/(solucoes)/calculadora-juros/_components/contratos-tabela'
 
 type ClienteInfoProps = {
   cliente: Cliente

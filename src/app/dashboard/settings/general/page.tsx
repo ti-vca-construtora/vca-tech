@@ -10,7 +10,7 @@ import {
 import { UsersTable } from './_components/users-table'
 import { useUser } from '@/hooks/use-user'
 import { useEffect, useState } from 'react'
-import { User } from '@/contexts/auth-context.context'
+import { User } from '@/store/auth-store'
 
 export default function Page() {
   const { getAllUsers, getToken } = useUser()
@@ -23,11 +23,12 @@ export default function Page() {
       try {
         setLoading(true)
         const token = getToken()
+
         if (!token) throw new Error('Não autenticado')
 
         const data = await getAllUsers(token, 1, 20)
 
-        setUsers(data)
+        setUsers(data.data)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erro desconhecido')
       } finally {
@@ -51,7 +52,6 @@ export default function Page() {
         </CardHeader>
         <CardContent>
           <UsersTable users={users} />
-          {/* Paginação mantida igual */}
         </CardContent>
       </Card>
     </section>

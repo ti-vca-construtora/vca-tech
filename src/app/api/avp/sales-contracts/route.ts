@@ -8,14 +8,25 @@ const LOTEAR_BASIC_HASH = process.env.NEXT_PUBLIC_HASH_BASIC_LOTEAR
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    const id = searchParams.get('id')
+    const idVca = searchParams.get('idVca')
+    const idLotear = searchParams.get('idLotear')
 
-    if (!id) {
-      return NextResponse.json({ error: 'id não fornecido' }, { status: 400 })
+    if (!idVca) {
+      return NextResponse.json(
+        { error: 'idVca não fornecido' },
+        { status: 400 },
+      )
+    }
+
+    if (!idLotear) {
+      return NextResponse.json(
+        { error: 'idLotear não fornecido' },
+        { status: 400 },
+      )
     }
 
     const responseVca = await fetch(
-      `${API_URL}vca/public/api/v1/sales-contracts?customerId=${id}&limit=200`,
+      `${API_URL}vca/public/api/v1/sales-contracts?customerId=${idVca}&limit=200`,
       {
         method: 'GET',
         headers: {
@@ -30,7 +41,7 @@ export async function GET(req: NextRequest) {
     }
 
     const responseLotear = await fetch(
-      `${API_URL}vcalotear/public/api/v1/sales-contracts?customerId=${id}&limit=200`,
+      `${API_URL}vcalotear/public/api/v1/sales-contracts?customerId=${idLotear}&limit=200`,
       {
         method: 'GET',
         headers: {

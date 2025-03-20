@@ -1,11 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import {
-  SearchForm,
-  Contrato,
-  Cliente,
-} from '../../../../../components/search-form'
+import { SearchForm, Cliente } from '../../../../../components/search-form'
 import { CombinedData, ContractsModal } from '@/components/contracts-modal'
 import {
   handleFetchCurrentDebitBalance,
@@ -17,6 +13,7 @@ import {
   IncomeByBillsApiResponse,
   Parcela,
 } from '@/app/api/avp/income-by-bills/route'
+import { Contrato } from '../../calculadora-juros/_components/contratos-tabela'
 
 export function FormContainer() {
   const [showTable, setShowTable] = useState(false)
@@ -25,9 +22,9 @@ export function FormContainer() {
     enterpriseName: '',
     unit: '',
     origem: '',
+    customerId: '',
   })
   const [clienteInfo, setClienteInfo] = useState<Cliente>({
-    id: '',
     name: '',
     documentType: 'cpf',
     documentNumber: '',
@@ -114,7 +111,7 @@ export function FormContainer() {
             document={{
               documentType: clienteInfo.documentType,
               documentNumber: clienteInfo.documentNumber,
-              customerId: clienteInfo.id,
+              customerId: contratoInfo.customerId,
             }}
             setContratosInfo={setContratoInfo}
             combinedHandlers={{

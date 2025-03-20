@@ -3,6 +3,7 @@
 import * as z from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Contrato } from '@/app/dashboard/(solucoes)/calculadora-juros/_components/contratos-tabela'
 
 const formSchema = z.object({
   buscaCliente: z
@@ -14,11 +15,31 @@ const formSchema = z.object({
 type FormType = z.infer<typeof formSchema>
 
 export type Cliente = {
-  id: string
   name: string
   documentType: 'cpf' | 'cnpj'
   documentNumber: string
 }
+
+// type CustomerCpfApiResponse = {
+//   vca: {
+//     resultSetMetadata: {
+//       count: number
+//       offset: number
+//       limit: number
+//     }
+//     results: Cliente[]
+//     origem: 'vca' | 'vcalotear'
+//   }
+//   vcalotear: {
+//     resultSetMetadata: {
+//       count: number
+//       offset: number
+//       limit: number
+//     }
+//     results: Cliente[]
+//     origem: 'vca' | 'vcalotear'
+//   }
+// }
 
 type ContractItem = {
   number: string
@@ -27,13 +48,7 @@ type ContractItem = {
     name: string
   }[]
   origem: string
-}
-
-export type Contrato = {
-  contractNumber: string
-  enterpriseName: string
-  unit: string
-  origem: string
+  customerId: string
 }
 
 type SearchFormProps = {
@@ -61,15 +76,23 @@ export function SearchForm({ onSearchComplete, children }: SearchFormProps) {
 
       if (data) {
         const parsed = await data.json()
-        const cliente = parsed.cliente.results[0]
+
+        const cliente = parsed.vca.results[0]
+
+        const idVca =
+          parsed.vca.results.length > 0 ? parsed.vca.results[0].id : 0
+        const idLotear =
+          parsed.vcalotear.results.length > 0
+            ? parsed.vcalotear.results[0].id
+            : 0
 
         const contratos = await fetch(
-          `/api/avp/sales-contracts?id=${cliente.id}`,
+          `/api/avp/sales-contracts?idVca=${idVca}&idLotear=${idLotear}`,
         )
+
         const contratosParsed = await contratos.json()
 
         const clienteInfo: Cliente = {
-          id: cliente.id,
           name: cliente.name,
           documentNumber: cliente[documentType],
           documentType,
@@ -80,9 +103,12 @@ export function SearchForm({ onSearchComplete, children }: SearchFormProps) {
             contractNumber: item.number,
             enterpriseName: item.enterpriseName,
             unit: item.salesContractUnits[0].name,
+            customerId: parsed[item.origem].results[0].id,
             origem: item.origem,
           }),
         )
+
+        console.log(filteredContratos)
 
         onSearchComplete({
           cliente: clienteInfo,

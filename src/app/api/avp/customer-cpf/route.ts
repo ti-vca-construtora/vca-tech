@@ -29,9 +29,6 @@ export async function GET(req: NextRequest) {
       },
     )
 
-    // Log da resposta original da API externa
-    console.log('Resposta da API VCA:', responseVca)
-
     if (!responseVca.ok) {
       throw new Error('Erro ao buscar dados da API externa')
     }
@@ -47,9 +44,6 @@ export async function GET(req: NextRequest) {
       },
     )
 
-    // Log da resposta original da API externa
-    console.log('Resposta da API Lotear:', responseLotear)
-
     if (!responseLotear.ok) {
       throw new Error('Erro ao buscar dados da API externa')
     }
@@ -57,12 +51,12 @@ export async function GET(req: NextRequest) {
     const dataVca = await responseVca.json()
     const dataLotear = await responseLotear.json()
 
-    const origem = dataVca.results?.length > 0 ? 'vca' : 'lotear'
-    const clienteData = dataVca.results?.length > 0 ? dataVca : dataLotear
-
     return NextResponse.json({
-      origem,
-      cliente: clienteData,
+      vca: {
+        ...dataVca,
+        origem: 'vca',
+      },
+      vcalotear: { ...dataLotear, origem: 'vcalotear' },
     })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any | unknown) {
