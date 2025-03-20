@@ -1,15 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import {
-  SearchForm,
-  Contrato,
-  Cliente,
-} from '../../../../../components/search-form'
+import { SearchForm, Cliente } from '../../../../../components/search-form'
 import { ContractsModal } from '../../../../../components/contracts-modal'
 import { ParcelasTabela } from './parcelas-tabela'
 import { IncomeByBillsApiResponse } from '@/app/api/avp/income-by-bills/route'
 import { handleFetchReceivableBills } from '@/util'
+import { Contrato } from './contratos-tabela'
 
 export function FormContainer() {
   const [showTable, setShowTable] = useState(false)
@@ -18,9 +15,9 @@ export function FormContainer() {
     enterpriseName: '',
     unit: '',
     origem: '',
+    customerId: '',
   })
   const [clienteInfo, setClienteInfo] = useState<Cliente>({
-    id: '',
     name: '',
     documentType: 'cpf',
     documentNumber: '',
@@ -53,7 +50,7 @@ export function FormContainer() {
             document={{
               documentNumber: clienteInfo.documentNumber,
               documentType: clienteInfo.documentType,
-              customerId: clienteInfo.id,
+              customerId: contratoInfo.customerId,
             }}
             contratos={contratosFull}
             action={setShowTable}

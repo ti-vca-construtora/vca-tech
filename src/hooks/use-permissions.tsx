@@ -1,8 +1,7 @@
 'use client'
 
 import { useUser } from '@/hooks/use-user'
-
-import { User } from '@/contexts/auth-context.context'
+import { User } from '@/store/auth-store'
 
 export type UserPermission = {
   area: string

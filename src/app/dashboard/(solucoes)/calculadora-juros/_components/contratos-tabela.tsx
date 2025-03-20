@@ -23,13 +23,13 @@ export type Contrato = {
   contractNumber: string
   enterpriseName: string
   origem: string
+  customerId: string
 }
 
 type ContratosTabelaProps<T, U = never> = {
   action: Dispatch<SetStateAction<boolean>>
   setContratosInfo: Dispatch<SetStateAction<Contrato>>
   contratos: Contrato[]
-  customerId: string
   fetchHandler?: FetchHandler<T>
   setData?: Dispatch<SetStateAction<T>>
   combinedHandlers?: {
@@ -45,7 +45,6 @@ export function ContratosTabela<T, U>({
   action,
   setContratosInfo,
   contratos,
-  customerId,
   fetchHandler,
   setData,
   combinedHandlers,
@@ -58,14 +57,14 @@ export function ContratosTabela<T, U>({
       if (combinedHandlers && setCombinedData) {
         const [incomeData, debitData] = await Promise.all([
           combinedHandlers.incomeByBills(
-            customerId,
+            contract.customerId,
             contract.contractNumber,
             contract.origem,
             document,
             documentType,
           ),
           combinedHandlers.currentDebit(
-            customerId,
+            contract.customerId,
             contract.contractNumber,
             contract.origem,
             document,
@@ -79,7 +78,7 @@ export function ContratosTabela<T, U>({
         })
       } else if (fetchHandler && setData) {
         const data = await fetchHandler(
-          customerId,
+          contract.customerId,
           contract.contractNumber,
           contract.origem,
           document,
@@ -93,6 +92,7 @@ export function ContratosTabela<T, U>({
         enterpriseName: contract.enterpriseName,
         unit: contract.unit,
         origem: contract.origem,
+        customerId: contract.customerId,
       })
 
       action(true)
