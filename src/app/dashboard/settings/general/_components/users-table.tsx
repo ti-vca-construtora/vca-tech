@@ -20,6 +20,7 @@ export function UsersTable({ users }: UsersTableProps) {
         <TableRow>
           <TableHead className="w-[350px]">Nome</TableHead>
           <TableHead className="w-[350px]">E-mail</TableHead>
+          <TableHead className="w-[350px]">Departamento</TableHead>
           <TableHead className="flex-grow">Cargo</TableHead>
           <TableHead className="w-16 text-center">Ações</TableHead>
         </TableRow>
@@ -29,6 +30,7 @@ export function UsersTable({ users }: UsersTableProps) {
           <TableRow key={item.id}>
             <TableCell>{item.name || 'Não cadastrado'}</TableCell>
             <TableCell>{item.email}</TableCell>
+            <TableCell>{item.department || 'Não cadastrado'}</TableCell>
             <TableCell>{item.role}</TableCell>
             <TableCell className="text-center">
               <MoreHorizontalIcon />

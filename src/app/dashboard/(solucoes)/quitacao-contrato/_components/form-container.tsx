@@ -8,12 +8,9 @@ import {
   handleFetchReceivableBills,
 } from '@/util'
 import { CurrentDebitBalanceApiResponse } from '@/app/api/avp/current-debit-balance/route'
-import { VisualizaoCalculo } from './visualizacao-calculo'
-import {
-  IncomeByBillsApiResponse,
-  Parcela,
-} from '@/app/api/avp/income-by-bills/route'
+import { IncomeByBillsApiResponse } from '@/app/api/avp/income-by-bills/route'
 import { Contrato } from '../../calculadora-juros/_components/contratos-tabela'
+import { ParcelasTabela } from './parcelas-tabela'
 
 export function FormContainer() {
   const [showTable, setShowTable] = useState(false)
@@ -50,54 +47,6 @@ export function FormContainer() {
     }
   }
 
-  const checkValidParcelas = (array: Parcela[]) => {
-    if (array.length <= 1) return array
-
-    const validParcels = array.filter(
-      (parcela) =>
-        parcela.correctedBalanceAmount !== 0 &&
-        new Date(parcela.dueDate) > new Date(),
-    )
-
-    if (validParcels.length === 0) {
-      return []
-    }
-
-    return validParcels
-  }
-
-  const updateParcelas = checkValidParcelas(
-    combinedData.incomeByBills.data,
-  ).filter((parcela) => parcela.correctedBalanceAmount !== 0)
-
-  const calcularTotalParcelasVencidas = () => {
-    let total = 0
-
-    if (combinedData.currentDebit.data[0].dueInstallments) {
-      total += combinedData.currentDebit.data[0].dueInstallments.reduce(
-        (total, parcela) => {
-          const valorNumerico = parseFloat(
-            parcela.originalValue.toString().replace(',', '.').trim(),
-          )
-
-          return total + (isNaN(valorNumerico) ? 0 : valorNumerico)
-        },
-        0,
-      )
-    }
-
-    return total
-  }
-
-  const calcularTotalParcelasFuturas = () => {
-    return updateParcelas.reduce((total, parcela) => {
-      const valorNumerico = parseFloat(
-        parcela.correctedBalanceAmount.toString().replace(',', '.').trim(),
-      )
-      return total + (isNaN(valorNumerico) ? 0 : valorNumerico)
-    }, 0)
-  }
-
   return (
     <div className="w-full h-full">
       {!showTable ? (
@@ -122,13 +71,11 @@ export function FormContainer() {
           />
         </SearchForm>
       ) : (
-        <VisualizaoCalculo
-          valorVencidas={Number(calcularTotalParcelasVencidas().toFixed(2))}
-          valorFuturas={Number(calcularTotalParcelasFuturas().toFixed(2))}
-          contrato={contratoInfo}
+        <ParcelasTabela
           cliente={clienteInfo}
-          currentDebit={combinedData.currentDebit}
-          incomeByBills={{ data: updateParcelas }}
+          contrato={contratoInfo}
+          currentDebitBalance={combinedData.currentDebit}
+          incomeByBills={combinedData.incomeByBills}
         />
       )}
     </div>

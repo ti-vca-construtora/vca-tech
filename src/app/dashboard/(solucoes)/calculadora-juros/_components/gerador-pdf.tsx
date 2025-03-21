@@ -3,7 +3,6 @@
 import { usePdf } from '@/hooks/use-pdf'
 import { PiDownload } from 'react-icons/pi'
 import React, { useState } from 'react'
-import { Loader2 } from 'lucide-react'
 
 export function GeradorPdf<T extends object>({
   Component,
@@ -28,7 +27,7 @@ export function GeradorPdf<T extends object>({
       {isLoading ? (
         <div className="flex items-center justify-center gap-2 font-bold text-neutral-400  text-xs px-6">
           <span>Gerando PDF...</span>
-          <Loader2 className="animate-spin duration-300" />
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-azul-claro-vca"></div>
         </div>
       ) : (
         <button

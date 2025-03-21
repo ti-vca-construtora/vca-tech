@@ -86,7 +86,6 @@ export function ParcelasTabela({
       )
 
       if (parcelaJaSelecionada) {
-        // Desmarcar a parcela se ela já está selecionada
         return prev.filter((p) => p.installmentId !== parcela.installmentId)
       } else {
         return [...prev, { ...parcela, index }]
@@ -117,11 +116,15 @@ export function ParcelasTabela({
       return []
     }
 
+    const closestParcel = validParcels.reduce((prev, curr) =>
+      new Date(prev.dueDate) < new Date(curr.dueDate) ? prev : curr,
+    )
+
     const sortedParcelas = array.sort(
       (a, b) => Number(new Date(b.dueDate)) - Number(new Date(a.dueDate)),
     )
 
-    return sortedParcelas
+    return [closestParcel, ...sortedParcelas]
   }
 
   const handleCalculo = () => {

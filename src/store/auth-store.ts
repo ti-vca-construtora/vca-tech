@@ -18,6 +18,7 @@ export type User = {
   id: string
   name?: string
   email: string
+  department?: string
   role: 'MASTER' | 'ADMIN' | 'USER'
   permissions: Array<{ area: string; permissions: string[] }>
 }
@@ -29,6 +30,7 @@ export type AuthState = {
   login: (email: string, password: string) => Promise<boolean>
   logout: () => void
   hasPermission: (area: string, permission: string) => boolean
+  hasRequiredRole: (requiredRole: string) => boolean
   getToken: () => string | null
   getAllUsers: (
     token: string,
@@ -137,6 +139,16 @@ export const useAuthStore = create<AuthState>()(
         return user.permissions.some(
           (p) => p.area === area && p.permissions.includes(permission),
         )
+      },
+
+      hasRequiredRole: (requiredRole) => {
+        const { user } = get()
+
+        if (!user) return false
+
+        if (user.role === 'MASTER') return true
+
+        return user.role === requiredRole
       },
 
       getToken(): string | null {
