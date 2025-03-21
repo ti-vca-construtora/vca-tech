@@ -283,7 +283,16 @@ export function VisualizaoCalculo({
 
   const calculaQuantidadeTitulosVencidos = () => {
     return currentDebit.data[0].dueInstallments
-      ? currentDebit.data[0].dueInstallments.length
+      ? currentDebit.data[0].dueInstallments.filter((parcela) => {
+          const paymentTermId = parcela.conditionType
+            .trim()
+            .replaceAll(' ', '')
+            .toUpperCase()
+
+          return !excludedFullPaymentTerms
+            .map((term) => term.trim().replaceAll(' ', '').toUpperCase())
+            .includes(paymentTermId)
+        }).length
       : 0
   }
 
