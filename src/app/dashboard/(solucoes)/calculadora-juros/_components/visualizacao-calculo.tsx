@@ -70,6 +70,16 @@ export function VisualizaoCalculo({
   >([])
   const [isLoading, setIsLoading] = useState(true)
 
+  const excludedFullPaymentTerms = [
+    'Financiamento CEF',
+    'Financiamento Outros Bancos',
+    'FGTS Financiável',
+    'Subsídio Financiável',
+    'Parcela Única',
+    'Permuta',
+    'Morar Bem - PE',
+  ]
+
   const getParcelaDoMesDoPagamento = () => {
     const isSameMonthYear = (dueDate: string, targetDate: Date): boolean => {
       const due = new Date(`${dueDate}T04:00:00Z`)
@@ -92,13 +102,24 @@ export function VisualizaoCalculo({
 
     for (const installments of checkOrder) {
       if (installments && installments.length > 0) {
-        const found = installments.find(
-          (inst) =>
-            inst.dueDate &&
-            isSameMonthYear(inst.dueDate, pagarDate) &&
-            inst.conditionType.includes('MENSAL') &&
-            inst.conditionType.includes('ANO'),
-        )
+        const found = installments
+          .filter((parcela) => {
+            const paymentTermId = parcela.conditionType
+              .trim()
+              .replaceAll(' ', '')
+              .toUpperCase()
+
+            return !excludedFullPaymentTerms
+              .map((term) => term.trim().replaceAll(' ', '').toUpperCase())
+              .includes(paymentTermId)
+          })
+          .find(
+            (inst) =>
+              inst.dueDate &&
+              isSameMonthYear(inst.dueDate, pagarDate) &&
+              inst.conditionType.includes('MENSAL') &&
+              inst.conditionType.includes('ANO'),
+          )
 
         if (found) {
           return {
@@ -285,11 +306,18 @@ export function VisualizaoCalculo({
         )
 
       if (response.data[0].dueInstallments) {
-        setUpdatedCurrentDebitDue(response.data[0].dueInstallments)
-      }
+        setUpdatedCurrentDebitDue(
+          response.data[0].dueInstallments.filter((parcela) => {
+            const paymentTermId = parcela.conditionType
+              .trim()
+              .replaceAll(' ', '')
+              .toUpperCase()
 
-      if (response.data[0].paidInstallments) {
-        console.log(response.data[0].paidInstallments)
+            return !excludedFullPaymentTerms
+              .map((term) => term.trim().replaceAll(' ', '').toUpperCase())
+              .includes(paymentTermId)
+          }),
+        )
       }
     } catch (error) {
       console.log(error)

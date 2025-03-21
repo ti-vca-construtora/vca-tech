@@ -117,19 +117,23 @@ export function ParcelasTabela({
       (parcela) => parcela.correctedBalanceAmount !== 0,
     )
 
-    if (validParcels.length === 0) {
-      return []
-    }
+    if (validParcels.length === 0) return []
 
     const closestParcel = validParcels.reduce((prev, curr) =>
       new Date(prev.dueDate) < new Date(curr.dueDate) ? prev : curr,
     )
 
-    const sortedParcelas = array.sort(
-      (a, b) => Number(new Date(b.dueDate)) - Number(new Date(a.dueDate)),
+    const sortedValidParcels = [...validParcels].sort(
+      (a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime(),
     )
 
-    return [closestParcel, ...sortedParcelas]
+    const index = sortedValidParcels.findIndex((p) => p === closestParcel)
+
+    if (index !== -1) {
+      sortedValidParcels.splice(index, 1)
+    }
+
+    return [closestParcel, ...sortedValidParcels]
   }
 
   const handleCalculo = () => {
@@ -160,9 +164,20 @@ export function ParcelasTabela({
     'MB',
   ]
 
+  const excludedFullPaymentTerms = [
+    'Financiamento CEF',
+    'Financiamento Outros Bancos',
+    'FGTS Financiável',
+    'Subsídio Financiável',
+    'Parcela Única',
+    'Permuta',
+    'Morar Bem - PE',
+  ]
+
   const updateParcelas = sortByDueDateDesc(incomeByBills.data)
     .filter((parcela) => {
       const paymentTermId = parcela.paymentTerm.id.toUpperCase()
+
       return !excludedPaymentTerms
         .map((term) => term.toUpperCase())
         .includes(paymentTermId)
@@ -206,7 +221,16 @@ export function ParcelasTabela({
             </CardHeader>
             <CardContent>
               {currentDebitBalance.data[0].dueInstallments &&
-              currentDebitBalance.data[0].dueInstallments.length > 0 ? (
+              currentDebitBalance.data[0].dueInstallments.filter((parcela) => {
+                const paymentTermId = parcela.conditionType
+                  .trim()
+                  .replaceAll(' ', '')
+                  .toUpperCase()
+
+                return !excludedFullPaymentTerms
+                  .map((term) => term.trim().replaceAll(' ', '').toUpperCase())
+                  .includes(paymentTermId)
+              }).length > 0 ? (
                 <span className="font-bold text-red-500 text-lg uppercase">
                   {`Este cliente possui ${currentDebitBalance.data[0].dueInstallments.length} parcelas em aberto.
                   Todas as parcelas vencidas serão incluídas no cálculo do AVP, com juros aplicados.`}
