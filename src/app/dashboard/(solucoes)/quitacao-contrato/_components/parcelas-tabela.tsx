@@ -286,7 +286,7 @@ export function ParcelasTabela({
                 </Table>
               ) : (
                 <div className="size-full flex">
-                  <span className="font-bold text-red-500">
+                  <span className="text-neutral-700">
                     Este cliente não possui parcelas à vencer.
                   </span>
                 </div>
