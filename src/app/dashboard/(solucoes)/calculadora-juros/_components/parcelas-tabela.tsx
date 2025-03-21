@@ -10,8 +10,7 @@ import {
 } from '@/components/ui/table'
 import classNames from 'classnames'
 import { useState } from 'react'
-import { Cliente } from '../../../../../components/search-form'
-import { Contrato } from './contratos-tabela'
+import { Cliente } from '@/components/search-form'
 import { Loader2Icon } from 'lucide-react'
 import { VisualizaoCalculo } from './visualizacao-calculo'
 import { formatarData, formatarValor } from '@/util'
@@ -20,10 +19,21 @@ import {
   Parcela,
 } from '@/app/api/avp/income-by-bills/route'
 import { ClienteInfo } from '@/components/cliente-info'
+import { Contrato } from './contratos-tabela'
+import { CurrentDebitBalanceApiResponse } from '@/app/api/avp/current-debit-balance/route'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 
 type ParcelasTabelaProps = {
   cliente: Cliente
-  parcelas: IncomeByBillsApiResponse
+  incomeByBills: IncomeByBillsApiResponse
+  currentDebitBalance: CurrentDebitBalanceApiResponse
   contrato: Contrato
 }
 
@@ -33,42 +43,35 @@ export type ParcelaSelecionada = Parcela & {
 
 export function ParcelasTabela({
   cliente,
-  parcelas,
+  incomeByBills,
+  currentDebitBalance,
   contrato,
 }: ParcelasTabelaProps) {
-  const [parcelasSelecionadas, setParcelasSelecionadas] = useState<
-    ParcelaSelecionada[]
-  >([])
+  const [parcelasValidasSelecionadas, setParcelasValidasSelecionadas] =
+    useState<ParcelaSelecionada[]>([])
   const [calculo, setCalculo] = useState<boolean>(false)
   const [selectedDate, setSelectedDate] = useState('')
 
   const handleSelectTodasParcelas = () => {
-    if (
-      parcelasSelecionadas.length ===
-      parcelas.data.filter((parcela) => parcela.correctedBalanceAmount !== 0)
-        .length
-    ) {
-      setParcelasSelecionadas([])
+    if (parcelasValidasSelecionadas.length === updateParcelas.length) {
+      setParcelasValidasSelecionadas([])
 
       return
     }
 
-    setParcelasSelecionadas(
-      parcelas.data
-        .filter((parcela) => parcela.correctedBalanceAmount !== 0)
-        .map((item, index) => {
-          return {
-            ...item,
-            index,
-          }
-        }),
+    setParcelasValidasSelecionadas(
+      updateParcelas.map((item, index) => {
+        return {
+          ...item,
+          index,
+        }
+      }),
     )
   }
 
   const handleParcelasPorTipo = (tipo: string) => {
-    setParcelasSelecionadas(
-      parcelas.data
-        .filter((parcela) => parcela.correctedBalanceAmount !== 0)
+    setParcelasValidasSelecionadas(
+      updateParcelas
         .filter((parcela) => parcela.paymentTerm.id === tipo)
         .map((item, index) => {
           return {
@@ -80,7 +83,7 @@ export function ParcelasTabela({
   }
 
   const handleSelectParcela = (parcela: Parcela, index: number) => {
-    setParcelasSelecionadas((prev) => {
+    setParcelasValidasSelecionadas((prev) => {
       const parcelaJaSelecionada = prev.some(
         (p) => p.installmentId === parcela.installmentId,
       )
@@ -94,10 +97,12 @@ export function ParcelasTabela({
   }
 
   const isParcelaSelecionada = (parcela: Parcela) =>
-    parcelasSelecionadas.some((p) => p.installmentId === parcela.installmentId)
+    parcelasValidasSelecionadas.some(
+      (p) => p.installmentId === parcela.installmentId,
+    )
 
   const calcularTotalParcelasSelecionadas = () => {
-    return parcelasSelecionadas.reduce((total, parcela) => {
+    return parcelasValidasSelecionadas.reduce((total, parcela) => {
       const valorNumerico = parseFloat(
         parcela.correctedBalanceAmount.toString().replace(',', '.').trim(),
       )
@@ -128,7 +133,7 @@ export function ParcelasTabela({
   }
 
   const handleCalculo = () => {
-    const isDateValid = parcelasSelecionadas.every(
+    const isDateValid = parcelasValidasSelecionadas.every(
       (parcela: Parcela) => new Date(selectedDate) <= new Date(parcela.dueDate),
     )
 
@@ -143,22 +148,31 @@ export function ParcelasTabela({
     setCalculo(true)
   }
 
-  const verificarParcelaEmAberto = () => {
-    const hoje = new Date() // Data atual
-    return parcelas.data
-      .filter((parcela) => parcela.correctedBalanceAmount !== 0)
-      .some((parcela) => new Date(parcela.dueDate) < hoje)
-  }
+  const excludedPaymentTerms = [
+    'F',
+    'FB',
+    'FG',
+    'FI',
+    'SU',
+    'Su',
+    'PU',
+    'PE',
+    'MB',
+  ]
 
-  const parcelaVencida = verificarParcelaEmAberto()
-
-  const updateParcelas = sortByDueDateDesc(parcelas.data).filter(
-    (parcela) => parcela.correctedBalanceAmount !== 0,
-  )
+  const updateParcelas = sortByDueDateDesc(incomeByBills.data)
+    .filter((parcela) => {
+      const paymentTermId = parcela.paymentTerm.id.toUpperCase()
+      return !excludedPaymentTerms
+        .map((term) => term.toUpperCase())
+        .includes(paymentTermId)
+    })
+    .filter((parcela) => parcela.correctedBalanceAmount !== 0)
+    .filter((parcela) => new Date(parcela.dueDate) > new Date())
 
   const tiposDeParcela = Array.from(
     new Set(
-      parcelas.data
+      incomeByBills.data
         .filter((parcela) => parcela.correctedBalanceAmount !== 0)
         .map((parcela) => parcela.paymentTerm?.id?.trim())
         .filter((id): id is string => !!id),
@@ -169,115 +183,151 @@ export function ParcelasTabela({
     <div className="w-full h-full flex flex-col items-center justify-center gap-6 text-xs">
       {calculo ? (
         <VisualizaoCalculo
-          parcelasSelecionadas={parcelasSelecionadas}
-          parcelas={parcelas}
-          cliente={cliente}
           contrato={contrato}
-          valor={Number(calcularTotalParcelasSelecionadas().toFixed(2))}
+          cliente={cliente}
           dataAPagar={selectedDate}
+          currentDebit={currentDebitBalance}
+          incomeByBills={{
+            data: parcelasValidasSelecionadas.sort(
+              (a, b) =>
+                Number(new Date(b.dueDate)) - Number(new Date(a.dueDate)),
+            ),
+          }}
         />
-      ) : parcelas.data.length ? (
+      ) : incomeByBills.data.length ? (
         <>
           <ClienteInfo cliente={cliente} contrato={contrato} />
-          <div className="flex flex-row-reverse items-center justify-center self-end gap-3">
-            <button
-              onClick={handleSelectTodasParcelas}
-              className="w-fit bg-azul-claro-vca font-semibold text-white rounded py-1 px-3 self-end"
-            >
-              {parcelasSelecionadas.length ===
-              parcelas.data.filter(
-                (parcela) => parcela.correctedBalanceAmount !== 0,
-              ).length
-                ? 'Desmarcar todas'
-                : 'Selecionar todas'}
-            </button>
-            <div className="self-end flex items-center justify-center gap-2">
-              <select
-                defaultValue=""
-                onChange={(e) => handleParcelasPorTipo(e.target.value)}
-                className="w-fit bg-azul-claro-vca font-semibold text-white rounded py-[3px] px-3 self-end"
-              >
-                <option value="">Selecionar parcelas pelo tipo</option>
-                {tiposDeParcela.map((item, index) => (
-                  <option key={index} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          {parcelaVencida && (
-            <div className="font-bold text-base text-red-500">
-              ESTE CLIENTE POSSUI PARCELAS EM ABERTO.
-            </div>
-          )}
-          {updateParcelas.length > 0 ? (
-            <Table className="shadow-md p-2 rounded bg-white">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[200px]">DATA VENCIMENTO</TableHead>
-                  <TableHead className="w-[200px]">VALOR</TableHead>
-                  <TableHead className="w-[200px]">ID CONDIÇÃO</TableHead>
-                  <TableHead className="w-[200px]">NOME INDEXADOR </TableHead>
-                  <TableHead className="w-[150px] text-center">
-                    SELECIONAR
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {updateParcelas.map((parcela, index) => (
-                  <TableRow
-                    key={index}
-                    className={classNames(
-                      index % 2 === 0 && 'bg-neutral-100',
-                      index === 0 && 'bg-green-100',
-                    )}
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle className="text-base">Parcelas Vencidas</CardTitle>
+              <CardDescription className="text-xs">
+                Parcelas com a data de vencimento anterior à data de hoje.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {currentDebitBalance.data[0].dueInstallments &&
+              currentDebitBalance.data[0].dueInstallments.length > 0 ? (
+                <span className="font-bold text-red-500 text-lg uppercase">
+                  {`Este cliente possui ${currentDebitBalance.data[0].dueInstallments.length} parcelas em aberto.
+                  Todas as parcelas vencidas serão incluídas no cálculo do AVP, com juros aplicados.`}
+                </span>
+              ) : (
+                <span className="font-bold text-green-500 text-lg uppercase">
+                  Este cliente não possui parcelas vencidas.
+                </span>
+              )}
+            </CardContent>
+          </Card>
+          <Card className="w-full">
+            <CardHeader className="flex justify-between">
+              <div>
+                <CardTitle className="text-base">Parcelas Válidas</CardTitle>
+                <CardDescription className="text-xs">
+                  Parcelas com a data de vencimento posterior à data de hoje.
+                </CardDescription>
+              </div>
+              {updateParcelas.length > 0 && (
+                <div className="flex flex-row-reverse gap-3">
+                  <button
+                    onClick={handleSelectTodasParcelas}
+                    className="w-fit bg-azul-claro-vca font-semibold text-white rounded py-1 px-3 self-end"
                   >
-                    <TableCell className="font-medium">
-                      {formatarData(parcela.dueDate)}
-                    </TableCell>
-                    <TableCell>
-                      R$ {formatarValor(parcela.correctedBalanceAmount)}
-                    </TableCell>
-                    <TableCell>{parcela.paymentTerm.id}</TableCell>
-                    <TableCell>{parcela.indexerName}</TableCell>
-                    <TableCell className="border text-center">
-                      <input
-                        type="checkbox"
-                        checked={isParcelaSelecionada(parcela)}
-                        onChange={() => handleSelectParcela(parcela, index)}
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <div className="size-full flex items-center justify-center">
-              <span className="font-bold text-red-500 text-base">
-                Este cliente não possui parcelas com valor maior que 0.
-              </span>
-            </div>
-          )}
-          <div className="w-full flex justify-between items-start">
-            <div className="rounded flex items-center justify-center w-full text-xs gap-2">
-              <span className="text-azul-vca">
-                Quantidade total de títulos:{' '}
-                <span className="font-bold">
-                  {
-                    parcelas.data.filter(
+                    {parcelasValidasSelecionadas.length ===
+                    incomeByBills.data.filter(
                       (parcela) => parcela.correctedBalanceAmount !== 0,
                     ).length
-                  }
-                </span>
-              </span>
-            </div>
-          </div>
+                      ? 'Desmarcar todas'
+                      : 'Selecionar todas'}
+                  </button>
+                  <div className="self-end flex items-center justify-center gap-2">
+                    <select
+                      defaultValue=""
+                      onChange={(e) => handleParcelasPorTipo(e.target.value)}
+                      className="w-fit bg-azul-claro-vca font-semibold text-white rounded py-[3px] px-3 self-end"
+                    >
+                      <option value="">Selecionar parcelas pelo tipo</option>
+                      {tiposDeParcela.map((item, index) => (
+                        <option key={index} value={item}>
+                          {item}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+            </CardHeader>
+            <CardContent>
+              {updateParcelas.length > 0 ? (
+                <Table className="shadow-md p-2 rounded bg-white">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[200px]">
+                        DATA VENCIMENTO
+                      </TableHead>
+                      <TableHead className="w-[200px]">VALOR</TableHead>
+                      <TableHead className="w-[200px]">ID CONDIÇÃO</TableHead>
+                      <TableHead className="w-[200px]">
+                        NOME INDEXADOR{' '}
+                      </TableHead>
+                      <TableHead className="w-[150px] text-center">
+                        SELECIONAR
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {updateParcelas.map((parcela, index) => (
+                      <TableRow
+                        key={index}
+                        className={classNames(
+                          index % 2 === 0 && 'bg-neutral-100',
+                          index === 0 && 'bg-green-100',
+                        )}
+                      >
+                        <TableCell className="font-medium">
+                          {formatarData(parcela.dueDate)}
+                        </TableCell>
+                        <TableCell>
+                          R$ {formatarValor(parcela.correctedBalanceAmount)}
+                        </TableCell>
+                        <TableCell>{parcela.paymentTerm.id}</TableCell>
+                        <TableCell>{parcela.indexerName}</TableCell>
+                        <TableCell className="border text-center">
+                          <input
+                            type="checkbox"
+                            checked={isParcelaSelecionada(parcela)}
+                            onChange={() => handleSelectParcela(parcela, index)}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="size-full flex">
+                  <span className="text-neutral-700">
+                    Este cliente não possui parcelas à vencer.
+                  </span>
+                </div>
+              )}
+            </CardContent>
+            <CardFooter>
+              <div className="w-full flex justify-between items-start">
+                <div className="rounded flex items-center justify-center w-full text-xs gap-2">
+                  <span className="text-azul-vca">
+                    Quantidade de títulos:{' '}
+                    <span className="font-bold">{updateParcelas.length}</span>
+                  </span>
+                </div>
+              </div>
+            </CardFooter>
+          </Card>
           <div className="bg-white shadow-md rounded w-full p-2 flex justify-between items-start">
             <div className="rounded p-2 flex flex-col gap-2">
               <span className="text-azul-vca">
                 Títulos Selecionados:{' '}
-                <span className="font-bold">{parcelasSelecionadas.length}</span>
+                <span className="font-bold">
+                  {parcelasValidasSelecionadas.length}
+                </span>
               </span>
               <span className="text-azul-vca">
                 Total das Parcelas:{' '}
@@ -299,14 +349,13 @@ export function ParcelasTabela({
                       .split('T')[0]
                   }
                   onChange={(e) => {
-                    console.log(e.target.value)
                     setSelectedDate(e.target.value)
                   }}
                 />
               </span>
               <button
                 onClick={handleCalculo}
-                disabled={parcelaVencida || !selectedDate}
+                disabled={!selectedDate}
                 className="w-fit bg-azul-claro-vca text-white rounded font-bold py-1 px-3 self-end disabled:bg-gray-300"
               >
                 Calcular

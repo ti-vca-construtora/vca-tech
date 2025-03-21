@@ -23,10 +23,6 @@ const data = {
       isActive: true,
       items: [
         {
-          title: 'Diretoria',
-          url: '/dashboard/setores/diretoria?title=Painel de Soluções - Diretoria',
-        },
-        {
           title: 'Financeiro',
           url: '/dashboard/setores/financeiro?title=Painel de Soluções - Financeiro',
         },

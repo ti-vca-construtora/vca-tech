@@ -4,7 +4,7 @@ import { FormContainer } from './_components/form-container'
 export default function CalculadoraJuros() {
   return (
     <RouteGuard requiredArea="financeiro" requiredPermission="avp">
-      <div className="size-full flex p-6">
+      <div className="w-full h-full flex p-6">
         <FormContainer />
       </div>
     </RouteGuard>

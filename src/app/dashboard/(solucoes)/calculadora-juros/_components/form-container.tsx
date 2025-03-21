@@ -1,12 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { SearchForm, Cliente } from '../../../../../components/search-form'
-import { ContractsModal } from '../../../../../components/contracts-modal'
-import { ParcelasTabela } from './parcelas-tabela'
+import { SearchForm, Cliente } from '@/components/search-form'
+import { CombinedData, ContractsModal } from '@/components/contracts-modal'
+import {
+  handleFetchCurrentDebitBalance,
+  handleFetchReceivableBills,
+} from '@/util'
+import { CurrentDebitBalanceApiResponse } from '@/app/api/avp/current-debit-balance/route'
 import { IncomeByBillsApiResponse } from '@/app/api/avp/income-by-bills/route'
-import { handleFetchReceivableBills } from '@/util'
 import { Contrato } from './contratos-tabela'
+import { ParcelasTabela } from './parcelas-tabela'
 
 export function FormContainer() {
   const [showTable, setShowTable] = useState(false)
@@ -23,8 +27,11 @@ export function FormContainer() {
     documentNumber: '',
   })
   const [contratosFull, setContratosFull] = useState<Contrato[]>([])
-  const [parcelas, setParcelas] = useState<IncomeByBillsApiResponse>({
-    data: [],
+  const [combinedData, setCombinedData] = useState<
+    CombinedData<IncomeByBillsApiResponse, CurrentDebitBalanceApiResponse>
+  >({
+    incomeByBills: { data: [] },
+    currentDebit: { data: [] },
   })
 
   const handleSearchComplete = (data: {
@@ -44,24 +51,31 @@ export function FormContainer() {
     <div className="w-full h-full">
       {!showTable ? (
         <SearchForm onSearchComplete={handleSearchComplete}>
-          <ContractsModal
-            setContratosInfo={setContratoInfo}
-            setData={setParcelas}
+          <ContractsModal<
+            IncomeByBillsApiResponse,
+            CurrentDebitBalanceApiResponse
+          >
+            action={setShowTable}
+            contratos={contratosFull}
             document={{
-              documentNumber: clienteInfo.documentNumber,
               documentType: clienteInfo.documentType,
+              documentNumber: clienteInfo.documentNumber,
               customerId: contratoInfo.customerId,
             }}
-            contratos={contratosFull}
-            action={setShowTable}
-            fetchHandler={handleFetchReceivableBills}
+            setContratosInfo={setContratoInfo}
+            combinedHandlers={{
+              incomeByBills: handleFetchReceivableBills,
+              currentDebit: handleFetchCurrentDebitBalance,
+            }}
+            setCombinedData={setCombinedData}
           />
         </SearchForm>
       ) : (
         <ParcelasTabela
-          contrato={contratoInfo}
-          parcelas={parcelas}
           cliente={clienteInfo}
+          contrato={contratoInfo}
+          currentDebitBalance={combinedData.currentDebit}
+          incomeByBills={combinedData.incomeByBills}
         />
       )}
     </div>
