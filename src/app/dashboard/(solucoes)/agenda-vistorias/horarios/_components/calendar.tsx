@@ -6,119 +6,140 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
-import { useEffect } from 'react'
-import CriarSlotsBulk from './fnc-criaSlotsBulk'
-import vrfCriaSlot from './fnc-verificaUltSlot'
+import { format, parseISO } from 'date-fns'
+import { ptBR } from 'date-fns/locale/pt-BR'
+import { useEffect, useState } from 'react'
 
-export function Calendar() {
-  const verificaCriacaodeSlot = async () => {
-    const vrf = await vrfCriaSlot()
-    console.log(vrf)
-  }
+interface Slot {
+  id: string
+  startAt: string
+  endAt: string
+}
+
+export function Calendar({
+  selectedDevelopment,
+}: {
+  selectedDevelopment?: string
+}) {
+  const [slots, setSlots] = useState<Slot[]>([])
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
+
+  const diasPrazo = 3
+  const diasDuracao = 2
+
+  console.log(selectedSlot)
+  console.log(selectedDevelopment)
 
   useEffect(() => {
-    console.log(verificaCriacaodeSlot())
-    CriarSlotsBulk()
-  }, [])
+    if (!selectedDevelopment) return
+    loadSlots()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDevelopment])
 
-  const atualDate = new Date()
-  const currentMonth = atualDate.getMonth()
-  const currentYear = atualDate.getFullYear()
-  const atualDay = atualDate.getDate()
+  const loadSlots = async () => {
+    const firstDateRender = new Date()
+    firstDateRender.setHours(2, 0, 0, 0)
+    firstDateRender.setDate(firstDateRender.getDate() + diasPrazo)
 
-  const getDaysInMonth = (month: number, year: number) => {
-    return new Date(year, month + 1, 0).getDate()
-  }
-
-  const trTable = () => {
-    let day = atualDay + 3
-    let month = currentMonth
-    let year = currentYear
-
-    return (
-      <thead>
-        <tr>
-          {Array.from({ length: 30 }, (_, i) => {
-            const daysInMonth = getDaysInMonth(month, year)
-            if (day > daysInMonth) {
-              day = 1
-              month += 1
-              if (month > 11) {
-                month = 0
-                year += 1
-              }
-            }
-            const displayDay = day.toString().padStart(2, '0')
-            const displayMonth = (month + 1).toString().padStart(2, '0')
-            day += 1
-            return (
-              <th
-                key={i}
-                className="border py-2 px-2 text-center bg-gray-100"
-              >{`${displayDay}/${displayMonth}`}</th>
-            )
-          })}
-        </tr>
-      </thead>
+    const response = await fetch(
+      // eslint-disable-next-line prettier/prettier
+      `/api/vistorias/slots?fromDate=${firstDateRender.toISOString()}&developmentId=${selectedDevelopment}`
     )
+
+    if (!response.ok) {
+      console.error('Erro ao carregar slots')
+      return
+    }
+
+    const data = await response.json()
+    console.log(data.data)
+    setSlots(data.data)
   }
 
-  const tdTable = () => {
-    return (
-      <tbody>
-        {Array.from({ length: 4 }, (_, rowIndex) => (
-          <tr key={rowIndex}>
-            {Array.from({ length: 30 }, (_, colIndex) => {
-              const timeSlot =
-                rowIndex === 0
-                  ? '08:00 às 09:30'
-                  : rowIndex === 1
-                    ? '10:00 às 11:30'
-                    : rowIndex === 2
-                      ? '13:30 às 15:00'
-                      : '15:00 às 16:30'
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const groupedSlots = (slots ?? []).reduce((acc: any, slot) => {
+    const date = format(parseISO(slot.startAt), 'yyyy-MM-dd')
+    if (!acc[date]) acc[date] = []
+    acc[date].push(slot)
+    return acc
+  }, {})
 
-              return (
-                <td
-                  key={colIndex}
-                  className="cursor-pointer border text-center hover:bg-gray-200"
-                >
-                  <ContextMenu>
-                    <ContextMenuTrigger className="w-full h-full flex justify-center items-center py-4 px-3">
-                      {timeSlot}
-                    </ContextMenuTrigger>
-                    <ContextMenuContent>
-                      <ContextMenuItem className="cursor-pointer">
-                        Disponibilizar
-                      </ContextMenuItem>
-                      <ContextMenuItem className="cursor-pointer">
-                        Indisponibilizar
-                      </ContextMenuItem>
-                    </ContextMenuContent>
-                  </ContextMenu>
-                </td>
-              )
-            })}
-          </tr>
-        ))}
-      </tbody>
-    )
+  /**
+   * Obtém os próximos dias a partir de hoje + diasPrazo
+   */
+  const getNextDays = () => {
+    const days = []
+    const today = new Date()
+    today.setDate(today.getDate() + diasPrazo)
+
+    for (let i = 0; i < diasDuracao; i++) {
+      const date = new Date(today)
+      date.setDate(today.getDate() + i)
+      days.push(format(date, 'yyyy-MM-dd'))
+    }
+
+    return days
   }
+
+  const nextDays = getNextDays()
 
   return (
     <div className="max-w-screen-sm">
       <div className="flex flex-col p-2 justify-center items-center rounded-lg border bg-card text-card-foreground shadow-sm w-full h-auto">
-        <div className="flex w-full justify-evenly items-center mb-5">
-          <h1 className="flex items-center text-center justify-center font-semibold text-2xl text-trasform: capitalize">
-            Agenda ativa:
-          </h1>
-        </div>
-        <div id="agenda" className="overflow-x-auto w-full">
-          <table className="min-w-max border-collapse">
-            {trTable()}
-            {tdTable()}
-          </table>
-        </div>
+        <h1 className="font-semibold text-2xl mb-5">Agenda ativa:</h1>
+        {selectedDevelopment ? (
+          <div className="overflow-x-auto w-full">
+            <table className="min-w-max border-collapse">
+              <thead>
+                <tr>
+                  {nextDays.map((day) => (
+                    <th
+                      key={day}
+                      className="border py-2 px-2 text-center bg-gray-100"
+                    >
+                      {format(parseISO(day), 'dd/MM', { locale: ptBR })}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 4 }, (_, rowIndex) => (
+                  <tr key={rowIndex}>
+                    {nextDays.map((day) => {
+                      const slot = groupedSlots[day]?.[rowIndex]
+
+                      return (
+                        <td
+                          key={day + rowIndex}
+                          className="cursor-pointer border text-center hover:bg-gray-200"
+                          onClick={() => setSelectedSlot(slot?.id)}
+                        >
+                          <ContextMenu>
+                            <ContextMenuTrigger className="w-full h-full flex justify-center items-center py-4 px-3">
+                              {slot
+                                ? `${format(parseISO(slot.startAt), 'HH:mm')} às ${format(parseISO(slot.endAt), 'HH:mm')}`
+                                : '—'}
+                            </ContextMenuTrigger>
+                            <ContextMenuContent>
+                              <ContextMenuItem className="cursor-pointer">
+                                Disponibilizar
+                              </ContextMenuItem>
+                              <ContextMenuItem className="cursor-pointer">
+                                Indisponibilizar
+                              </ContextMenuItem>
+                            </ContextMenuContent>
+                          </ContextMenu>
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p>Selecione um empreendimento</p>
+        )}
       </div>
     </div>
   )

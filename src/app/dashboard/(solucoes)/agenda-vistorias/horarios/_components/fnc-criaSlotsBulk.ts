@@ -49,23 +49,21 @@ const CriarSlotsBulk = () => {
       }
     }
 
-    console.log('Slots criados:', slots)
+    const response = await fetch('/api/vistorias/slots', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ slots }),
+    })
 
-    // const response = await fetch('/api/vistorias/slots', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify({ slots }),
-    // })
+    if (!response.ok) {
+      console.error('Erro ao criar slots')
+      return
+    }
 
-    // if (!response.ok) {
-    //   console.error('Erro ao criar slots')
-    //   return
-    // }
-
-    // const data = await response.json()
-    // console.log('Slots criados:', data)
+    const data = await response.json()
+    console.log('Slots criados:', data)
   }
 }
 

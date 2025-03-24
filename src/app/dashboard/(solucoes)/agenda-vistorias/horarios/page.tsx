@@ -1,3 +1,5 @@
+'use client'
+
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -6,40 +8,75 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useEffect, useState } from 'react'
 import { Calendar } from './_components/calendar'
 import { DisponibilizarHorarios } from './_components/disponibilizar-horarios'
 
+type Empreendimento = {
+  id: string
+  name: string
+  isActive: boolean
+}
+
 const Horarios = () => {
+  const [empreendimentos, setEmpreendimentos] = useState<Empreendimento[]>([])
+  const [selectedDevelopment, setSelectedDevelopment] = useState<string>('')
+
+  const getEmpreendimentos = async () => {
+    const response = await fetch(
+      '/api/vistorias/empreendimentos?page=1&pageSize=999&isActive=1',
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // eslint-disable-next-line prettier/prettier
+      }
+    )
+
+    if (!response.ok) {
+      console.error('Erro ao carregar empreendimentos')
+      return
+    }
+
+    const data = await response.json()
+    setEmpreendimentos(data.data)
+  }
+
+  useEffect(() => {
+    getEmpreendimentos()
+  }, [])
+
   return (
     <section className="flex p-6 flex-col">
       <div className="grid w-full items-center gap-1.5 mb-4">
         <Label htmlFor="empreendimento">Empreendimento</Label>
-        <Select>
+        <Select
+          value={selectedDevelopment}
+          onValueChange={(value) => setSelectedDevelopment(value)}
+        >
           <SelectTrigger
             id="empreendimento"
             className="w-full cursor-pointer bg-white"
           >
-            <SelectValue placeholder="TODOS" />
+            <SelectValue placeholder="SELECIONE UM EMPREENDIMENTO" />
           </SelectTrigger>
           <SelectContent className="cursor-pointer">
-            <SelectItem className="cursor-pointer" value="TODOS">
-              TODOS
-            </SelectItem>
-            <SelectItem className="cursor-pointer" value="EMPREENDIMENTO 1">
-              EMPREENDIMENTO 1
-            </SelectItem>
-            <SelectItem className="cursor-pointer" value="EMPREENDIMENTO 2">
-              EMPREENDIMENTO 2
-            </SelectItem>
-            <SelectItem className="cursor-pointer" value="EMPREENDIMENTO 3">
-              EMPREENDIMENTO 3
-            </SelectItem>
+            {empreendimentos.map((empreendimento) => (
+              <SelectItem
+                key={empreendimento.id}
+                className="cursor-pointer"
+                value={empreendimento.id}
+              >
+                {empreendimento.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
       <div className="flex">
         <DisponibilizarHorarios />
-        <Calendar />
+        <Calendar selectedDevelopment={selectedDevelopment} />
       </div>
     </section>
   )

@@ -1,12 +1,13 @@
 const vrfCriaSlot = async () => {
   const diasPrazo = 3
-  const diasDuracao = 5
+  const diasDuracao = 2
 
   const dataDeBuscaSlot = () => {
     const paramDate = new Date()
     paramDate.setHours(5, 0, 0, 0)
-    paramDate.setDate(paramDate.getDate() + diasPrazo + diasDuracao)
+    paramDate.setDate(paramDate.getDate() + diasPrazo + diasDuracao - 1)
     const date = paramDate.toISOString()
+    console.log(date)
     return { date }
   }
 
