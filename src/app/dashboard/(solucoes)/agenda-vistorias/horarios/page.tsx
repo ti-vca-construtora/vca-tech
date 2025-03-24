@@ -11,6 +11,8 @@ import {
 import { useEffect, useState } from 'react'
 import { Calendar } from './_components/calendar'
 import { DisponibilizarHorarios } from './_components/disponibilizar-horarios'
+import CriarSlotsBulk from './_components/fnc-criaSlotsBulk'
+import vrfCriaSlot from './_components/fnc-verificaUltSlot'
 
 type Empreendimento = {
   id: string
@@ -43,8 +45,16 @@ const Horarios = () => {
     setEmpreendimentos(data.data)
   }
 
+  const checkSlots = async () => {
+    const result = await vrfCriaSlot()
+    if (!result) {
+      CriarSlotsBulk()
+    }
+  }
+
   useEffect(() => {
     getEmpreendimentos()
+    checkSlots()
   }, [])
 
   return (

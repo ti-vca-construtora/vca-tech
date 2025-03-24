@@ -1,6 +1,6 @@
 const vrfCriaSlot = async () => {
   const diasPrazo = 3
-  const diasDuracao = 2
+  const diasDuracao = 3
 
   const dataDeBuscaSlot = () => {
     const paramDate = new Date()
@@ -28,6 +28,7 @@ const vrfCriaSlot = async () => {
   }
 
   const data = await response.json()
+  console.log(data)
 
   if (data.data.length === 0) {
     return false

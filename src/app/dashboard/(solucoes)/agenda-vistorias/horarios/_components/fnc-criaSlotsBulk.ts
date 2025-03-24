@@ -4,7 +4,7 @@ import RetornaEmpAtivos from './fnc-empativos'
 
 const CriarSlotsBulk = () => {
   const diasPrazo = 3
-  const diasDuracao = 2
+  const diasDuracao = 3
   const horarios = [
     { inicio: '08:00', fim: '09:30' },
     { inicio: '10:00', fim: '11:30' },
@@ -49,6 +49,7 @@ const CriarSlotsBulk = () => {
       }
     }
 
+    console.log(slots)
     const response = await fetch('/api/vistorias/slots', {
       method: 'POST',
       headers: {

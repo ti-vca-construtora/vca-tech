@@ -25,7 +25,7 @@ export function Calendar({
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
 
   const diasPrazo = 3
-  const diasDuracao = 2
+  const diasDuracao = 3
 
   console.log(selectedSlot)
   console.log(selectedDevelopment)
@@ -64,9 +64,6 @@ export function Calendar({
     return acc
   }, {})
 
-  /**
-   * Obtém os próximos dias a partir de hoje + diasPrazo
-   */
   const getNextDays = () => {
     const days = []
     const today = new Date()
