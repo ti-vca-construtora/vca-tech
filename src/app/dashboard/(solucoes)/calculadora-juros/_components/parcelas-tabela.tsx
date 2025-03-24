@@ -202,6 +202,7 @@ export function ParcelasTabela({
           cliente={cliente}
           dataAPagar={selectedDate}
           currentDebit={currentDebitBalance}
+          originalIncomeByBills={incomeByBills}
           incomeByBills={{
             data: parcelasValidasSelecionadas.sort(
               (a, b) =>
