@@ -232,6 +232,7 @@ export const handleFetchCurrentDebitBalance: FetchHandler<
   origem,
   document?,
   documentType?,
+  correctionDate?,
 ): Promise<CurrentDebitBalanceApiResponse> => {
   try {
     const data = await fetch(
@@ -255,7 +256,7 @@ export const handleFetchCurrentDebitBalance: FetchHandler<
     const receivableBillId = filteredContratos[0].receivableBillId
 
     const currentDebitBalance = await fetch(
-      `/api/avp/current-debit-balance?billId=${receivableBillId}&origem=${origem}&document=${document}&documentType=${documentType}`,
+      `/api/avp/current-debit-balance?billId=${receivableBillId}&origem=${origem}&document=${document}&documentType=${documentType}&correctionDate=${correctionDate}`,
     )
 
     if (!currentDebitBalance.ok) {

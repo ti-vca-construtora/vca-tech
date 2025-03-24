@@ -14,6 +14,7 @@ import {
 } from '../app/dashboard/(solucoes)/calculadora-juros/_components/contratos-tabela'
 import { Dispatch, SetStateAction } from 'react'
 import { GoX } from 'react-icons/go'
+import { formatarCpfCnpj } from '@/util'
 
 export type CombinedData<T, U> = {
   incomeByBills: T
@@ -67,7 +68,7 @@ export function ContractsModal<T, U>({
           <AlertDialogTitle>
             Contratos atrelados ao{' '}
             <span className="uppercase">{document.documentType}: </span>
-            {document.documentNumber}
+            {formatarCpfCnpj(document.documentNumber)}
           </AlertDialogTitle>
           <AlertDialogDescription>
             <ContratosTabela<T, U>
@@ -80,6 +81,7 @@ export function ContractsModal<T, U>({
               setCombinedData={setCombinedData}
               document={document.documentNumber}
               documentType={document.documentType}
+              correctionDate={new Date().toISOString().split('T')[0]}
             />
           </AlertDialogDescription>
         </AlertDialogHeader>

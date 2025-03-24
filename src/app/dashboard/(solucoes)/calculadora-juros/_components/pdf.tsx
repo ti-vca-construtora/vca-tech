@@ -17,32 +17,38 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import classNames from 'classnames'
-import { Cliente } from '../../../../../components/search-form'
-import { Contrato } from './contratos-tabela'
-import { ParcelaSelecionada } from './parcelas-tabela'
-import { CalculoPorParcela } from './visualizacao-calculo'
+import { Cliente } from '@/components/search-form'
 
 import { LOGO_BASE64 } from '@/util/logo-base64'
 import { contratos } from '@/data/contratos'
+import { Contrato } from './contratos-tabela'
+import { DueInstallment } from '@/app/api/avp/current-debit-balance/route'
+import { CalculoPorParcela } from './visualizacao-calculo'
 
 export type PdfProps = {
-  valor: number
+  valorTotalGeral: number
+  valorAnteriorVencidas: number
+  valorPresenteVencidas: number
+  valorAnteriorFuturas: number
+  valorPresenteFuturas: number
   dataAPagar: string
-  parcelasSelecionadas: ParcelaSelecionada[]
+  currentDebit: DueInstallment[]
   cliente: Cliente
   contrato: Contrato
-  getValorPresenteTotal: () => number
-  calculoPorParcela: CalculoPorParcela[]
+  incomeByBills: CalculoPorParcela[]
 }
 
 export function Pdf({
   cliente,
   contrato,
-  parcelasSelecionadas,
-  valor,
+  currentDebit,
   dataAPagar,
-  getValorPresenteTotal,
-  calculoPorParcela,
+  valorTotalGeral,
+  valorAnteriorFuturas,
+  valorPresenteFuturas,
+  valorAnteriorVencidas,
+  valorPresenteVencidas,
+  incomeByBills,
 }: PdfProps) {
   const taxaTotal =
     contratos.find((contrato) => contrato.cliente === cliente.name)
@@ -70,6 +76,7 @@ export function Pdf({
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-2">
+            <span className="font-bold">Informações de contrato</span>
             <p className="border-b w-full">
               Cliente: <span className="font-semibold">{cliente.name}</span>
             </p>
@@ -87,25 +94,63 @@ export function Pdf({
             <p className="border-b w-full">
               Quantidade de Parcelas:{' '}
               <span className="font-semibold">
-                {parcelasSelecionadas.length}
+                {currentDebit.length + incomeByBills.length}
               </span>
             </p>
-            <p className="border-b w-full">
-              Valor Total Anterior:{' '}
-              <span className="font-semibold">{`RS ${formatarValor(valor)}`}</span>
-            </p>
-            <p className="border-b w-full">
-              Valor Total Presente:{' '}
-              <span className="font-semibold">{`RS ${formatarValor(getValorPresenteTotal())}`}</span>
-            </p>
-            <p className="border-b w-full">
-              Valor Desconto:{' '}
-              <span className="font-semibold">{`RS ${formatarValor(valor - getValorPresenteTotal())}`}</span>
-            </p>
-            <p className="border-b w-full">
-              Data a Pagar:{' '}
-              <span className="font-semibold">{formatarData(dataAPagar)}</span>
-            </p>
+            {currentDebit.length > 0 && (
+              <div className="flex flex-col gap-2 mt-4">
+                <span className="font-bold">Subtotal parcelas vencidas</span>
+                <p className="border-b w-full">
+                  Quantidade de Parcelas:{' '}
+                  <span className="font-semibold">{currentDebit.length}</span>
+                </p>
+                <p className="border-b w-full">
+                  Valor Anterior de Parcelas Vencidas:{' '}
+                  <span className="font-semibold">{`RS ${formatarValor(valorAnteriorVencidas)}`}</span>
+                </p>
+                <p className="border-b w-full">
+                  Valor Presente de Parcelas Vencidas:{' '}
+                  <span className="font-semibold">{`RS ${formatarValor(valorPresenteVencidas)}`}</span>
+                </p>
+                <p className="border-b w-full">
+                  Valor Acréscimo:{' '}
+                  <span className="font-semibold">{`RS ${formatarValor(valorPresenteVencidas - valorAnteriorVencidas)}`}</span>
+                </p>
+              </div>
+            )}
+            {incomeByBills.length > 0 && (
+              <div className="flex flex-col gap-2 mt-4">
+                <span className="font-bold">Subtotal parcelas futuras</span>
+                <p className="border-b w-full">
+                  Quantidade de Parcelas:{' '}
+                  <span className="font-semibold">{incomeByBills.length}</span>
+                </p>
+                <p className="border-b w-full">
+                  Valor Anterior de Parcelas Futuras:{' '}
+                  <span className="font-semibold">{`RS ${formatarValor(valorAnteriorFuturas)}`}</span>
+                </p>
+                <p className="border-b w-full">
+                  Valor Presente de Parcelas Futuras:{' '}
+                  <span className="font-semibold">{`RS ${formatarValor(valorPresenteFuturas)}`}</span>
+                </p>
+                <p className="border-b w-full">
+                  Valor Desconto:{' '}
+                  <span className="font-semibold">{`RS ${formatarValor(valorAnteriorFuturas - valorPresenteFuturas)}`}</span>
+                </p>
+              </div>
+            )}
+            <div className="flex flex-col gap-2 mt-4">
+              <span className="font-bold">Resumo</span>
+              <p className="border-b w-full">
+                Data a Pagar:{' '}
+                <span className="font-semibold">
+                  {formatarData(dataAPagar)}
+                </span>
+              </p>
+              <span className="font-bold">
+                Total: {`RS ${formatarValor(valorTotalGeral)}`}
+              </span>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -117,42 +162,123 @@ export function Pdf({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Valor Original</TableHead>
-                <TableHead>Valor Presente</TableHead>
-                <TableHead>Valor Desconto</TableHead>
-                <TableHead>Vencimento</TableHead>
-                <TableHead>Pagamento</TableHead>
-                <TableHead>{`Período (dias)`}</TableHead>
-                <TableHead>{`Taxa (%)`}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {calculoPorParcela.map((item, index) => (
-                <TableRow
-                  className={classNames(index % 2 === 0 && 'bg-neutral-100')}
-                  key={index}
-                >
-                  <TableCell>R$ {formatarValor(item.valorAnterior)}</TableCell>
-                  <TableCell>R$ {formatarValor(item.valorPresente)}</TableCell>
-                  <TableCell>
-                    R$ {formatarValor(item.valorAnterior - item.valorPresente)}
-                  </TableCell>
-                  <TableCell>{formatarData(item.dataVencimento)}</TableCell>
-                  <TableCell>{formatarData(item.dataAPagar)}</TableCell>
-                  <TableCell>
-                    {calcularDiferencaDias(
-                      item.dataAPagar,
-                      item.dataVencimento,
-                    )}
-                  </TableCell>
-                  <TableCell>{taxaTotal}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          {incomeByBills.length > 0 && (
+            <Card className="w-full ">
+              <CardHeader>
+                <CardTitle className="text-lg">Parcelas Futuras</CardTitle>
+                <CardDescription className="text-xs">
+                  Parcelas com a data de vencimento posterior à data de
+                  pagamento
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Valor Original</TableHead>
+                      <TableHead>Valor Presente</TableHead>
+                      <TableHead>Valor Desconto</TableHead>
+                      <TableHead>Vencimento</TableHead>
+                      <TableHead>Pagamento</TableHead>
+                      <TableHead>{`Período (dias)`}</TableHead>
+                      <TableHead>{`Taxa (%)`}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {incomeByBills.map((item, index) => (
+                      <TableRow
+                        className={classNames(
+                          index % 2 === 0 && 'bg-neutral-100',
+                        )}
+                        key={index}
+                      >
+                        <TableCell>
+                          R$ {formatarValor(item.valorAnterior)}
+                        </TableCell>
+                        <TableCell>
+                          R$ {formatarValor(item.valorPresente)}
+                        </TableCell>
+                        <TableCell>
+                          R${' '}
+                          {formatarValor(
+                            item.valorAnterior - item.valorPresente,
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {formatarData(item.dataVencimento)}
+                        </TableCell>
+                        <TableCell>{formatarData(item.dataAPagar)}</TableCell>
+                        <TableCell>
+                          {calcularDiferencaDias(
+                            item.dataAPagar,
+                            item.dataVencimento,
+                          )}
+                        </TableCell>
+                        <TableCell>{taxaTotal}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+          {currentDebit.length > 0 && (
+            <Card className="w-full">
+              <CardHeader>
+                <CardTitle className="text-lg">Parcelas Vencidas</CardTitle>
+                <CardDescription className="text-xs">
+                  Parcelas com a data de vencimento anterior à data de pagamento
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Valor Original</TableHead>
+                      <TableHead>Valor Presente</TableHead>
+                      <TableHead>Valor Acréscimo</TableHead>
+                      <TableHead>Vencimento</TableHead>
+                      <TableHead>Pagamento</TableHead>
+                      <TableHead>{`Período (dias)`}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {currentDebit.map((item, index) => (
+                      <TableRow
+                        className={classNames(
+                          index % 2 === 0 && 'bg-neutral-100',
+                        )}
+                        key={index}
+                      >
+                        <TableCell>
+                          R$ {formatarValor(item.adjustedValue)}
+                        </TableCell>
+                        <TableCell>
+                          R${' '}
+                          {formatarValor(
+                            item.adjustedValue + item.additionalValue,
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          R${' '}
+                          {formatarValor(
+                            item.adjustedValue +
+                              item.additionalValue -
+                              item.adjustedValue,
+                          )}
+                        </TableCell>
+                        <TableCell>{formatarData(item.dueDate)}</TableCell>
+                        <TableCell>{formatarData(dataAPagar)}</TableCell>
+                        <TableCell>
+                          {calcularDiferencaDias(dataAPagar, item.dueDate)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -27,14 +27,15 @@ interface InstallmentBase {
 
 interface PaidInstallment extends InstallmentBase {
   receipts: Receipt[]
+  dueDate: string
 }
 
-interface DueInstallment extends InstallmentBase {
+export interface DueInstallment extends InstallmentBase {
   indexerValueCalculationDate: number
   dueDate: string
 }
 
-interface PayableInstallment extends InstallmentBase {
+export interface PayableInstallment extends InstallmentBase {
   indexerValueCalculationDate: number
   dueDate: string
 }
@@ -42,9 +43,9 @@ interface PayableInstallment extends InstallmentBase {
 export interface CurrentDebit {
   billReceivableId: number
   documentId: string
-  paidInstallments: PaidInstallment[]
-  dueInstallments: DueInstallment[]
-  payableInstallments: PayableInstallment[]
+  paidInstallments?: PaidInstallment[]
+  dueInstallments?: DueInstallment[]
+  payableInstallments?: PayableInstallment[]
 }
 
 export interface CurrentDebitBalanceExternalApiResponse {
@@ -70,6 +71,7 @@ export async function GET(req: NextRequest) {
     const document = searchParams.get('document')
     const documentType = searchParams.get('documentType')
     const billId = searchParams.get('billId')
+    const correctionDate = searchParams.get('correctionDate')
     const origem = searchParams.get('origem')
 
     if (!document) {
@@ -100,8 +102,15 @@ export async function GET(req: NextRequest) {
       )
     }
 
+    if (!correctionDate) {
+      return NextResponse.json(
+        { error: 'correctionDate não fornecido' },
+        { status: 400 },
+      )
+    }
+
     const response = await fetch(
-      `${API_URL}${origem}/public/api/v1/current-debit-balance?${documentType}=${document}&numberTitle=${billId}`,
+      `${API_URL}${origem}/public/api/v1/current-debit-balance?${documentType}=${document}&numberTitle=${billId}&correctionDate=${correctionDate}`,
       {
         method: 'GET',
         headers: {

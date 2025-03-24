@@ -9,21 +9,38 @@ export const RouteGuard = memo(
     children,
     requiredArea,
     requiredPermission,
+    requiredRole,
   }: {
     children: React.ReactNode
     requiredArea: string
     requiredPermission: string
+    requiredRole?: 'MASTER' | 'ADMIN' | undefined
   }) => {
     const router = useRouter()
-    const { user, isLoading, hasPermission } = useAuthStore()
+    const { user, isLoading, hasPermission, hasRequiredRole } = useAuthStore()
 
     useEffect(() => {
       if (!isLoading && !hasPermission(requiredArea, requiredPermission)) {
         router.push('/dashboard/unauthorized')
       }
-    }, [user, isLoading, router, requiredArea, requiredPermission])
 
-    if (isLoading) return <div>Carregando...</div>
+      if (requiredRole && !isLoading && !hasRequiredRole(requiredRole)) {
+        router.push('/dashboard/unauthorized')
+      }
+    }, [
+      user,
+      isLoading,
+      router,
+      requiredArea,
+      requiredPermission,
+      requiredRole,
+    ])
+
+    if (isLoading)
+      return (
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-azul-claro-vca"></div>
+      )
+
     if (!hasPermission(requiredArea, requiredPermission)) return null
 
     return <>{children}</>

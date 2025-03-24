@@ -16,6 +16,7 @@ export type FetchHandler<T> = (
   origem: string,
   document?: string,
   documentType?: 'cpf' | 'cnpj',
+  correctionDate?: string,
 ) => Promise<T>
 
 export type Contrato = {
@@ -39,6 +40,7 @@ type ContratosTabelaProps<T, U = never> = {
   setCombinedData?: Dispatch<SetStateAction<CombinedData<T, U>>>
   document?: string
   documentType?: 'cpf' | 'cnpj'
+  correctionDate?: string
 }
 
 export function ContratosTabela<T, U>({
@@ -51,6 +53,7 @@ export function ContratosTabela<T, U>({
   setCombinedData,
   document,
   documentType,
+  correctionDate,
 }: ContratosTabelaProps<T, U>) {
   const handleClick = async (contract: Contrato) => {
     try {
@@ -69,6 +72,7 @@ export function ContratosTabela<T, U>({
             contract.origem,
             document,
             documentType,
+            correctionDate,
           ),
         ])
 
