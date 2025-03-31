@@ -53,7 +53,7 @@ export default function Empreendimentos() {
 
   const getEmpreendimentos = async () => {
     const response = await fetch(
-      '/api/vistorias/empreendimentos?page=1&pageSize=20',
+      '/api/vistorias/empreendimentos?page=1&pageSize=200',
       {
         method: 'GET',
         headers: {

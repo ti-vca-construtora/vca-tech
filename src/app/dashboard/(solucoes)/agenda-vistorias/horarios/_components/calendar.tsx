@@ -25,7 +25,7 @@ export function Calendar({
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
 
   const diasPrazo = 3
-  const diasDuracao = 3
+  const diasDuracao = 4
 
   console.log(selectedSlot)
   console.log(selectedDevelopment)

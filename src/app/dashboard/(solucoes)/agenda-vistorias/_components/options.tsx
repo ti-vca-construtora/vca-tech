@@ -3,6 +3,7 @@
 import {
   PiBuildingApartmentLight,
   PiCalendar,
+  PiCalendarXDuotone,
   PiHouseLineLight,
 } from 'react-icons/pi'
 
@@ -33,6 +34,14 @@ const solucoesData: Solucoes[] = [
     href: 'agenda-vistorias/empreendimentos?title=Gerenciar empreendimentos',
     area: 'entregas',
     permission: 'gerenciar-empreendimentos',
+  },
+  {
+    titulo: 'Recusas',
+    descricao: 'Gerencia recusas.',
+    Icon: PiCalendarXDuotone,
+    href: 'agenda-vistorias/recusas?title=Gerenciar recusas',
+    area: 'entregas',
+    permission: 'gerenciar-recusas',
   },
 ]
 
