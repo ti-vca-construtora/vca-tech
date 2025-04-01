@@ -169,7 +169,6 @@ const CadastrarEmpreendimento = () => {
     console.log('segundo:', unitsOf)
 
     for (const unit of unitsOf) {
-      console.log('ENTRADA NO FOR!')
       try {
         const response = await fetch('/api/vistorias/unidades', {
           method: 'POST',
