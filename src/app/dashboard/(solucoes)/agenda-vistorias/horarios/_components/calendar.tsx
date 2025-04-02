@@ -1,14 +1,14 @@
 'use client'
 
 import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from '@/components/ui/context-menu'
-import { format, parseISO } from 'date-fns'
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { addHours, format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale/pt-BR'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 interface Slot {
   id: string
@@ -22,13 +22,9 @@ export function Calendar({
   selectedDevelopment?: string
 }) {
   const [slots, setSlots] = useState<Slot[]>([])
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
 
   const diasPrazo = 3
   const diasDuracao = 4
-
-  console.log(selectedSlot)
-  console.log(selectedDevelopment)
 
   useEffect(() => {
     if (!selectedDevelopment) return
@@ -56,13 +52,15 @@ export function Calendar({
     setSlots(data.data)
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const groupedSlots = (slots ?? []).reduce((acc: any, slot) => {
-    const date = format(parseISO(slot.startAt), 'yyyy-MM-dd')
-    if (!acc[date]) acc[date] = []
-    acc[date].push(slot)
-    return acc
-  }, {})
+  const groupedSlots = useMemo(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (slots ?? []).reduce((acc: any, slot) => {
+      const date = format(parseISO(slot.startAt), 'yyyy-MM-dd')
+      if (!acc[date]) acc[date] = []
+      acc[date].push(slot)
+      return acc
+    }, {})
+  }, [slots])
 
   const getNextDays = () => {
     const days = []
@@ -79,6 +77,50 @@ export function Calendar({
   }
 
   const nextDays = getNextDays()
+
+  const disponibilizarSlot = async (slotId: string) => {
+    const response = await fetch(`/api/vistorias/slots?id=${slotId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        status: 'AVAILABLE',
+      }),
+      // eslint-disable-next-line prettier/prettier
+    })
+
+    if (!response.ok) {
+      console.error('Erro ao disponibilizar slot')
+      return
+    }
+
+    const data = await response.json()
+    loadSlots()
+    console.log(data)
+  }
+
+  const inDisponibilizarSlot = async (slotId: string) => {
+    const response = await fetch(`/api/vistorias/slots?id=${slotId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        status: 'UNAVAILABLE',
+      }),
+      // eslint-disable-next-line prettier/prettier
+    })
+
+    if (!response.ok) {
+      console.error('Erro ao disponibilizar slot')
+      return
+    }
+
+    const data = await response.json()
+    loadSlots()
+    console.log(data)
+  }
 
   return (
     <div className="max-w-screen-sm">
@@ -105,29 +147,81 @@ export function Calendar({
                     {nextDays.map((day) => {
                       const slot = groupedSlots[day]?.[rowIndex]
 
-                      return (
+                      // Verificação inicial para slots undefined
+                      if (!slot) {
+                        return (
+                          <td
+                            key={day + rowIndex}
+                            className="border text-center"
+                          >
+                            <DropdownMenu>
+                              <DropdownMenuTrigger className="w-full h-full flex justify-center items-center py-4 px-3">
+                                —
+                              </DropdownMenuTrigger>
+                            </DropdownMenu>
+                          </td>
+                        )
+                      }
+
+                      // Renderização condicional por status (igual ao seu exemplo)
+                      return slot.status === 'UNAVAILABLE' ? (
                         <td
                           key={day + rowIndex}
-                          className="cursor-pointer border text-center hover:bg-gray-200"
-                          onClick={() => setSelectedSlot(slot?.id)}
+                          className="cursor-pointer border text-center bg-red-100 hover:bg-gray-200"
                         >
-                          <ContextMenu>
-                            <ContextMenuTrigger className="w-full h-full flex justify-center items-center py-4 px-3">
-                              {slot
-                                ? `${format(parseISO(slot.startAt), 'HH:mm')} às ${format(parseISO(slot.endAt), 'HH:mm')}`
-                                : '—'}
-                            </ContextMenuTrigger>
-                            <ContextMenuContent>
-                              <ContextMenuItem className="cursor-pointer">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger className="w-full h-full flex justify-center items-center py-4 px-3 outline-none focus:outline-none">
+                              {`${format(addHours(parseISO(slot.startAt), 3), 'HH:mm')} às ${format(addHours(parseISO(slot.endAt), 3), 'HH:mm')}`}{' '}
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuItem
+                                onClick={() => disponibilizarSlot(slot.id)}
+                                className="cursor-pointer"
+                              >
                                 Disponibilizar
-                              </ContextMenuItem>
-                              <ContextMenuItem className="cursor-pointer">
-                                Indisponibilizar
-                              </ContextMenuItem>
-                            </ContextMenuContent>
-                          </ContextMenu>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </td>
-                      )
+                      ) : slot.status === 'AVAILABLE' ? (
+                        <td
+                          key={day + rowIndex}
+                          className="cursor-pointer border text-center bg-green-100 hover:bg-gray-200"
+                        >
+                          <DropdownMenu>
+                            <DropdownMenuTrigger className="w-full h-full flex justify-center items-center py-4 px-3 outline-none focus:outline-none">
+                              {`${format(addHours(parseISO(slot.startAt), 3), 'HH:mm')} às ${format(addHours(parseISO(slot.endAt), 3), 'HH:mm')}`}{' '}
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuItem
+                                onClick={() => inDisponibilizarSlot(slot.id)}
+                                className="cursor-pointer"
+                              >
+                                Indisponibilizar
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      ) : slot.status === 'BOOKED' ? (
+                        <td
+                          key={day + rowIndex}
+                          className="cursor-pointer border text-center bg-blue-100 hover:bg-gray-200"
+                        >
+                          <DropdownMenu>
+                            <DropdownMenuTrigger className="w-full h-full flex justify-center items-center py-4 px-3">
+                              {`${format(addHours(parseISO(slot.startAt), 3), 'HH:mm')} às ${format(addHours(parseISO(slot.endAt), 3), 'HH:mm')}`}{' '}
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuItem className="cursor-pointer">
+                                Disponibilizar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="cursor-pointer">
+                                Indisponibilizar
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      ) : null
                     })}
                   </tr>
                 ))}
