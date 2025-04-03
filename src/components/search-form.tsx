@@ -77,10 +77,14 @@ export function SearchForm({ onSearchComplete, children }: SearchFormProps) {
       if (data) {
         const parsed = await data.json()
 
-        const cliente = parsed.vca.results[0]
+        const cliente =
+          parsed.vca.results.length > 0
+            ? parsed.vca.results[0]
+            : parsed.vcalotear.results[0]
 
         const idVca =
           parsed.vca.results.length > 0 ? parsed.vca.results[0].id : 0
+
         const idLotear =
           parsed.vcalotear.results.length > 0
             ? parsed.vcalotear.results[0].id
@@ -107,8 +111,6 @@ export function SearchForm({ onSearchComplete, children }: SearchFormProps) {
             origem: item.origem,
           }),
         )
-
-        console.log(filteredContratos)
 
         onSearchComplete({
           cliente: clienteInfo,
