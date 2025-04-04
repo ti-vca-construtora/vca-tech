@@ -147,7 +147,6 @@ export function Calendar({
                     {nextDays.map((day) => {
                       const slot = groupedSlots[day]?.[rowIndex]
 
-                      // Verificação inicial para slots undefined
                       if (!slot) {
                         return (
                           <td
@@ -163,7 +162,6 @@ export function Calendar({
                         )
                       }
 
-                      // Renderização condicional por status (igual ao seu exemplo)
                       return slot.status === 'UNAVAILABLE' ? (
                         <td
                           key={day + rowIndex}

@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useEffect, useState } from 'react'
+import { ToastContainer, toast } from 'react-toastify'
 
 type ValidationType = 'QUALITY' | 'RELATIONSHIP' | 'FINANCIAL'
 
@@ -51,6 +52,23 @@ const DisponibilizarUnidades = () => {
     Record<string, ValidationType[]>
   >({})
   const [isSaving, setIsSaving] = useState(false)
+
+  const toastConfig = {
+    position: 'top-right' as const,
+    autoClose: 3000,
+    hideProgressBar: false,
+    closeOnClick: false,
+    pauseOnHover: true,
+    draggable: true,
+    progress: undefined,
+    theme: 'light',
+  }
+
+  const errorNotifPatch = () =>
+    toast.error('Falha na atualização.', toastConfig)
+
+  const sucessNotifPatch = () =>
+    toast.success('Atualização realizada.', toastConfig)
 
   const getEmpreendimentos = async () => {
     setLoading(true)
@@ -168,6 +186,7 @@ const DisponibilizarUnidades = () => {
         })
 
         if (!response.ok) {
+          errorNotifPatch()
           throw new Error(`Erro ao atualizar unidade ${unitId}`)
         }
       }
@@ -186,6 +205,10 @@ const DisponibilizarUnidades = () => {
     } finally {
       setIsSaving(false)
     }
+    sucessNotifPatch()
+    setTimeout(() => {
+      window.location.reload()
+    }, 3000)
   }
 
   const filteredUnits = units.filter((unit) => {
@@ -278,6 +301,18 @@ const DisponibilizarUnidades = () => {
 
   return (
     <div className="w-full">
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
       <div className="flex">
         <div className="mr-2 w-1/2">
           <h1 className="font-medium ml-1">Selecione o empreendimento:</h1>

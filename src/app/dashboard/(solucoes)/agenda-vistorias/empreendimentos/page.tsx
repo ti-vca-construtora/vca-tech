@@ -31,8 +31,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-
-import { MoreHorizontal } from 'lucide-react'
+import classNames from 'classnames'
+import { LoaderCircle, MoreHorizontal } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
@@ -50,6 +50,7 @@ export default function Empreendimentos() {
       name: '',
       isActive: true,
     })
+  const [isLoading, setIsLoading] = useState(true)
 
   const getEmpreendimentos = async () => {
     const response = await fetch(
@@ -74,7 +75,12 @@ export default function Empreendimentos() {
   }
 
   useEffect(() => {
-    getEmpreendimentos()
+    const componentRender = async () => {
+      await getEmpreendimentos()
+      setIsLoading(false)
+    }
+
+    componentRender()
   }, [])
 
   return (
@@ -97,55 +103,69 @@ export default function Empreendimentos() {
             </div>
           </CardHeader>
           <CardContent>
-            <Table className="p-2 rounded bg-white">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[350px]">Empreendimento</TableHead>
-                  <TableHead className="w-44">Status</TableHead>
-                  <TableHead className="w-16 text-center"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {empreendimentos.map((index) => (
-                  <TableRow key={index.id} className="bg-neutral-50">
-                    <TableCell className="flex flex-col w-fit">
-                      <span className="font-semibold">{index.name}</span>
-                    </TableCell>
-                    <TableCell className="text-start">
-                      <span className="text-sm">
-                        {index.isActive ? 'Ativo' : 'Inativo'}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger>
-                          <MoreHorizontal />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuLabel>Opções</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <Link
-                            href={`/dashboard/agenda-vistorias/empreendimentos/${index.id}`}
-                          >
-                            <DropdownMenuItem className="cursor-pointer">
-                              Editar
-                            </DropdownMenuItem>
-                          </Link>
-                          <DialogTrigger className="flex w-full">
-                            <DropdownMenuItem
-                              onClick={() => setSelectedEmpreendimento(index)}
-                              className="cursor-pointer flex w-full"
-                            >
-                              Unidades
-                            </DropdownMenuItem>
-                          </DialogTrigger>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+            {isLoading ? (
+              <Card>
+                <div className="flex w-full h-full justify-center items-center">
+                  <LoaderCircle className="flex animate-spin duration-700 self-center text-neutral-500" />
+                </div>
+              </Card>
+            ) : (
+              <Table className="p-2 rounded bg-white">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[350px]">Empreendimento</TableHead>
+                    <TableHead className="w-44">Status</TableHead>
+                    <TableHead className="w-16 text-center"></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {empreendimentos.map((index, i) => (
+                    <TableRow
+                      key={index.id}
+                      className={classNames(
+                        // eslint-disable-next-line prettier/prettier
+                        i % 2 === 0 ? 'bg-white' : 'bg-neutral-100'
+                      )}
+                    >
+                      <TableCell className="flex flex-col w-fit">
+                        <span className="font-semibold flex">{index.name}</span>
+                      </TableCell>
+                      <TableCell className="text-start">
+                        <span className="text-sm">
+                          {index.isActive ? 'Ativo' : 'Inativo'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger>
+                            <MoreHorizontal />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuLabel>Opções</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <Link
+                              href={`/dashboard/agenda-vistorias/empreendimentos/${index.id}`}
+                            >
+                              <DropdownMenuItem className="cursor-pointer">
+                                Editar
+                              </DropdownMenuItem>
+                            </Link>
+                            <DialogTrigger className="flex w-full">
+                              <DropdownMenuItem
+                                onClick={() => setSelectedEmpreendimento(index)}
+                                className="cursor-pointer flex w-full"
+                              >
+                                Unidades
+                              </DropdownMenuItem>
+                            </DialogTrigger>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
         <DialogContent>

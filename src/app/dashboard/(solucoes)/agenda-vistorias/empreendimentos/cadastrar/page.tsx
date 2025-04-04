@@ -5,6 +5,7 @@
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
+import { Progress } from '@/components/ui/progress'
 import {
   Select,
   SelectContent,
@@ -14,6 +15,7 @@ import {
 } from '@/components/ui/select'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { ToastContainer, toast } from 'react-toastify'
 
 const optionsVca = {
   method: 'GET',
@@ -39,10 +41,48 @@ const CadastrarEmpreendimento = () => {
     { id: number; nome: string }[]
   >([])
   const [isActive, setIsActive] = useState<string | boolean>('')
+  const [submiting, setSubmiting] = useState(false)
+  const [submitingProgress, setSubmitingProgress] = useState(0)
+
+  const sucessNotif = () =>
+    toast.success('Empreendimento cadastrado.', {
+      position: 'top-right',
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: 'light',
+    })
+
+  const warnNotif = () =>
+    toast.warn('Preencha os campos!', {
+      position: 'top-right',
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: 'light',
+    })
+
+  const errorNotif = () =>
+    toast.error('Falha no cadastro.', {
+      position: 'top-right',
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: 'light',
+    })
 
   const buscaCv = async () => {
     if (empreendimentoId === 0 || isActive === '') {
-      window.alert('Campos obrigatórios não preenchidos!')
+      warnNotif()
       return
     }
 
@@ -127,6 +167,9 @@ const CadastrarEmpreendimento = () => {
     },
     unitsOf: { nome: string; id: string }[]
   ) => {
+    setSubmiting(true)
+    setSubmitingProgress(0)
+
     const isActiveBoolean = isActive === 'true'
 
     const response = await fetch('/api/vistorias/empreendimentos', {
@@ -142,20 +185,24 @@ const CadastrarEmpreendimento = () => {
     })
     if (!response.ok) {
       console.error('Erro ao criar o empreendimento')
+      errorNotif()
       return
     }
     const data = await response.json()
     const apiId: string = data.data.id
     await createUnits(apiId, unitsOf)
     console.log('Empreendimento criado:', data)
+    setSubmiting(false)
+    sucessNotif()
+    setTimeout(() => {
+      window.location.href = '/dashboard/agenda-vistorias/empreendimentos'
+    }, 3000)
   }
 
   const createUnits = async (
     apiId: string,
     unitsOf: { nome: string; id: string }[]
   ) => {
-    console.log('FUNÇÃO DE CRIAR UNIDADES CHAMADA!')
-
     if (!apiId) {
       console.error('apiId não foi fornecido!')
       return
@@ -166,9 +213,10 @@ const CadastrarEmpreendimento = () => {
       return
     }
 
-    console.log('segundo:', unitsOf)
-
     for (const unit of unitsOf) {
+      const progressQuantity = 100 / unitsOf.length
+      setSubmitingProgress((prev) => prev + progressQuantity)
+
       try {
         const response = await fetch('/api/vistorias/unidades', {
           method: 'POST',
@@ -232,6 +280,18 @@ const CadastrarEmpreendimento = () => {
 
   return (
     <section className="flex flex-col items-start gap-6 w-full h-full p-6">
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
       <Card className="size-full p-8">
         <div className="grid w-full items-center gap-1.5">
           <Label htmlFor="empreendimento">Empreendimento</Label>
@@ -289,6 +349,18 @@ const CadastrarEmpreendimento = () => {
             Salvar
           </Button>
         </div>
+
+        {submiting ? (
+          <div className="mt-20">
+            <h2 className="text-lg font-semibold">Progresso</h2>
+            <p className="text-sm text-muted-foreground">
+              Cadastrando empreendimento e unidades ...
+            </p>
+            <Progress value={submitingProgress} />
+          </div>
+        ) : (
+          ''
+        )}
       </Card>
     </section>
   )

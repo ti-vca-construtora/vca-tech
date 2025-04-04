@@ -1,5 +1,6 @@
 'use client'
 
+import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -8,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { LoaderCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Calendar } from './_components/calendar'
 import { DisponibilizarHorarios } from './_components/disponibilizar-horarios'
@@ -23,6 +25,7 @@ type Empreendimento = {
 const Horarios = () => {
   const [empreendimentos, setEmpreendimentos] = useState<Empreendimento[]>([])
   const [selectedDevelopment, setSelectedDevelopment] = useState<string>('')
+  const [isLoading, setIsLoading] = useState(true)
 
   const getEmpreendimentos = async () => {
     const response = await fetch(
@@ -49,6 +52,7 @@ const Horarios = () => {
     const result = await vrfCriaSlot()
     if (!result) {
       CriarSlotsBulk()
+      setIsLoading(false)
     }
   }
 
@@ -59,35 +63,45 @@ const Horarios = () => {
 
   return (
     <section className="flex p-6 flex-col">
-      <div className="grid w-full items-center gap-1.5 mb-4">
-        <Label htmlFor="empreendimento">Empreendimento</Label>
-        <Select
-          value={selectedDevelopment}
-          onValueChange={(value) => setSelectedDevelopment(value)}
-        >
-          <SelectTrigger
-            id="empreendimento"
-            className="w-full cursor-pointer bg-white"
-          >
-            <SelectValue placeholder="SELECIONE UM EMPREENDIMENTO" />
-          </SelectTrigger>
-          <SelectContent className="cursor-pointer">
-            {empreendimentos.map((empreendimento) => (
-              <SelectItem
-                key={empreendimento.id}
-                className="cursor-pointer"
-                value={empreendimento.id}
+      {isLoading ? (
+        <Card>
+          <div className="flex w-full h-full justify-center items-center">
+            <LoaderCircle className="flex animate-spin duration-700 self-center text-neutral-500" />
+          </div>
+        </Card>
+      ) : (
+        <>
+          <div className="grid w-full items-center gap-1.5 mb-4">
+            <Label htmlFor="empreendimento">Empreendimento</Label>
+            <Select
+              value={selectedDevelopment}
+              onValueChange={(value) => setSelectedDevelopment(value)}
+            >
+              <SelectTrigger
+                id="empreendimento"
+                className="w-full cursor-pointer bg-white"
               >
-                {empreendimento.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="flex">
-        <DisponibilizarHorarios />
-        <Calendar selectedDevelopment={selectedDevelopment} />
-      </div>
+                <SelectValue placeholder="SELECIONE UM EMPREENDIMENTO" />
+              </SelectTrigger>
+              <SelectContent className="cursor-pointer">
+                {empreendimentos.map((empreendimento) => (
+                  <SelectItem
+                    key={empreendimento.id}
+                    className="cursor-pointer"
+                    value={empreendimento.id}
+                  >
+                    {empreendimento.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex">
+            <DisponibilizarHorarios />
+            <Calendar selectedDevelopment={selectedDevelopment} />
+          </div>
+        </>
+      )}
     </section>
   )
 }
