@@ -25,7 +25,7 @@ type Empreendimento = {
 const Horarios = () => {
   const [empreendimentos, setEmpreendimentos] = useState<Empreendimento[]>([])
   const [selectedDevelopment, setSelectedDevelopment] = useState<string>('')
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
 
   const getEmpreendimentos = async () => {
     const response = await fetch(

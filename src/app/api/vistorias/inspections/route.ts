@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_TECH_API_URL
-const API_ENDPOINT = 'inspection-slots'
+const API_ENDPOINT = 'inspections'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const page = searchParams.get('page')
   const pageSize = searchParams.get('pageSize')
   const id = searchParams.get('id')
-  const isEnabled = searchParams.get('isEnabled')
-  const fromDate = searchParams.get('fromDate')
-  const developmentId = searchParams.get('developmentId')
+  const unitId = searchParams.get('unitId')
+  const customerCpf = searchParams.get('customerCpf')
+  const status = searchParams.get('status')
 
   let getUrl = `${API_BASE_URL}/${API_ENDPOINT}?page=${page}&pageSize=${pageSize}`
 
@@ -18,16 +18,16 @@ export async function GET(req: NextRequest) {
     getUrl = `${API_BASE_URL}/${API_ENDPOINT}/${id}`
   }
 
-  if (isEnabled) {
-    getUrl = `${API_BASE_URL}/${API_ENDPOINT}?page=${page}&pageSize=${pageSize}&isEnabled=${isEnabled}`
+  if (unitId) {
+    getUrl = `${API_BASE_URL}/${API_ENDPOINT}?unitId=${unitId}`
   }
 
-  if (fromDate) {
-    getUrl = `${API_BASE_URL}/${API_ENDPOINT}?fromDate=${fromDate}`
+  if (customerCpf) {
+    getUrl = `${API_BASE_URL}/${API_ENDPOINT}?page=1&pageSize=500&customerCpf=${customerCpf}`
   }
 
-  if (fromDate && developmentId) {
-    getUrl = `${API_BASE_URL}/${API_ENDPOINT}?fromDate=${fromDate}&developmentId=${developmentId}&page=1&pageSize=2000`
+  if (status) {
+    getUrl = `${API_BASE_URL}/${API_ENDPOINT}?status=${status}`
   }
 
   const res = await fetch(getUrl, {
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const body = await req.json()
 
-  const res = await fetch(`${API_BASE_URL}/${API_ENDPOINT}/bulk`, {
+  const res = await fetch(`${API_BASE_URL}/${API_ENDPOINT}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
