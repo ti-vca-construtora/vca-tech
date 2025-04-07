@@ -3,6 +3,7 @@
 import {
   PiBuildingApartmentLight,
   PiCalendar,
+  PiCalendarCheckDuotone,
   PiCalendarXDuotone,
   PiHouseLineLight,
 } from 'react-icons/pi'
@@ -10,6 +11,14 @@ import {
 import { Solucoes, SolucoesCard } from '@/components/solucoes-card'
 
 const solucoesData: Solucoes[] = [
+  {
+    titulo: 'Agendamentos',
+    descricao: 'Visualizar agendamentos realizados.',
+    Icon: PiCalendarCheckDuotone,
+    href: 'agenda-vistorias/agendamentos?title=Agendamentos',
+    area: 'entregas',
+    permission: 'agendamentos',
+  },
   {
     titulo: 'Disponibilizar unidades',
     descricao: 'Disponibiliza a unidade para a vistoria.',

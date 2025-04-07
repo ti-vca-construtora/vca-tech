@@ -74,7 +74,7 @@ const DisponibilizarUnidades = () => {
     setLoading(true)
     try {
       const response = await fetch(
-        '/api/vistorias/empreendimentos?page=1&pageSize=200&isActive=1',
+        '/api/vistorias/empreendimentos?page=1&pageSize=500&isActive=1',
         {
           method: 'GET',
           headers: {

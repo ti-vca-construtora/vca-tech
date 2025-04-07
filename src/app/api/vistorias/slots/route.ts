@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
   const id = searchParams.get('id')
   const isEnabled = searchParams.get('isEnabled')
   const fromDate = searchParams.get('fromDate')
+  const toDate = searchParams.get('toDate')
   const developmentId = searchParams.get('developmentId')
 
   let getUrl = `${API_BASE_URL}/${API_ENDPOINT}?page=${page}&pageSize=${pageSize}`
@@ -24,6 +25,10 @@ export async function GET(req: NextRequest) {
 
   if (fromDate) {
     getUrl = `${API_BASE_URL}/${API_ENDPOINT}?fromDate=${fromDate}`
+  }
+
+  if (fromDate && toDate) {
+    getUrl = `${API_BASE_URL}/${API_ENDPOINT}?fromDate=${fromDate}&toDate=${toDate}&page=1&pageSize=2000`
   }
 
   if (fromDate && developmentId) {
