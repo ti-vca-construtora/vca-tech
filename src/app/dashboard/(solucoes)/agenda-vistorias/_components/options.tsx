@@ -12,20 +12,12 @@ import { Solucoes, SolucoesCard } from '@/components/solucoes-card'
 
 const solucoesData: Solucoes[] = [
   {
-    titulo: 'Agendamentos',
-    descricao: 'Visualizar agendamentos realizados.',
-    Icon: PiCalendarCheckDuotone,
-    href: 'agenda-vistorias/agendamentos?title=Agendamentos',
+    titulo: 'Empreendimentos',
+    descricao: 'Gerencia empreendimentos.',
+    Icon: PiBuildingApartmentLight,
+    href: 'agenda-vistorias/empreendimentos?title=Gerenciar empreendimentos',
     area: 'entregas',
-    permission: 'agendamentos',
-  },
-  {
-    titulo: 'Disponibilizar unidades',
-    descricao: 'Disponibiliza a unidade para a vistoria.',
-    Icon: PiHouseLineLight,
-    href: 'agenda-vistorias/unidades?title=Disponibilizar unidades',
-    area: 'entregas',
-    permission: 'disponibilizar-unidades',
+    permission: 'gerenciar-empreendimentos',
   },
   {
     titulo: 'Disponibilizar horários',
@@ -37,12 +29,20 @@ const solucoesData: Solucoes[] = [
     permission: 'disponibilizar-horarios',
   },
   {
-    titulo: 'Empreendimentos',
-    descricao: 'Gerencia empreendimentos.',
-    Icon: PiBuildingApartmentLight,
-    href: 'agenda-vistorias/empreendimentos?title=Gerenciar empreendimentos',
+    titulo: 'Disponibilizar unidades',
+    descricao: 'Disponibiliza a unidade para a vistoria.',
+    Icon: PiHouseLineLight,
+    href: 'agenda-vistorias/unidades?title=Disponibilizar unidades',
     area: 'entregas',
-    permission: 'gerenciar-empreendimentos',
+    permission: 'disponibilizar-unidades',
+  },
+  {
+    titulo: 'Agendamentos',
+    descricao: 'Visualizar agendamentos realizados.',
+    Icon: PiCalendarCheckDuotone,
+    href: 'agenda-vistorias/agendamentos?title=Agendamentos',
+    area: 'entregas',
+    permission: 'agendamentos',
   },
   {
     titulo: 'Recusas',

@@ -37,6 +37,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 type Empreendimento = {
+  units: []
   id: string
   name: string
   isActive: boolean
@@ -49,6 +50,7 @@ export default function Empreendimentos() {
       id: '',
       name: '',
       isActive: true,
+      units: [],
     })
   const [isLoading, setIsLoading] = useState(true)
 
@@ -170,10 +172,9 @@ export default function Empreendimentos() {
         </Card>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Configurar Unidades</DialogTitle>
+            <DialogTitle>{selectedEmpreendimento.name}</DialogTitle>
             <DialogDescription>
-              {selectedEmpreendimento.id}
-              {selectedEmpreendimento.name}
+              {`Unidades cadastradas: ${selectedEmpreendimento.units.length}`}
             </DialogDescription>
           </DialogHeader>
         </DialogContent>

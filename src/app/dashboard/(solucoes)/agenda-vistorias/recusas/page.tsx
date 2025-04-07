@@ -230,7 +230,6 @@ const UnidadesComReagendamento = () => {
     }
   }
 
-  // Filtro principal: unidades com FINANCIAL + QUALITY, sem RELATIONSHIP e com RESCHEDULED
   const baseFilteredUnits = units.filter((unit) => {
     const hasFinancial = unit.validations.includes('FINANCIAL')
     const hasQuality = unit.validations.includes('QUALITY')
@@ -248,7 +247,6 @@ const UnidadesComReagendamento = () => {
     return hasRescheduled
   })
 
-  // Aplica filtros adicionais (se ativados)
   const filteredUnits = baseFilteredUnits.filter((unit) => {
     const unitValidations = modifiedUnits[unit.id] || unit.validations
 
