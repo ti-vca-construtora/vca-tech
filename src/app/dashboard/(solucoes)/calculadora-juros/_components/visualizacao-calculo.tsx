@@ -41,6 +41,7 @@ import { Pdf } from './pdf'
 type VisualizaoCalculoProps = {
   currentDebit: CurrentDebitBalanceApiResponse
   incomeByBills: IncomeByBillsApiResponse
+  originalIncomeByBills: IncomeByBillsApiResponse
   contrato: Contrato
   cliente: Cliente
   dataAPagar: string
@@ -58,6 +59,7 @@ export type CalculoPorParcela = {
 export function VisualizaoCalculo({
   currentDebit,
   incomeByBills,
+  originalIncomeByBills,
   contrato,
   cliente,
   dataAPagar,
@@ -134,23 +136,23 @@ export function VisualizaoCalculo({
 
   const parcelaDoMesDoPagamento = getParcelaDoMesDoPagamento()
 
-  const hasFP = incomeByBills.data.some(
+  const hasFP = originalIncomeByBills.data.some(
     (item) =>
       item.paymentTerm.id.trim() === 'FP' &&
       Number(item.correctedBalanceAmount) > 0,
   )
 
-  let hasPP = incomeByBills.data.some(
-    (item) => item.paymentTerm.id.trim() === 'PP',
+  let hasPP = originalIncomeByBills.data.some(
+    (item) =>
+      item.paymentTerm.id.trim() === 'PP' &&
+      Number(item.correctedBalanceAmount) > 0,
   )
 
   if (hasPP) {
-    let hasM = incomeByBills.data.some(
-      (item) => item.paymentTerm.id.trim().match(/^M\d+$/)?.input,
-    )
-
-    hasM = incomeByBills.data.some(
-      (item) => item.paymentTerm.id.trim().match(/^\d{2,}$/)?.input,
+    const hasM = originalIncomeByBills.data.some(
+      (item) =>
+        item.paymentTerm.id.trim().match(/^M\d+$/)?.input ||
+        item.paymentTerm.id.trim().match(/^\d{2,}$/)?.input,
     )
 
     if (hasM) {
@@ -243,7 +245,7 @@ export function VisualizaoCalculo({
           dataAPagar: new Date().toISOString().split('T')[0],
           dataVencimento: item.dueDate,
           taxa: taxaAnual,
-          indexador: item.paymentTerm.id,
+          indexador: item.indexerName,
         }
       })
 
@@ -369,8 +371,6 @@ export function VisualizaoCalculo({
       atualizaCurrentDebit()
     }
   }, [incomeByBills.data, contrato, currentDebit.data])
-
-  console.log(currentDebit)
 
   return (
     <div className="flex flex-col gap-4 justify-between w-full items-center h-full text-xs">

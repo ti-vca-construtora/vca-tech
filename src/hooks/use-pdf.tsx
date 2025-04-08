@@ -10,10 +10,23 @@ async function generatePdfFromComponent<T>(
     React.createElement(Component, props as React.Attributes & T),
   )
 
-  const response = await fetch('/api/pdf', {
+  const response = await fetch(`/api/pdf`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ htmlContent, fileName }),
+    body: JSON.stringify({
+      htmlContent: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+         <link href="https://cdn.tailwindcss.com/3.4.1" rel="stylesheet">
+        </head>
+        <body>
+          ${htmlContent}
+        </body>
+      </html>
+    `,
+      fileName,
+    }),
   })
 
   if (!response.ok) {

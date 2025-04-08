@@ -163,7 +163,7 @@ export function Pdf({
         </CardHeader>
         <CardContent>
           {incomeByBills.length > 0 && (
-            <Card className="w-full ">
+            <Card className="w-full">
               <CardHeader>
                 <CardTitle className="text-lg">Parcelas Futuras</CardTitle>
                 <CardDescription className="text-xs">
