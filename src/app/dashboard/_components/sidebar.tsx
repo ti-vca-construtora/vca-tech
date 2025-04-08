@@ -30,6 +30,10 @@ const data = {
           title: 'Relacionamento',
           url: '/dashboard/setores/relacionamento?title=Painel de Soluções - Relacionamento',
         },
+        {
+          title: 'Entregas',
+          url: '/dashboard/setores/entregas?title=Painel de Soluções - Entregas',
+        },
       ],
     },
     {
