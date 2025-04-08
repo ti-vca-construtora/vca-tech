@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "apis": [
+    {
+      "identifier": "cvcrm",
+      "source": "@cvcrm/v1.0#18bbo1dm6z1fx85",
+      "integrity": "sha512-IeVNUAajL6v65G17Ntz+wHizscHuTYerNwbEs6gPIVi3xxYdRef89R4YhQUnnTDbqGMLix88qYHaM5RahpK7fA==",
+      "installerVersion": "6.1.3"
+    }
+  ]
+}
