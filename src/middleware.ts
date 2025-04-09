@@ -18,7 +18,7 @@ export function middleware(req: NextRequest) {
           return NextResponse.redirect(new URL('/dashboard/setores', req.url))
         }
       } catch (error) {
-        console.error('Erro ao analisar o payload:', error)
+        console.error('Erro ao analisar o payload: ', error)
       }
     }
 
