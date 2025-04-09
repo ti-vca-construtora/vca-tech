@@ -4,7 +4,7 @@ import RetornaEmpAtivos from './fnc-empativos'
 
 const CriarSlotsBulk = () => {
   const diasPrazo = 3 - 3
-  const diasDuracao = 10
+  const diasDuracao = 60
   const horarios = [
     { inicio: '08:00', fim: '09:30' },
     { inicio: '10:00', fim: '11:30' },

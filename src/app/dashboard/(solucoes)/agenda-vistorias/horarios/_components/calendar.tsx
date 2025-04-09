@@ -33,7 +33,7 @@ export function Calendar({
   const [slots, setSlots] = useState<Slot[]>([])
 
   const diasPrazo = 3 - 3
-  const diasDuracao = 10
+  const diasDuracao = 60
 
   useEffect(() => {
     if (!selectedDevelopment) return
@@ -203,7 +203,7 @@ export function Calendar({
                         return slot.status === 'UNAVAILABLE' ? (
                           <td
                             key={day + rowIndex}
-                            className="cursor-pointer border text-center bg-red-100 hover:bg-gray-200"
+                            className="cursor-pointer border text-center bg-red-200 hover:bg-gray-200"
                           >
                             <DropdownMenu>
                               <DropdownMenuTrigger className="w-full h-full flex justify-center items-center py-4 px-3 outline-none focus:outline-none">
@@ -222,7 +222,7 @@ export function Calendar({
                         ) : slot.status === 'AVAILABLE' ? (
                           <td
                             key={day + rowIndex}
-                            className="cursor-pointer border text-center bg-green-100 hover:bg-gray-200"
+                            className="cursor-pointer border text-center bg-green-200 hover:bg-gray-200"
                           >
                             <DropdownMenu>
                               <DropdownMenuTrigger className="w-full h-full flex justify-center items-center py-4 px-3 outline-none focus:outline-none">
@@ -241,7 +241,7 @@ export function Calendar({
                         ) : slot.status === 'BOOKED' ? (
                           <td
                             key={day + rowIndex}
-                            className="cursor-pointer border text-center bg-blue-100 hover:bg-gray-200"
+                            className="cursor-pointer border text-center bg-blue-200 hover:bg-gray-200"
                             // onClick={() => getInspectionsBySlot(slot.startAt, slot.endAt)}
                           >
                             <DialogTrigger className="w-full h-full flex justify-center items-center py-4 px-3">
@@ -251,8 +251,9 @@ export function Calendar({
                               <DialogHeader>
                                 <DialogTitle>Vistorias agendadas:</DialogTitle>
                                 <DialogDescription>
-                                  {'selectedEmpreendimento.id'}
-                                  {'selectedEmpreendimento.name'}
+                                  <p>Coming soon ...</p>
+                                  {/* {'selectedEmpreendimento.id'}
+                                  {'selectedEmpreendimento.name'} */}
                                 </DialogDescription>
                               </DialogHeader>
                             </DialogContent>
