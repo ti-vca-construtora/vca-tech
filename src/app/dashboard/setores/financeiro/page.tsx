@@ -1,3 +1,5 @@
+'use client'
+
 import React from 'react'
 import { CiCalculator1 } from 'react-icons/ci'
 import { PiPixLogo } from 'react-icons/pi'
@@ -10,12 +12,16 @@ const solucoesData: Solucoes[] = [
     descricao: 'Efetua o cálculo de juros para antecipação de parcelas.',
     Icon: CiCalculator1,
     href: 'calculadora-juros?title=AVP - Calculadora de Juros de Parcelas',
+    area: 'financeiro',
+    permission: 'avp',
   },
   {
     titulo: 'Gerador de Pix',
     descricao: 'Gera QR Codes individuais ou em massa identificáveis.',
     Icon: PiPixLogo,
     href: 'gerador-pix?title=Gerador de Pix',
+    area: 'financeiro',
+    permission: 'gerador-pix',
   },
   // {
   //   titulo: 'Agenda de Vistorias',
@@ -35,6 +41,8 @@ const Financeiro = () => {
           Icon={item.Icon}
           key={index}
           href={item.href}
+          area={item.area}
+          permission={item.permission}
         />
       ))}
     </div>

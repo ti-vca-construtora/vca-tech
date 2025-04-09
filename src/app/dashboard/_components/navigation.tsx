@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import classNames from 'classnames'
 import { Loader2 } from 'lucide-react'
-import { formatarRota } from '@/app/util'
+import { formatarRota } from '@/util'
 
 export function Navigation() {
   const [formattedPathname, setFormattedPathname] = useState([''])

@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 const BASIC_HASH = process.env.NEXT_PUBLIC_HASH_BASIC
+const LOTEAR_BASIC_HASH = process.env.NEXT_PUBLIC_HASH_BASIC_LOTEAR
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const customerId = searchParams.get('customerId')
     const contractNumber = searchParams.get('contractNumber')
+    const origem = searchParams.get('origem')
 
     if (!customerId) {
       return NextResponse.json(
@@ -23,12 +25,19 @@ export async function GET(req: NextRequest) {
       )
     }
 
+    if (!origem) {
+      return NextResponse.json(
+        { error: 'origem não fornecido' },
+        { status: 400 },
+      )
+    }
+
     const response = await fetch(
-      `${API_URL}vca/public/api/v1/accounts-receivable/receivable-bills?customerId=${customerId}`,
+      `${API_URL}${origem}/public/api/v1/accounts-receivable/receivable-bills?customerId=${customerId}`,
       {
         method: 'GET',
         headers: {
-          Authorization: `Basic ${BASIC_HASH}`,
+          Authorization: `Basic ${origem === 'vca' ? BASIC_HASH : LOTEAR_BASIC_HASH}`,
           'Content-Type': 'application/json',
         },
       },

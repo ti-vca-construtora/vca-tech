@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 const BASIC_HASH = process.env.NEXT_PUBLIC_HASH_BASIC
+const LOTEAR_BASIC_HASH = process.env.NEXT_PUBLIC_HASH_BASIC_LOTEAR
 
 type PaymentTerm = {
   id: string
@@ -128,6 +129,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const billId = searchParams.get('billId')
+    const origem = searchParams.get('origem')
 
     if (!billId) {
       return NextResponse.json(
@@ -136,15 +138,22 @@ export async function GET(req: NextRequest) {
       )
     }
 
+    if (!origem) {
+      return NextResponse.json(
+        { error: 'origem não fornecido' },
+        { status: 400 },
+      )
+    }
+
     const today = new Date()
     const formattedDate = today.toISOString().split('T')[0]
 
     const response = await fetch(
-      `${API_URL}vca/public/api/bulk-data/v1/income/by-bills?billsIds=${billId}&correctionDate=${formattedDate}`,
+      `${API_URL}${origem}/public/api/bulk-data/v1/income/by-bills?billsIds=${billId}&correctionDate=${formattedDate}`,
       {
         method: 'GET',
         headers: {
-          Authorization: `Basic ${BASIC_HASH}`,
+          Authorization: `Basic ${origem === 'vca' ? BASIC_HASH : LOTEAR_BASIC_HASH}`,
           'Content-Type': 'application/json',
         },
       },

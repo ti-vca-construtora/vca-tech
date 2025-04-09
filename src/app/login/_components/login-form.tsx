@@ -3,11 +3,8 @@
 import * as z from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useRouter } from 'next/navigation'
 
 import Link from 'next/link'
-
-import Cookies from 'js-cookie'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -20,22 +17,27 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { usuarios } from '@/data/usuarios'
 import LogoVca from '../../../../public/assets/logo-vca.png'
 import LogoVcaTech from '../../../../public/assets/logo-vca-tech.png'
 import Image from 'next/image'
 
+import ReCAPTCHA from 'react-google-recaptcha'
+import { useRouter } from 'next/navigation'
+
+import { useUser } from '@/hooks/use-user'
+
+const NEXT_PUBLIC_GOOGLE_SITE_KEY =
+  process.env.NEXT_PUBLIC_GOOGLE_SITE_KEY || ''
+
 const formSchema = z.object({
-  user: z.string().min(1, 'Utilize um nome de usuário válido!'),
+  email: z.string().email('Informe um e-mail válido!'),
   senha: z.string().min(1, 'Utilize uma senha válida!'),
+  recaptcha: z.boolean().refine((captcha) => captcha === true, {
+    message: 'Validação reCAPTCHA necessária. Tente novamente.',
+  }),
 })
 
 type FormType = z.infer<typeof formSchema>
-
-type UserPayload = {
-  user: string
-  token: string
-}
 
 export function LoginForm() {
   const {
@@ -43,28 +45,31 @@ export function LoginForm() {
     formState: { errors },
     setError,
     handleSubmit,
+    setValue,
   } = useForm<FormType>({
     resolver: zodResolver(formSchema),
   })
+  const { login } = useUser()
   const router = useRouter()
 
-  const salvaAutorizacao = ({ user, token }: UserPayload): void => {
-    Cookies.set('vca-tech-authorize', JSON.stringify({ user, token }), {
-      expires: 7,
-    })
-  }
+  const handleLogin = async (data: FormType) => {
+    try {
+      const isLogged = await login(data.email, data.senha)
 
-  const handleLogin = (data: FormType) => {
-    const user = usuarios.find((user) => user.user === data.user)
+      if (isLogged) {
+        router.refresh()
+        router.push('/dashboard')
+        return
+      }
 
-    if (user && user.senha === data.senha) {
-      salvaAutorizacao({ user: user.user, token: user.token })
-      router.push('/dashboard')
-
-      return
+      setError('senha', {
+        message: 'Credenciais inválidas',
+      })
+    } catch (error) {
+      setError('senha', {
+        message: error instanceof Error ? error.message : 'Erro inesperado',
+      })
     }
-
-    setError('senha', { message: 'Erro nas credenciais' })
   }
 
   return (
@@ -85,11 +90,15 @@ export function LoginForm() {
         </div>
         <form onSubmit={handleSubmit(handleLogin)} className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="user">Usuário</Label>
-            <Input {...register('user')} placeholder="Usuário" required />
-            {errors.user && (
+            <Label htmlFor="email">E-mail</Label>
+            <Input
+              {...register('email')}
+              placeholder="email@vcaconstrutora.com.br"
+              required
+            />
+            {errors.email && (
               <span className="text-xs text-red-500">
-                {errors.user.message}
+                {errors.email.message}
               </span>
             )}
           </div>
@@ -109,6 +118,22 @@ export function LoginForm() {
             {errors.senha && (
               <span className="text-xs text-red-500">
                 {errors.senha.message}
+              </span>
+            )}
+          </div>
+          <div className="flex flex-col gap-2 items-center justify-center">
+            <ReCAPTCHA
+              onChange={() =>
+                setValue('recaptcha', true, { shouldValidate: true })
+              }
+              onExpired={() =>
+                setValue('recaptcha', false, { shouldValidate: true })
+              }
+              sitekey={NEXT_PUBLIC_GOOGLE_SITE_KEY}
+            />
+            {errors.recaptcha?.message && (
+              <span className="text-xs text-red-500">
+                {errors.recaptcha.message}
               </span>
             )}
           </div>

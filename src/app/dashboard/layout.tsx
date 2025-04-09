@@ -1,15 +1,13 @@
 import { Dashboard } from './_components/dashboard'
 
-export default function AppLayout({
+export default function DashboardLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body className={`antialiased flex`}>
-        <Dashboard>{children}</Dashboard>
-      </body>
-    </html>
+    <div>
+      <Dashboard>{children}</Dashboard>
+    </div>
   )
 }
