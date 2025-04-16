@@ -119,8 +119,9 @@ export function VisualizaoCalculo({
             (inst) =>
               inst.dueDate &&
               isSameMonthYear(inst.dueDate, pagarDate) &&
-              inst.conditionType.includes('MENSAL') &&
-              inst.conditionType.includes('ANO'),
+              ((inst.conditionType.toUpperCase().includes('MENSAL') &&
+                inst.conditionType.toUpperCase().includes('ANO')) ||
+                inst.conditionType.toUpperCase().includes('MENSAL HABITAR')),
           )
 
         if (found) {
