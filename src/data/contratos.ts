@@ -2986,9 +2986,9 @@ export const contratos: Contrato[] = [
     unidade: 'B10 - 02',
     empreendimento: 'DONA OLÍVIA RESIDENCIAL BOULEVARD - INCORPORAÇÃO',
     responsavel: 'JEAN',
-    taxaReferencia: 0,
-    taxaAdm: 0,
-    taxaTotal: 0,
+    taxaReferencia: 0.1095,
+    taxaAdm: 0.004,
+    taxaTotal: 0.1135,
   },
   {
     cliente: 'MARIA JOSE SANTOS PIMENTEL',
