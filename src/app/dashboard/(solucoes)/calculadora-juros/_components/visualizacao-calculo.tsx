@@ -82,9 +82,25 @@ export function VisualizaoCalculo({
     'Morar Bem - PE',
   ]
 
+  const checkOrder = [
+    currentDebit.data[0].payableInstallments,
+    currentDebit.data[0].paidInstallments,
+    currentDebit.data[0].dueInstallments,
+  ]
+
   const getParcelaDoMesDoPagamento = () => {
     const isSameMonthYear = (dueDate: string, targetDate: Date): boolean => {
       const due = new Date(`${dueDate}T04:00:00Z`)
+
+      // console.log('Data de pagamento na função: ', targetDate)
+      // console.log('Data de cobrança após formatação: ', due)
+
+      // console.log('Mês da cobrança e ano: ', due.getMonth(), due.getFullYear())
+      // console.log(
+      //   'Mês de pagamento e ano: ',
+      //   targetDate.getMonth(),
+      //   targetDate.getFullYear(),
+      // )
 
       return (
         due.getMonth() === targetDate.getMonth() &&
@@ -92,15 +108,9 @@ export function VisualizaoCalculo({
       )
     }
 
-    const pagarDate = new Date(
-      `${new Date().toISOString().split('T')[0]}T04:00:00Z`,
-    )
-
-    const checkOrder = [
-      currentDebit.data[0].payableInstallments,
-      currentDebit.data[0].paidInstallments,
-      currentDebit.data[0].dueInstallments,
-    ]
+    // const pagarDate = new Date(
+    //   `${new Date().toISOString().split('T')[0]}T04:00:00Z`,
+    // )
 
     for (const installments of checkOrder) {
       if (installments && installments.length > 0) {
@@ -118,7 +128,10 @@ export function VisualizaoCalculo({
           .find(
             (inst) =>
               inst.dueDate &&
-              isSameMonthYear(inst.dueDate, pagarDate) &&
+              isSameMonthYear(
+                inst.dueDate,
+                new Date(`${dataAPagar}T04:00:00Z`),
+              ) &&
               ((inst.conditionType.toUpperCase().includes('MENSAL') &&
                 inst.conditionType.toUpperCase().includes('ANO')) ||
                 inst.conditionType.toUpperCase().includes('MENSAL HABITAR')),
@@ -136,6 +149,39 @@ export function VisualizaoCalculo({
   }
 
   const parcelaDoMesDoPagamento = getParcelaDoMesDoPagamento()
+
+  const getPrimeiraParcelaMensalDoContrato = () => {
+    for (const installments of checkOrder) {
+      if (installments && installments.length > 0) {
+        const found = installments
+          .filter((parcela) => {
+            const paymentTermId = parcela.conditionType
+              .trim()
+              .replaceAll(' ', '')
+              .toUpperCase()
+
+            return !excludedFullPaymentTerms
+              .map((term) => term.trim().replaceAll(' ', '').toUpperCase())
+              .includes(paymentTermId)
+          })
+          .find((inst) => {
+            return (
+              inst.dueDate &&
+              inst.conditionType.replaceAll(' ', '').toUpperCase() ===
+                'MENSALANO01'
+            )
+          })
+
+        if (found) {
+          return {
+            originalAmount: found.adjustedValue,
+          }
+        }
+      }
+    }
+
+    return undefined
+  }
 
   const hasFP = originalIncomeByBills.data.some(
     (item) =>
@@ -168,8 +214,6 @@ export function VisualizaoCalculo({
     const taxaTotal = buscaTaxaPorContrato(contrato.contractNumber)?.taxaTotal
 
     let taxaAnual: number
-
-    const primeiraParcela = incomeByBills.data[0]
 
     const calculoParcelas = incomeByBills.data
       .map((parcela) => {
@@ -231,7 +275,9 @@ export function VisualizaoCalculo({
 
               break
             }
-            valorPorParcela = primeiraParcela.correctedBalanceAmount
+
+            valorPorParcela =
+              getPrimeiraParcelaMensalDoContrato()?.originalAmount || 0
 
             break
 
