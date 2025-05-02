@@ -20,8 +20,12 @@ const equipmentKeys = ['vca001', 'vca002', 'vca003', 'vca004', 'vca005']
 
 export function Carousel({
   onSlideChange,
+  onAvailableCountChange,
+  onOpenModal,
 }: {
   onSlideChange?: (index: number) => void
+  onAvailableCountChange?: (count: number) => void
+  onOpenModal?: () => void
 }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false })
   const [selectedIndex, setSelectedIndex] = useState(0)
@@ -46,20 +50,26 @@ export function Carousel({
     emblaApi.scrollTo(2)
     setSelectedIndex(2)
   }, [emblaApi, onSelect])
-
   useEffect(() => {
     const equipmentsRef = ref(rtdb, 'equipments')
     const unsubscribe = onValue(equipmentsRef, (snapshot) => {
       const data = snapshot.val()
       const newAvailability: { [key: string]: boolean } = {}
+      let availableCount = 0
+
       for (const key of equipmentKeys) {
-        newAvailability[key] = data?.[key]?.available ?? false
+        const isAvailable = data?.[key]?.available ?? false
+        newAvailability[key] = isAvailable
+        if (isAvailable) availableCount++
       }
+
       setAvailability(newAvailability)
+
+      onAvailableCountChange?.(availableCount)
     })
 
     return () => unsubscribe()
-  }, [])
+  }, [onAvailableCountChange])
 
   return (
     <div className="relative w-5/6 flex flex-col items-center justify-center select-none">
@@ -91,9 +101,12 @@ export function Carousel({
                   )}
                 />
                 {selectedIndex === index && (
-                  <div className="mt-4 rounded shadow-md flex flex-col items-center">
+                  <div className="mt-4 rounded flex flex-col items-center">
                     {availability[equipmentKeys[index]] ? (
-                      <button className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                      <button
+                        onClick={onOpenModal}
+                        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                      >
                         Reservar
                       </button>
                     ) : (
