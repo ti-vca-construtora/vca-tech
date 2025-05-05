@@ -5,8 +5,8 @@ import { get, ref } from 'firebase/database'
 
 export const checkUserHasReservation = async (
   userLoggedId: string | null
-): Promise<boolean> => {
-  if (!userLoggedId) return false
+): Promise<string | null> => {
+  if (!userLoggedId) return null
 
   const equipmentsRef = ref(rtdb, 'equipments')
 
@@ -14,13 +14,15 @@ export const checkUserHasReservation = async (
     const snapshot = await get(equipmentsRef)
     const data = snapshot.val()
 
-    const found = Object.values(data || {}).some(
-      (equip: any) => equip.currentUser === userLoggedId
+    const entry = Object.entries(data || {}).find(
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      ([_, equip]: any) => equip.currentUser === userLoggedId
     )
 
-    return found
+    // Retorna o ID do equipamento (ex: "vca001")
+    return entry ? entry[0] : null
   } catch (error) {
     console.error('Erro ao verificar reserva do usuário:', error)
-    return false
+    return null
   }
 }

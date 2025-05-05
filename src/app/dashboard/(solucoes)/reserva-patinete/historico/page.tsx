@@ -65,9 +65,9 @@ const LogsReservaPatinete = () => {
         <div className="w-full max-w-6xl">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="flex w-full justify-between items-center">
                 <TableHead>Tipo</TableHead>
-                <TableHead>Data</TableHead>
+                <TableHead className="mr-40">Data</TableHead>
                 <TableHead>Patinete</TableHead>
                 <TableHead>Usuário</TableHead>
                 <TableHead className="text-center">Observações</TableHead>
