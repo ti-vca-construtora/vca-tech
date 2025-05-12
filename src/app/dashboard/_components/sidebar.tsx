@@ -11,7 +11,9 @@ import {
   SidebarRail,
   SidebarTrigger,
 } from '@/components/ui/sidebar'
-import { LayoutDashboard, Settings2, SquareTerminal } from 'lucide-react'
+import { Settings2, SquareTerminal } from 'lucide-react'
+import { MdOutlinePublic } from 'react-icons/md'
+
 import * as React from 'react'
 
 const data = {
@@ -34,10 +36,6 @@ const data = {
           title: 'Entregas',
           url: '/dashboard/setores/entregas?title=Painel de Soluções - Entregas',
         },
-        {
-          title: 'Público',
-          url: '/dashboard/setores/publico?title=Painel de Soluções - Público',
-        },
       ],
     },
     {
@@ -55,9 +53,9 @@ const data = {
   ],
   projects: [
     {
-      name: 'Dashboard',
-      url: '/dashboard',
-      icon: LayoutDashboard,
+      name: 'Público',
+      url: '/dashboard/setores/publico?title=Painel de Soluções - Público',
+      icon: MdOutlinePublic,
     },
   ],
 }

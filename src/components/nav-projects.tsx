@@ -9,6 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
+import { IconType } from 'react-icons'
 
 export function NavProjects({
   projects,
@@ -16,7 +17,7 @@ export function NavProjects({
   projects: {
     name: string
     url: string
-    icon: LucideIcon
+    icon: LucideIcon | IconType
   }[]
 }) {
   return (

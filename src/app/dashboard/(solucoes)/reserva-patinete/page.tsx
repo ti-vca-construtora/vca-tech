@@ -1,7 +1,5 @@
 'use client'
 
-// import { RouteGuard } from '@/components/route-guard'
-
 import { Button } from '@/components/ui/button'
 import { useUser } from '@/hooks/use-user'
 import { db, rtdb } from '@/lib/firebase'
@@ -237,10 +235,6 @@ export default function ReservarPatinete() {
   }
 
   return (
-    // <RouteGuard
-    //   requiredArea="entregas"
-    //   requiredPermission="agendamento-vistorias"
-    // >
     <>
       <ToastContainer
         position="top-right"
@@ -364,6 +358,5 @@ export default function ReservarPatinete() {
         )}
       </>
     </>
-    // </RouteGuard>
   )
 }

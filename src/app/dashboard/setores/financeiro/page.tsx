@@ -23,12 +23,6 @@ const solucoesData: Solucoes[] = [
     area: 'financeiro',
     permission: 'gerador-pix',
   },
-  // {
-  //   titulo: 'Agenda de Vistorias',
-  //   descricao: 'Configura e relaciona a agenda de vistorias do cliente.',
-  //   Icon: PiCalendarCheckDuotone,
-  //   href: 'agenda-vistorias?title=Agenda de Vistorias',
-  // },
 ]
 
 const Financeiro = () => {
