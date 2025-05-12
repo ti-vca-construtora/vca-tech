@@ -52,6 +52,7 @@ export default function Empreendimentos() {
       isActive: true,
       units: [],
     })
+
   const [isLoading, setIsLoading] = useState(true)
 
   const getEmpreendimentos = async () => {
