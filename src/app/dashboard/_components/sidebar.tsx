@@ -1,8 +1,7 @@
 'use client'
 
-import * as React from 'react'
-import { LayoutDashboard, Settings2, SquareTerminal } from 'lucide-react'
 import { NavMain } from '@/components/nav-main'
+import { NavProjects } from '@/components/nav-projects'
 import { NavUser } from '@/components/nav-user'
 import {
   Sidebar,
@@ -12,7 +11,8 @@ import {
   SidebarRail,
   SidebarTrigger,
 } from '@/components/ui/sidebar'
-import { NavProjects } from '@/components/nav-projects'
+import { LayoutDashboard, Settings2, SquareTerminal } from 'lucide-react'
+import * as React from 'react'
 
 const data = {
   navMain: [
@@ -33,6 +33,10 @@ const data = {
         {
           title: 'Entregas',
           url: '/dashboard/setores/entregas?title=Painel de Soluções - Entregas',
+        },
+        {
+          title: 'Público',
+          url: '/dashboard/setores/publico?title=Painel de Soluções - Público',
         },
       ],
     },
