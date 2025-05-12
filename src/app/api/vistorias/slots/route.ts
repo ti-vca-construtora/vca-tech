@@ -24,15 +24,15 @@ export async function GET(req: NextRequest) {
   }
 
   if (fromDate) {
-    getUrl = `${API_BASE_URL}/${API_ENDPOINT}?fromDate=${fromDate}`
+    getUrl = `${API_BASE_URL}/${API_ENDPOINT}?fromDate=${fromDate}&page=1&pageSize=99999`
   }
 
   if (fromDate && toDate) {
-    getUrl = `${API_BASE_URL}/${API_ENDPOINT}?fromDate=${fromDate}&toDate=${toDate}&page=1&pageSize=2000`
+    getUrl = `${API_BASE_URL}/${API_ENDPOINT}?fromDate=${fromDate}&toDate=${toDate}&page=1&pageSize=99999`
   }
 
   if (fromDate && developmentId) {
-    getUrl = `${API_BASE_URL}/${API_ENDPOINT}?fromDate=${fromDate}&developmentId=${developmentId}&page=1&pageSize=2000`
+    getUrl = `${API_BASE_URL}/${API_ENDPOINT}?fromDate=${fromDate}&developmentId=${developmentId}&page=1&pageSize=99999`
   }
 
   const res = await fetch(getUrl, {
