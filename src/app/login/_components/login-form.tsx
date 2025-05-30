@@ -1,8 +1,8 @@
 'use client'
 
-import * as z from 'zod'
-import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
+import * as z from 'zod'
 
 import Link from 'next/link'
 
@@ -17,12 +17,12 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import LogoVca from '../../../../public/assets/logo-vca.png'
-import LogoVcaTech from '../../../../public/assets/logo-vca-tech.png'
 import Image from 'next/image'
+import LogoVcaTech from '../../../../public/assets/logo-vca-tech.png'
+import LogoVca from '../../../../public/assets/logo-vca.png'
 
-import ReCAPTCHA from 'react-google-recaptcha'
 import { useRouter } from 'next/navigation'
+import ReCAPTCHA from 'react-google-recaptcha'
 
 import { useUser } from '@/hooks/use-user'
 
@@ -73,7 +73,7 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-[600px] bg-neutral-50 px-16 h-full flex flex-col justify-between">
+    <Card className="w-[95%] md:w-[600px] bg-neutral-50 px-2 md:px-16 h-full flex flex-col justify-between">
       <CardHeader className="flex flex-col gap-10">
         <CardTitle className="self-center">
           <Image width={250} src={LogoVca} alt="Logo da VCA Construtora" />
@@ -89,7 +89,7 @@ export function LoginForm() {
           </CardDescription>
         </div>
         <form onSubmit={handleSubmit(handleLogin)} className="grid gap-4">
-          <div className="grid gap-2">
+          <div className="grid gap-2 min-w-3">
             <Label htmlFor="email">E-mail</Label>
             <Input
               {...register('email')}
@@ -102,12 +102,11 @@ export function LoginForm() {
               </span>
             )}
           </div>
-          <div className="grid gap-2">
+          <div className="grid gap-2 min-w-3">
             <div className="flex items-center">
               <Label htmlFor="password">Senha</Label>
               <Link
-                href="https://teams.microsoft.com/l/chat/0/0?users=felipe.santos@vcaconstrutora.com.br
- "
+                href="https://teams.microsoft.com/l/chat/0/0?users=felipe.santos@vcaconstrutora.com.br"
                 target="_blank"
                 className="ml-auto inline-block text-xs underline"
               >
@@ -121,7 +120,7 @@ export function LoginForm() {
               </span>
             )}
           </div>
-          <div className="flex flex-col gap-2 items-center justify-center">
+          <div className="flex flex-col gap-2 items-center justify-center min-w-3">
             <ReCAPTCHA
               onChange={() =>
                 setValue('recaptcha', true, { shouldValidate: true })
@@ -148,8 +147,7 @@ export function LoginForm() {
           Não tem um acesso?{' '}
           <Link
             target="_blank"
-            href="https://teams.microsoft.com/l/chat/0/0?users=felipe.santos@vcaconstrutora.com.br
- "
+            href="https://ac6oxj9qarv.typeform.com/to/J3FeBlEQ"
             className="underline"
           >
             Solicite

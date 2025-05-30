@@ -250,7 +250,7 @@ export default function ReservarPatinete() {
       />
       {modalOpen ? (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-md w-3/5">
+          <div className="bg-white p-6 rounded-lg shadow-md w-10/12 md:w-3/5">
             <h2 className="text-lg font-semibold">Check-In</h2>
             <h3 className="mb-4">{`Reservando patinete elétrico ${selectedEquipmentName?.toUpperCase()}`}</h3>
             <h2 className="font-medium">Observações:</h2>
@@ -282,7 +282,7 @@ export default function ReservarPatinete() {
         </div>
       ) : modalOpenCheckout ? (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-md w-3/5">
+          <div className="bg-white p-6 rounded-lg shadow-md w-10/12 md:w-3/5">
             <h2 className="text-lg font-semibold">Check-Out</h2>
             <h3 className="mb-4">{`Patinete reservado: ${hasReservation?.toUpperCase()}`}</h3>
             <h2 className="font-medium">Observações:</h2>
@@ -331,10 +331,10 @@ export default function ReservarPatinete() {
             </Button>
           </div>
         ) : (
-          <div className="size-full flex-col flex items-center justify-center p-6">
-            <div className="flex w-4/6 justify-between items-center mb-10">
+          <div className="size-full flex-col flex items-center justify-center md:p-6 ">
+            <div className="flex flex-col md:flex-row w-5/6 justify-center md:justify-between items-center mb-10">
               <div>
-                <h1 className="text-xl font-semibold text-green-600">
+                <h1 className="text-xl font-semibold text-green-600 mb-3 md:mb-0">
                   Patinetes disponíveis: {availableCount}
                 </h1>
               </div>

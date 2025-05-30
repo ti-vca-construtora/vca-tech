@@ -1,5 +1,5 @@
+import { ChevronRight, Menu, Settings2, SquareTerminal } from 'lucide-react'
 import Link from 'next/link'
-import { Home, Menu, Package2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 
@@ -9,11 +9,13 @@ import { Navigation } from './navigation'
 import LogoVcaTech from '../../../../public/assets/logo-vca-tech.png'
 import LogoVca from '../../../../public/assets/logo-vca.png'
 
-import Image from 'next/image'
-import { DashboardSidebar } from './sidebar'
-import { SidebarProvider } from '@/components/ui/sidebar'
 import { PageTitle } from '@/components/page-title'
+import { SidebarProvider } from '@/components/ui/sidebar'
+import Image from 'next/image'
 import { Suspense } from 'react'
+import { DashboardSidebar } from './sidebar'
+
+import { MdOutlinePublic } from 'react-icons/md'
 
 type DashboardProps = {
   children: React.ReactNode
@@ -37,22 +39,78 @@ export function Dashboard({ children }: DashboardProps) {
                   <span className="sr-only">Toggle navigation menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="flex flex-col">
-                <nav className="grid gap-2 text-lg font-medium">
-                  <Link
-                    href="#"
-                    className="flex items-center gap-2 text-lg font-semibold"
-                  >
-                    <Package2 className="h-6 w-6" />
-                    <span className="sr-only">VCA Tech</span>
-                  </Link>
-                  <Link
-                    href="#"
-                    className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                  >
-                    <Home className="h-5 w-5" />
-                    Dashboard
-                  </Link>
+              <SheetContent side="left" className="w-[250px] p-4">
+                <nav className="flex flex-col gap-6">
+                  {/* Seção Principal */}
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Principal
+                    </span>
+                    <Link
+                      href="/dashboard/setores/publico?title=Painel de Soluções - Público"
+                      className="flex items-center gap-2 rounded-md px-2 py-2 text-sm font-medium hover:bg-muted"
+                    >
+                      <MdOutlinePublic className="h-4 w-4" />
+                      Público
+                    </Link>
+                  </div>
+
+                  {/* Seção Plataforma */}
+                  <div className="flex flex-col gap-2">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Plataforma
+                    </span>
+
+                    {/* Dropdown Setores */}
+                    <details className="group">
+                      <summary className="flex cursor-pointer items-center justify-between rounded-md px-2 py-2 text-sm font-medium hover:bg-muted">
+                        <div className="flex items-center gap-2">
+                          <SquareTerminal className="h-4 w-4" />
+                          Setores
+                        </div>
+                        <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
+                      </summary>
+                      <div className="ml-4 mt-1 flex flex-col gap-1">
+                        <Link
+                          href="/dashboard/setores/financeiro?title=Painel de Soluções - Financeiro"
+                          className="rounded-md px-2 py-1 text-sm hover:bg-muted"
+                        >
+                          Financeiro
+                        </Link>
+                        <Link
+                          href="/dashboard/setores/relacionamento?title=Painel de Soluções - Relacionamento"
+                          className="rounded-md px-2 py-1 text-sm hover:bg-muted"
+                        >
+                          Relacionamento
+                        </Link>
+                        <Link
+                          href="/dashboard/setores/entregas?title=Painel de Soluções - Entregas"
+                          className="rounded-md px-2 py-1 text-sm hover:bg-muted"
+                        >
+                          Entregas
+                        </Link>
+                      </div>
+                    </details>
+
+                    {/* Dropdown Configurações */}
+                    <details className="group">
+                      <summary className="flex cursor-pointer items-center justify-between rounded-md px-2 py-2 text-sm font-medium hover:bg-muted">
+                        <div className="flex items-center gap-2">
+                          <Settings2 className="h-4 w-4" />
+                          Configurações
+                        </div>
+                        <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
+                      </summary>
+                      <div className="ml-4 mt-1 flex flex-col gap-1">
+                        <Link
+                          href="/dashboard/settings/general"
+                          className="rounded-md px-2 py-1 text-sm hover:bg-muted"
+                        >
+                          Geral
+                        </Link>
+                      </div>
+                    </details>
+                  </div>
                 </nav>
               </SheetContent>
             </Sheet>

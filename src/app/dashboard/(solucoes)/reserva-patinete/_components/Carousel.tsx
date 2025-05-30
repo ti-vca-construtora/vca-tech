@@ -76,12 +76,15 @@ export function Carousel({
       <div className="relative flex items-center w-full justify-center">
         <button
           onClick={scrollPrev}
-          className="absolute left-0 z-10 bg-green-600 text-white hover:text-purple-900 hover:bg-white shadow-md rounded-full p-2 m-2 transition"
+          className="absolute left-0 z-10 bg-green-600 text-white hover:text-purple-900 hover:bg-white shadow-md rounded-full p-2 m-2 transition mt-20 md:mt-0"
         >
           <span className="text-xl font-bold">&#8592;</span>
         </button>
 
-        <div className="overflow-x-hidden w-4/6 max-w-5xl" ref={emblaRef}>
+        <div
+          className="overflow-x-hidden w-full md:w-4/6 max-w-5xl"
+          ref={emblaRef}
+        >
           <div className="flex">
             {slides.map((src, index) => (
               <div
@@ -123,7 +126,7 @@ export function Carousel({
 
         <button
           onClick={scrollNext}
-          className="absolute right-0 z-10 bg-green-600 text-white hover:text-purple-900 hover:bg-white shadow-md rounded-full p-2 m-2 transition"
+          className="absolute right-0 z-10 bg-green-600 text-white hover:text-purple-900 hover:bg-white shadow-md rounded-full p-2 m-2 transition mt-20 md:mt-0"
         >
           <span className="text-xl font-bold">&#8594;</span>
         </button>
