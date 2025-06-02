@@ -52,6 +52,8 @@ const LogsReservaPatinete = () => {
     fetchLogs()
   }, [])
 
+  // Deploy
+
   return (
     <div className="flex flex-col w-full items-center gap-6 h-5/6">
       <div className="w-full max-w-6xl">
