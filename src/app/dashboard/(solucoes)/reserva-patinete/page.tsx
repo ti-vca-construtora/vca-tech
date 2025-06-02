@@ -331,10 +331,22 @@ export default function ReservarPatinete() {
             </Button>
           </div>
         ) : (
-          <div className="size-full flex-col flex items-center justify-center md:p-6 ">
-            <div className="flex flex-col md:flex-row w-5/6 justify-center md:justify-between items-center mb-10">
+          <div className="size-full flex-col flex items-center justify-center md:p-6 relative ">
+            <Image
+              fill
+              src="/assets/banner-patinetes.jpg"
+              alt="Banner patinete"
+              className="z-0 opacity-100 hidden md:block rounded-xl"
+            ></Image>
+            <Image
+              fill
+              src="/assets/banner-patinetes-mobile.jpg"
+              alt="Banner patinete"
+              className="z-0 opacity-100 block md:hidden rounded-xl"
+            ></Image>
+            <div className="flex flex-col md:flex-row w-5/6 justify-center md:justify-between items-center mb-10 z-10">
               <div>
-                <h1 className="text-xl font-semibold text-green-600 mb-3 md:mb-0">
+                <h1 className="text-xl font-semibold text-slate-50 mb-3 md:mb-0">
                   Patinetes disponíveis: {availableCount}
                 </h1>
               </div>
