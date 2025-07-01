@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button'
 import { useUser } from '@/hooks/use-user'
 import { db, rtdb } from '@/lib/firebase'
-import { ref, set } from 'firebase/database'
+import { get, ref, set } from 'firebase/database'
 import { addDoc, collection } from 'firebase/firestore'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -101,12 +101,104 @@ export default function ReservarPatinete() {
   const selectedEquipmentName =
     selectedIndex !== null ? equipmentNames[selectedIndex] : null
 
-  const openModal = () => {
+  const openModal = async () => {
+    if (!userLoggedId) return
+
+    // Verifica se o usuário está no target_limits
+    const userLimitRef = ref(rtdb, `target_limits/${userLoggedId}`)
+    const snapshot = await get(userLimitRef)
+
+    if (snapshot.exists()) {
+      const limitData = snapshot.val()
+      const reserveLimit = new Date(limitData.reserveLimit)
+      const now = new Date()
+
+      if (now < reserveLimit) {
+        toast.error(
+          `Você só pode reservar novamente após ${reserveLimit.toLocaleString()}`,
+          {
+            position: 'top-right',
+            autoClose: 5000,
+            // eslint-disable-next-line prettier/prettier
+          }
+        )
+        return
+      }
+    }
+
     setModalOpen(true)
   }
 
   const openModalCheckout = () => {
     setModalOpenCheckout(true)
+  }
+
+  const cleanExpiredLimits = async () => {
+    try {
+      const limitsRef = ref(rtdb, 'target_limits')
+      const snapshot = await get(limitsRef)
+
+      if (snapshot.exists()) {
+        const limits = snapshot.val()
+        const now = new Date()
+
+        Object.keys(limits).forEach(async (userId) => {
+          const limitData = limits[userId]
+          const reserveLimit = new Date(limitData.reserveLimit)
+
+          if (now > reserveLimit) {
+            // Remove o registro expirado
+            const userLimitRef = ref(rtdb, `target_limits/${userId}`)
+            await set(userLimitRef, null)
+          }
+        })
+      }
+    } catch (error) {
+      console.error('Erro ao limpar limites expirados:', error)
+    }
+  }
+
+  const checkAndAutoCheckout = async () => {
+    if (!hasReservation || !userLoggedId) return
+
+    const equipmentRef = ref(rtdb, `equipments/${hasReservation}`)
+    const snapshot = await get(equipmentRef)
+    const equipmentData = snapshot.val()
+
+    if (equipmentData && equipmentData.reservedUntil) {
+      const reservedUntil = new Date(equipmentData.reservedUntil)
+      const now = new Date()
+
+      if (now > reservedUntil) {
+        // Faz checkout automático
+        await set(equipmentRef, {
+          available: true,
+          currentUser: '',
+          reservedUntil: '',
+        })
+
+        // Registra no Firestore
+        const date = new Date()
+        date.setHours(date.getHours() - 3)
+        const logsRef = collection(db, 'logs')
+
+        await addDoc(logsRef, {
+          equipment: hasReservation,
+          obs: 'CHECKOUT AUTOMÁTICO - LIMITE EXPIRADO',
+          photos: [],
+          time: date.toISOString(),
+          type: 'out',
+          userName: user?.name,
+        })
+
+        // Remove o limite do usuárioopenModal
+        const userLimitRef = ref(rtdb, `target_limits/${userLoggedId}`)
+        await set(userLimitRef, null)
+
+        setHasReservation(null)
+        window.location.reload()
+      }
+    }
   }
 
   useEffect(() => {
@@ -115,7 +207,13 @@ export default function ReservarPatinete() {
       setUserLoggedName(user.name ?? null)
     }
 
-    checkUserReservation()
+    const checkReservations = async () => {
+      await checkUserReservation()
+      await cleanExpiredLimits() // Limpa registros expirados
+      await checkAndAutoCheckout()
+    }
+
+    checkReservations()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedIndex, user])
 
@@ -135,14 +233,19 @@ export default function ReservarPatinete() {
     }
 
     const prazoDevolucao = new Date()
-    prazoDevolucao.setDate(prazoDevolucao.getDate() + 1)
+    prazoDevolucao.setHours(prazoDevolucao.getHours() + 12)
     const reservedUntil = prazoDevolucao.toISOString()
+
+    const limiteReserva = new Date()
+    limiteReserva.setHours(limiteReserva.getHours() + 24)
+    const reserveLimit = limiteReserva.toISOString()
 
     const equipmentIds = ['vca001', 'vca002', 'vca003', 'vca004', 'vca005']
     const selectedEquipmentId =
       selectedIndex !== null ? equipmentIds[selectedIndex] : null
 
     const equipmentRef = ref(rtdb, `equipments/${selectedEquipmentId}`)
+    const userLimitRef = ref(rtdb, `target_limits/${userLoggedId}`)
 
     try {
       await set(equipmentRef, {
@@ -150,6 +253,12 @@ export default function ReservarPatinete() {
         currentUser: userLoggedId,
         reservedUntil,
       })
+
+      await set(userLimitRef, {
+        userId: userLoggedId,
+        reserveLimit,
+      })
+
       reservarPatineteFirestoreDb()
     } catch (error) {
       console.error('Erro ao reservar patinete na realtimeDb:', error)
