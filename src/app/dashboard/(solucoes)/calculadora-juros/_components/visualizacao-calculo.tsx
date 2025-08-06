@@ -225,7 +225,9 @@ export function VisualizaoCalculo({
       .map((item) => {
         const tipoDeParcela = item.paymentTerm.id
         const diferencaDias = dias360(
-          new Date(`${new Date().toISOString().split('T')[0]}T04:00:00Z`),
+          new Date(
+            `${new Date(dataAPagar).toISOString().split('T')[0]}T04:00:00Z`,
+          ),
           new Date(`${item.dueDate}T04:00:00Z`),
         )
 
@@ -238,7 +240,7 @@ export function VisualizaoCalculo({
         switch (tipoDeParcela.trim()) {
           case 'FP': {
             const dataAPagarDate = new Date(
-              `${new Date().toISOString().split('T')[0]}T04:00:00Z`,
+              `${new Date(dataAPagar).toISOString().split('T')[0]}T04:00:00Z`,
             )
             const dataVencimento = new Date(`${item.dueDate}T04:00:00Z`)
 
@@ -289,7 +291,7 @@ export function VisualizaoCalculo({
         return {
           valorAnterior: item.correctedBalanceAmount,
           valorPresente: valorPorParcela,
-          dataAPagar: new Date().toISOString().split('T')[0],
+          dataAPagar: new Date(dataAPagar).toISOString().split('T')[0],
           dataVencimento: item.dueDate,
           taxa: taxaAnual,
           indexador: item.indexerName,
@@ -592,7 +594,7 @@ export function VisualizaoCalculo({
                         <TableCell>{item.indexerName}</TableCell>
                         <TableCell>
                           {calcularDiferencaDias(
-                            new Date().toISOString().split('T')[0],
+                            new Date(dataAPagar).toISOString().split('T')[0],
                             item.dueDate,
                           )}
                         </TableCell>
@@ -653,7 +655,7 @@ export function VisualizaoCalculo({
                         <TableCell>{item.indexador}</TableCell>
                         <TableCell>
                           {calcularDiferencaDias(
-                            new Date().toISOString().split('T')[0],
+                            new Date(dataAPagar).toISOString().split('T')[0],
                             item.dataVencimento,
                           )}
                         </TableCell>
