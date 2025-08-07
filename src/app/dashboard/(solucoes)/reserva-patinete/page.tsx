@@ -73,6 +73,22 @@ export default function ReservarPatinete() {
       theme: 'light',
     })
 
+  const fridayDay = () =>
+    toast.warn(
+      'OS PATINETES NÃO PODEM SER LEVADOS PARA CASA NAS SEXTAS-FEIRAS',
+      {
+        position: 'top-right',
+        autoClose: 20000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: 'colored',
+        // eslint-disable-next-line prettier/prettier
+      }
+    )
+
   const errorNotif = () =>
     toast.error('Falha na reserva.', {
       position: 'top-right',
@@ -104,6 +120,13 @@ export default function ReservarPatinete() {
   const openModal = async () => {
     if (!userLoggedId) return
 
+    // se hoje for sexta-feira, warn toast
+    const today = new Date()
+    // console.log('Hoje é:', today.getDay())
+    if (today.getDay() === 5) {
+      fridayDay()
+    }
+
     // Verifica se o usuário está no target_limits
     const userLimitRef = ref(rtdb, `target_limits/${userLoggedId}`)
     const snapshot = await get(userLimitRef)
@@ -131,31 +154,6 @@ export default function ReservarPatinete() {
 
   const openModalCheckout = () => {
     setModalOpenCheckout(true)
-  }
-
-  const cleanExpiredLimits = async () => {
-    try {
-      const limitsRef = ref(rtdb, 'target_limits')
-      const snapshot = await get(limitsRef)
-
-      if (snapshot.exists()) {
-        const limits = snapshot.val()
-        const now = new Date()
-
-        Object.keys(limits).forEach(async (userId) => {
-          const limitData = limits[userId]
-          const reserveLimit = new Date(limitData.reserveLimit)
-
-          if (now > reserveLimit) {
-            // Remove o registro expirado
-            const userLimitRef = ref(rtdb, `target_limits/${userId}`)
-            await set(userLimitRef, null)
-          }
-        })
-      }
-    } catch (error) {
-      console.error('Erro ao limpar limites expirados:', error)
-    }
   }
 
   const checkAndAutoCheckout = async () => {
@@ -209,7 +207,6 @@ export default function ReservarPatinete() {
 
     const checkReservations = async () => {
       await checkUserReservation()
-      await cleanExpiredLimits() // Limpa registros expirados
       await checkAndAutoCheckout()
     }
 
@@ -233,11 +230,11 @@ export default function ReservarPatinete() {
     }
 
     const prazoDevolucao = new Date()
-    prazoDevolucao.setHours(prazoDevolucao.getHours() + 12)
+    prazoDevolucao.setHours(prazoDevolucao.getHours() + 12 - 3)
     const reservedUntil = prazoDevolucao.toISOString()
 
     const limiteReserva = new Date()
-    limiteReserva.setHours(limiteReserva.getHours() + 24)
+    limiteReserva.setHours(limiteReserva.getHours() + 48 - 3)
     const reserveLimit = limiteReserva.toISOString()
 
     const equipmentIds = ['vca001', 'vca002', 'vca003', 'vca004', 'vca005']

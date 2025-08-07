@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/sidebar'
 import { Settings2, SquareTerminal } from 'lucide-react'
 import { MdOutlinePublic } from 'react-icons/md'
+import { deleteExpiredReservations } from '../(solucoes)/reserva-patinete/_components/deleteReservations'
 
 import * as React from 'react'
 
@@ -63,6 +64,7 @@ const data = {
 export function DashboardSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
+  deleteExpiredReservations()
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
