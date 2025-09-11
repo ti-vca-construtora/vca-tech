@@ -37,6 +37,10 @@ const data = {
           title: 'Entregas',
           url: '/dashboard/setores/entregas?title=Painel de Soluções - Entregas',
         },
+        {
+          title: 'Obras',
+          url: '/dashboard/setores/obras?title=Painel de Soluções - Obras',
+        },
       ],
     },
     {

@@ -1,7 +1,11 @@
 import Link from 'next/link'
-import { IconType } from 'react-icons/lib'
 import { GrMoney } from 'react-icons/gr'
-import { MdOutlineRealEstateAgent } from 'react-icons/md'
+import { IconType } from 'react-icons/lib'
+import {
+  MdConstruction,
+  MdHowToReg,
+  MdOutlineRealEstateAgent,
+} from 'react-icons/md'
 // import { BsPeopleFill } from 'react-icons/bs'
 // import { GoLaw } from 'react-icons/go'
 
@@ -21,6 +25,16 @@ const setoresData: Setor[] = [
     title: 'Relacionamento',
     href: '/dashboard/setores/relacionamento?title=Painel de Soluções - Relacionamento',
     Icon: MdOutlineRealEstateAgent,
+  },
+  {
+    title: 'Entregas',
+    href: '/dashboard/setores/entregas?title=Painel de Soluções - Entregas',
+    Icon: MdHowToReg,
+  },
+  {
+    title: 'Obras',
+    href: '/dashboard/setores/obras?title=Painel de Soluções - Obras',
+    Icon: MdConstruction,
   },
   // {
   //   title: 'Jurídico',

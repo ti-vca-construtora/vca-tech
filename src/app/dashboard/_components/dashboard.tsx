@@ -89,6 +89,12 @@ export function Dashboard({ children }: DashboardProps) {
                         >
                           Entregas
                         </Link>
+                        <Link
+                          href="/dashboard/setores/obras?title=Painel de Soluções - Obras"
+                          className="rounded-md px-2 py-1 text-sm hover:bg-muted"
+                        >
+                          Obras
+                        </Link>
                       </div>
                     </details>
 

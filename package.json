@@ -44,6 +44,7 @@
     "@radix-ui/react-tooltip": "^1.1.6",
     "@sparticuz/chromium": "^132.0.0",
     "@sparticuz/chromium-min": "^132.0.0",
+    "@supabase/supabase-js": "^2.57.4",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/react-google-recaptcha": "^2.1.9",
     "@vercel/node": "^5.1.7",
