@@ -1,6 +1,6 @@
 'use client'
 
-import { calcularDiferencaDias, formatarData, formatarValor } from '@/util'
+import { Cliente } from '@/components/search-form'
 import {
   Card,
   CardContent,
@@ -16,13 +16,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { calcularDiferencaDias, formatarData, formatarValor } from '@/util'
 import classNames from 'classnames'
-import { Cliente } from '@/components/search-form'
 
-import { LOGO_BASE64 } from '@/util/logo-base64'
-import { contratos } from '@/data/contratos'
-import { Contrato } from './contratos-tabela'
 import { DueInstallment } from '@/app/api/avp/current-debit-balance/route'
+import { contratos } from '@/data/contratos'
+import { LOGO_BASE64 } from '@/util/logo-base64'
+import { Contrato } from './contratos-tabela'
 import { CalculoPorParcela } from './visualizacao-calculo'
 
 export type PdfProps = {
@@ -52,7 +52,7 @@ export function Pdf({
 }: PdfProps) {
   const taxaTotal =
     contratos.find((contrato) => contrato.cliente === cliente.name)
-      ?.taxaTotal || null
+      ?.taxaReferencia || null
 
   return (
     <div
@@ -188,7 +188,7 @@ export function Pdf({
                     {incomeByBills.map((item, index) => (
                       <TableRow
                         className={classNames(
-                          index % 2 === 0 && 'bg-neutral-100',
+                          index % 2 === 0 && 'bg-neutral-100'
                         )}
                         key={index}
                       >
@@ -201,7 +201,7 @@ export function Pdf({
                         <TableCell>
                           R${' '}
                           {formatarValor(
-                            item.valorAnterior - item.valorPresente,
+                            item.valorAnterior - item.valorPresente
                           )}
                         </TableCell>
                         <TableCell>
@@ -211,7 +211,7 @@ export function Pdf({
                         <TableCell>
                           {calcularDiferencaDias(
                             item.dataAPagar,
-                            item.dataVencimento,
+                            item.dataVencimento
                           )}
                         </TableCell>
                         <TableCell>{taxaTotal}</TableCell>
@@ -246,7 +246,7 @@ export function Pdf({
                     {currentDebit.map((item, index) => (
                       <TableRow
                         className={classNames(
-                          index % 2 === 0 && 'bg-neutral-100',
+                          index % 2 === 0 && 'bg-neutral-100'
                         )}
                         key={index}
                       >
@@ -256,7 +256,7 @@ export function Pdf({
                         <TableCell>
                           R${' '}
                           {formatarValor(
-                            item.adjustedValue + item.additionalValue,
+                            item.adjustedValue + item.additionalValue
                           )}
                         </TableCell>
                         <TableCell>
@@ -264,7 +264,7 @@ export function Pdf({
                           {formatarValor(
                             item.adjustedValue +
                               item.additionalValue -
-                              item.adjustedValue,
+                              item.adjustedValue
                           )}
                         </TableCell>
                         <TableCell>{formatarData(item.dueDate)}</TableCell>

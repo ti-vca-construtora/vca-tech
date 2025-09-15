@@ -4,6 +4,7 @@ import {
   CurrentDebitBalanceApiResponse,
   DueInstallment,
 } from '@/app/api/avp/current-debit-balance/route'
+import { IncomeByBillsApiResponse } from '@/app/api/avp/income-by-bills/route'
 import { Cliente } from '@/components/search-form'
 import {
   Card,
@@ -33,7 +34,6 @@ import {
 } from '@/util'
 import classNames from 'classnames'
 import { useEffect, useState } from 'react'
-import { IncomeByBillsApiResponse } from '@/app/api/avp/income-by-bills/route'
 import { Contrato } from './contratos-tabela'
 import { GeradorPdf } from './gerador-pdf'
 import { Pdf } from './pdf'
@@ -130,11 +130,11 @@ export function VisualizaoCalculo({
               inst.dueDate &&
               isSameMonthYear(
                 inst.dueDate,
-                new Date(`${dataAPagar}T04:00:00Z`),
+                new Date(`${dataAPagar}T04:00:00Z`)
               ) &&
               ((inst.conditionType.toUpperCase().includes('MENSAL') &&
                 inst.conditionType.toUpperCase().includes('ANO')) ||
-                inst.conditionType.toUpperCase().includes('MENSAL HABITAR')),
+                inst.conditionType.toUpperCase().includes('MENSAL HABITAR'))
           )
 
         if (found) {
@@ -185,21 +185,22 @@ export function VisualizaoCalculo({
 
   const hasFP = originalIncomeByBills.data.some(
     (item) =>
-      item.paymentTerm.id.trim() === 'FP' &&
-      Number(item.correctedBalanceAmount) > 0,
+      (item.paymentTerm.id.trim() === 'FP' ||
+        item.paymentTerm.id.trim() === 'FS') &&
+      Number(item.correctedBalanceAmount) > 0
   )
 
   let hasPP = originalIncomeByBills.data.some(
     (item) =>
       item.paymentTerm.id.trim() === 'PP' &&
-      Number(item.correctedBalanceAmount) > 0,
+      Number(item.correctedBalanceAmount) > 0
   )
 
   if (hasPP) {
     const hasM = originalIncomeByBills.data.some(
       (item) =>
         item.paymentTerm.id.trim().match(/^M\d+$/)?.input ||
-        item.paymentTerm.id.trim().match(/^\d{2,}$/)?.input,
+        item.paymentTerm.id.trim().match(/^\d{2,}$/)?.input
     )
 
     if (hasM) {
@@ -226,9 +227,9 @@ export function VisualizaoCalculo({
         const tipoDeParcela = item.paymentTerm.id
         const diferencaDias = dias360(
           new Date(
-            `${new Date(dataAPagar).toISOString().split('T')[0]}T04:00:00Z`,
+            `${new Date(dataAPagar).toISOString().split('T')[0]}T04:00:00Z`
           ),
-          new Date(`${item.dueDate}T04:00:00Z`),
+          new Date(`${item.dueDate}T04:00:00Z`)
         )
 
         if (taxaTotal && taxaAdm) {
@@ -240,7 +241,7 @@ export function VisualizaoCalculo({
         switch (tipoDeParcela.trim()) {
           case 'FP': {
             const dataAPagarDate = new Date(
-              `${new Date(dataAPagar).toISOString().split('T')[0]}T04:00:00Z`,
+              `${new Date(dataAPagar).toISOString().split('T')[0]}T04:00:00Z`
             )
             const dataVencimento = new Date(`${item.dueDate}T04:00:00Z`)
 
@@ -257,7 +258,7 @@ export function VisualizaoCalculo({
               valorPorParcela = calcularVPA(
                 taxaDeJurosMensal,
                 mesesDeDiferenca,
-                item.correctedBalanceAmount,
+                item.correctedBalanceAmount
               )
             }
             break
@@ -322,7 +323,7 @@ export function VisualizaoCalculo({
   const calculaValorTotalPresenteFuturas = () => {
     return calculoPorParcela.reduce(
       (soma, parcela) => soma + (parcela.valorPresente || 0),
-      0,
+      0
     )
   }
 
@@ -362,7 +363,7 @@ export function VisualizaoCalculo({
           contrato.origem,
           cliente.documentNumber,
           cliente.documentType,
-          dataAPagar,
+          dataAPagar
         )
 
       if (response.data[0].dueInstallments) {
@@ -376,7 +377,7 @@ export function VisualizaoCalculo({
             return !excludedFullPaymentTerms
               .map((term) => term.trim().replaceAll(' ', '').toUpperCase())
               .includes(paymentTermId)
-          }),
+          })
         )
       }
     } catch (error) {
@@ -389,7 +390,7 @@ export function VisualizaoCalculo({
   const calcularTotalParcelasFuturas = () => {
     return incomeByBills.data.reduce((total, parcela) => {
       const valorNumerico = parseFloat(
-        parcela.correctedBalanceAmount.toString().replace(',', '.').trim(),
+        parcela.correctedBalanceAmount.toString().replace(',', '.').trim()
       )
       return total + (isNaN(valorNumerico) ? 0 : valorNumerico)
     }, 0)
@@ -401,7 +402,7 @@ export function VisualizaoCalculo({
     if (updatedCurrentDebitDue) {
       total += updatedCurrentDebitDue.reduce((total, parcela) => {
         const valorNumerico = parseFloat(
-          parcela.originalValue.toString().replace(',', '.').trim(),
+          parcela.originalValue.toString().replace(',', '.').trim()
         )
 
         return total + (isNaN(valorNumerico) ? 0 : valorNumerico)
@@ -574,7 +575,7 @@ export function VisualizaoCalculo({
                     {updatedCurrentDebitDue.map((item, index) => (
                       <TableRow
                         className={classNames(
-                          index % 2 === 0 && 'bg-neutral-100',
+                          index % 2 === 0 && 'bg-neutral-100'
                         )}
                         key={index}
                       >
@@ -584,7 +585,7 @@ export function VisualizaoCalculo({
                         <TableCell>
                           R${' '}
                           {formatarValor(
-                            item.additionalValue + item.adjustedValue,
+                            item.additionalValue + item.adjustedValue
                           )}
                         </TableCell>
                         <TableCell>
@@ -595,7 +596,7 @@ export function VisualizaoCalculo({
                         <TableCell>
                           {calcularDiferencaDias(
                             new Date(dataAPagar).toISOString().split('T')[0],
-                            item.dueDate,
+                            item.dueDate
                           )}
                         </TableCell>
                         <TableCell>Sem taxa</TableCell>
@@ -633,7 +634,7 @@ export function VisualizaoCalculo({
                     {calculoPorParcela.map((item, index) => (
                       <TableRow
                         className={classNames(
-                          index % 2 === 0 && 'bg-neutral-100',
+                          index % 2 === 0 && 'bg-neutral-100'
                         )}
                         key={index}
                       >
@@ -646,7 +647,7 @@ export function VisualizaoCalculo({
                         <TableCell>
                           R${' '}
                           {formatarValor(
-                            item.valorAnterior - item.valorPresente,
+                            item.valorAnterior - item.valorPresente
                           )}
                         </TableCell>
                         <TableCell>
@@ -656,7 +657,7 @@ export function VisualizaoCalculo({
                         <TableCell>
                           {calcularDiferencaDias(
                             new Date(dataAPagar).toISOString().split('T')[0],
-                            item.dataVencimento,
+                            item.dataVencimento
                           )}
                         </TableCell>
                         <TableCell>{item.taxa}</TableCell>
