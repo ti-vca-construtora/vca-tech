@@ -1,6 +1,8 @@
 'use client'
 
 import { Solucoes, SolucoesCard } from '@/components/solucoes-card'
+import { FaLaptopCode } from 'react-icons/fa'
+import { HiUsers } from 'react-icons/hi2'
 import { LuScanQrCode } from 'react-icons/lu'
 import { VscTasklist } from 'react-icons/vsc'
 
@@ -20,6 +22,22 @@ const solucoesData: Solucoes[] = [
     href: 'controle-cargas/validador?title=Validador de comprovantes',
     area: 'obras',
     permission: 'validar-comprovantes',
+  },
+  {
+    titulo: 'Usuários e cartões',
+    descricao: 'Permite gerenciar usuários e cartões de acesso.',
+    Icon: HiUsers,
+    href: 'controle-cargas/usuarios?title=Gerenciar usuários',
+    area: 'obras',
+    permission: 'gerenciar-usuarios',
+  },
+  {
+    titulo: 'Equipamentos',
+    descricao: 'Permite gerenciar equipamentos.',
+    Icon: FaLaptopCode,
+    href: 'controle-cargas/equipments?title=Gerenciar equipamentos',
+    area: 'obras',
+    permission: 'gerenciar-equipamentos',
   },
 ]
 

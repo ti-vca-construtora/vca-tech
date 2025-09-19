@@ -1,9 +1,12 @@
+/* eslint-disable @next/next/no-img-element */
 /* eslint-disable prettier/prettier */
 'use client'
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 // using native <img> for base64 previews to avoid required width/height from next/image
 import { useEffect, useState } from 'react'
+import { FaQrcode } from 'react-icons/fa6'
+import { IoMdCamera } from 'react-icons/io'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL as string
 const SUPABASE_PUBLISHABLE_KEY = process.env
@@ -38,16 +41,13 @@ const Dashboard = () => {
   // image modal
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [selectedAuth, setSelectedAuth] = useState<string | null>(null)
-  const [menuOpenId, setMenuOpenId] = useState<number | null>(null)
-  const [menuPosition, setMenuPosition] = useState<{
-    top: number
-    left: number
-  } | null>(null)
   const [obrasOptions, setObrasOptions] = useState<string[]>([])
 
   const formatDate = (dateString?: string | null) => {
     if (!dateString) return ''
     const d = new Date(dateString)
+    // adjust stored timestamp by -3 hours to compensate timezone difference
+    d.setHours(d.getHours() - 3)
     const pad = (n: number) => String(n).padStart(2, '0')
     return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} - ${pad(
       // eslint-disable-next-line prettier/prettier
@@ -257,22 +257,22 @@ const Dashboard = () => {
 
       <form
         onSubmit={handleFilter}
-        className="mb-4 grid grid-cols-1 md:grid-cols-4 gap-3"
+        className="mb-4 grid grid-cols-1 md:grid-cols-5 gap-3"
       >
         <input
-          className="border rounded px-2 py-1"
+          className="border rounded px-2 py-1 w-full"
           placeholder="Nome"
           value={nome}
           onChange={(e) => setNome(e.target.value)}
         />
         <input
-          className="border rounded px-2 py-1"
+          className="border rounded px-2 py-1 w-full"
           placeholder="CPF"
           value={cpf}
           onChange={(e) => setCpf(e.target.value)}
         />
         <select
-          className="border rounded px-2 py-1 bg-white"
+          className="border rounded px-2 py-1 bg-white w-full"
           value={obra}
           onChange={(e) => setObra(e.target.value)}
         >
@@ -283,24 +283,22 @@ const Dashboard = () => {
             </option>
           ))}
         </select>
-        <div className="flex gap-2">
-          <input
-            type="date"
-            className="border rounded px-2 py-1"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            title="Data de"
-          />
-          <input
-            type="date"
-            className="border rounded px-2 py-1"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            title="Data até"
-          />
-        </div>
+        <input
+          type="date"
+          className="border rounded px-2 py-1 w-full"
+          value={dateFrom}
+          onChange={(e) => setDateFrom(e.target.value)}
+          title="Data de"
+        />
+        <input
+          type="date"
+          className="border rounded px-2 py-1 w-full"
+          value={dateTo}
+          onChange={(e) => setDateTo(e.target.value)}
+          title="Data até"
+        />
 
-        <div className="md:col-span-4 flex gap-2 mt-2 items-center">
+        <div className="md:col-span-5 flex gap-2 mt-2 items-center justify-between">
           <div className="flex gap-2">
             <button
               type="submit"
@@ -324,7 +322,7 @@ const Dashboard = () => {
             </button>
           </div>
 
-          <div className="ml-auto flex items-center gap-3">
+          <div className="flex items-center gap-3">
             <button
               type="button"
               className="bg-green-600 text-white px-3 py-1 rounded"
@@ -356,7 +354,8 @@ const Dashboard = () => {
                 <th className="p-2 text-left">CPF</th>
                 <th className="p-2 text-left">Obra</th>
                 <th className="p-2 text-left">Data/Hora</th>
-                <th className="p-2 text-left">Imagem / Opções</th>
+                <th className="p-2 text-left">Imagem</th>
+                <th className="p-2 text-left">Autenticador</th>
               </tr>
             </thead>
             <tbody>
@@ -366,26 +365,28 @@ const Dashboard = () => {
                   <td className="p-2">{r.cpf}</td>
                   <td className="p-2">{r.obra}</td>
                   <td className="p-2">{formatDate(r.data)}</td>
-                  <td className="p-2 relative">
+                  <td className="p-2 text-center">
                     {r.base64 ? (
-                      <>
-                        <button
-                          type="button"
-                          className="px-2 py-1 bg-gray-100 rounded border"
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={(e) => {
-                            const btn = e.currentTarget as HTMLElement
-                            const rect = btn.getBoundingClientRect()
-                            setMenuPosition({
-                              top: rect.bottom + window.scrollY,
-                              left: rect.right - 180 + window.scrollX,
-                            })
-                            setMenuOpenId(menuOpenId === r.id ? null : r.id)
-                          }}
-                        >
-                          Opções
-                        </button>
-                      </>
+                      <button
+                        title="Ver imagem"
+                        className="p-0"
+                        onClick={() => setSelectedImage(r.base64)}
+                      >
+                        <IoMdCamera size={20} />
+                      </button>
+                    ) : (
+                      <span className="text-gray-500">sem</span>
+                    )}
+                  </td>
+                  <td className="p-2 text-center">
+                    {r.auth ? (
+                      <button
+                        title="Ver autenticador"
+                        className="p-0"
+                        onClick={() => setSelectedAuth(r.auth ?? null)}
+                      >
+                        <FaQrcode size={18} />
+                      </button>
                     ) : (
                       <span className="text-gray-500">sem</span>
                     )}
@@ -394,7 +395,7 @@ const Dashboard = () => {
               ))}
               {rows.length === 0 && !loading && (
                 <tr>
-                  <td colSpan={5} className="p-4 text-center text-gray-500">
+                  <td colSpan={6} className="p-4 text-center text-gray-500">
                     Nenhum registro encontrado
                   </td>
                 </tr>
@@ -403,41 +404,6 @@ const Dashboard = () => {
           </table>
         </div>
       </div>
-
-      {menuOpenId && menuPosition && (
-        <div
-          style={{
-            position: 'fixed',
-            top: menuPosition.top,
-            left: menuPosition.left,
-          }}
-          className="z-50 w-44 bg-white border rounded shadow-md"
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          <button
-            className="block w-full text-left px-3 py-2 hover:bg-gray-100"
-            onClick={() => {
-              const r = rows.find((x) => x.id === menuOpenId)
-              setSelectedAuth(r?.auth ?? null)
-              setMenuOpenId(null)
-              setMenuPosition(null)
-            }}
-          >
-            Autenticador
-          </button>
-          <button
-            className="block w-full text-left px-3 py-2 hover:bg-gray-100"
-            onClick={() => {
-              const r = rows.find((x) => x.id === menuOpenId)
-              setSelectedImage(r?.base64 ?? null)
-              setMenuOpenId(null)
-              setMenuPosition(null)
-            }}
-          >
-            Imagem
-          </button>
-        </div>
-      )}
 
       {/* modal for base64 image */}
       {selectedImage && (
