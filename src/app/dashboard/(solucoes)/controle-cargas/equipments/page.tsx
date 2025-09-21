@@ -72,10 +72,18 @@ const Equipments = () => {
     if (!editing) return
     try {
       const name = (editingName || '').toString().toUpperCase()
-      await supabase
+      const { error: upErr } = await supabase
         .from('equipments')
         .update({ empreendimento: name })
-        .eq('id', editing.id)
+        // the primary key column is `equipment` (not `id`) in this table
+        .eq('equipment', editing.id)
+
+      if (upErr) {
+        setError(upErr.message)
+        return
+      }
+
+      // success
       setEditing(null)
       setEditingName('')
       await fetchItems()

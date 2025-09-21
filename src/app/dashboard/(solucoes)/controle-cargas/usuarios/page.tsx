@@ -198,6 +198,7 @@ const Usuarios = () => {
       fetchRows().catch(() => {})
       // if currently editing, refresh the editRecords view
       if (editingCpf) startEdit(editingCpf)
+      window.location.reload()
     } catch (err) {
       setError(String(err))
     }
