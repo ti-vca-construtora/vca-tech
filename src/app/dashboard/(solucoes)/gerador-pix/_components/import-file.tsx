@@ -1,18 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import * as xlsx from 'xlsx'
-import * as qrcode from 'qrcode'
+import { exportJsonToExcel, generatePix } from '@/util'
+import { toPng } from 'html-to-image'
+import JSZip from 'jszip'
+import { Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import * as qrcode from 'qrcode'
 import { useState } from 'react'
 import { BsFiletypeXlsx } from 'react-icons/bs'
-import { Loader2 } from 'lucide-react'
-import JSZip from 'jszip'
-import { toPng } from 'html-to-image'
-import { exportJsonToExcel, generatePix } from '@/util'
+import { toast } from 'sonner'
+import * as xlsx from 'xlsx'
 import { ZodError, ZodIssue } from 'zod'
 import { formSchema } from '../schema/pix-schema'
-import { toast } from 'sonner'
 
 type Info = {
   'Tipo de Chave': 'Celular/Telefone' | 'CPF/CNPJ' | 'E-mail' | 'Outro'
@@ -36,6 +36,8 @@ export function ImportFile() {
   const [info, setInfo] = useState<Info[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
+  const toStr = (v: unknown) => (v == null ? '' : String(v).trim())
+
   const handleReadFile = async () => {
     setIsLoading(true)
     const reader = new FileReader()
@@ -48,7 +50,8 @@ export function ImportFile() {
       const workbook = xlsx.read(data, { type: 'array' })
 
       const sheetName = workbook.SheetNames.find(
-        (name) => name.toLowerCase() === 'dados',
+        // eslint-disable-next-line prettier/prettier
+        (name) => name.toLowerCase() === 'dados'
       )
 
       if (!sheetName) {
@@ -86,18 +89,20 @@ export function ImportFile() {
   const handleInfoToPixData = async (): Promise<PixResult[]> => {
     const results = await Promise.all(
       info.map(async (item): Promise<PixResult> => {
+        const tipoChaveStr = toStr(item['Tipo de Chave']).toLowerCase()
+        const chavePixStr = toStr(item['Chave Pix'])
+        const identificadorStr = toStr(item.Identificador) // <- fix principal
+
         const transformedItem = {
-          keyType: item['Tipo de Chave'].toLowerCase().includes('cpf')
-            ? 'cpf'
-            : 'tel',
+          keyType: tipoChaveStr.includes('cpf') ? 'cpf' : 'tel',
           key:
-            item['Tipo de Chave'] === 'Celular/Telefone'
-              ? `+55${item['Chave Pix']}`
-              : item['Chave Pix'],
-          nomeBeneficiario: item['Nome do Beneficiario'],
-          cidade: item['Cidade do Beneficiario'],
-          valor: item[' Valor (opcional) ']?.toString(),
-          identificador: item.Identificador.trim(),
+            toStr(item['Tipo de Chave']) === 'Celular/Telefone'
+              ? `+55${chavePixStr.replace(/\D/g, '')}`
+              : chavePixStr,
+          nomeBeneficiario: toStr(item['Nome do Beneficiario']),
+          cidade: toStr(item['Cidade do Beneficiario']),
+          valor: toStr(item[' Valor (opcional) ']),
+          identificador: identificadorStr,
         }
 
         try {
@@ -147,7 +152,8 @@ export function ImportFile() {
             ],
           }
         }
-      }),
+        // eslint-disable-next-line prettier/prettier
+      })
     )
 
     return results
@@ -227,7 +233,8 @@ export function ImportFile() {
     // Adicionar link para download
     exportJsonToExcel(
       pixDataArray.map((pix) => ({ payload: pix.payload })),
-      'copia-e-cola',
+      // eslint-disable-next-line prettier/prettier
+      'copia-e-cola'
     )
   }
 
