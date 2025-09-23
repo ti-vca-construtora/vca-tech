@@ -1,12 +1,12 @@
 'use client'
 
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
 import { generatePix } from '@/util'
-import { useState } from 'react'
-import * as qrcode from 'qrcode'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { toPng } from 'html-to-image'
 import Image from 'next/image'
+import * as qrcode from 'qrcode'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { FormSchema, formSchema } from '../schema/pix-schema'
 
 type PixData = {
@@ -91,7 +91,13 @@ export function IndividualForm() {
               />
             </div>
             <p className="text-xs font-semibold">Código copia e cola:</p>
-            <p className="text-xs w-full overflow-hidden">{pixData.payload}</p>
+            <p className="text-xs max-w-[80%] break-all">{pixData.payload}</p>
+            <button
+              onClick={() => navigator.clipboard.writeText(pixData.payload)}
+              className="bg-azul-claro-vca hover:bg-azul-claro-vca/80 text-white px-2 py-1 rounded text-xs font-semibold"
+            >
+              Copiar
+            </button>
           </div>
           <button
             onClick={() =>
@@ -188,6 +194,10 @@ export function IndividualForm() {
               placeholder="100.99"
               className="border h-10 p-2 w-full rounded shadow-md"
               type="text"
+              onInput={(e) => {
+                const target = e.target as HTMLInputElement
+                target.value = target.value.replace(/,/g, '')
+              }}
             />
             {errors.valor?.message && (
               <span className="text-xs text-red-500">
@@ -204,6 +214,10 @@ export function IndividualForm() {
               placeholder="Identificador"
               className="border h-10 p-2 w-full rounded shadow-md"
               type="text"
+              onInput={(e) => {
+                const target = e.target as HTMLInputElement
+                target.value = target.value.replace(/\s/g, '')
+              }}
             />
             {errors.identificador?.message && (
               <span className="text-xs text-red-500">
