@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { LoaderCircle } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Calendar } from './_components/calendar'
 import { DisponibilizarHorarios } from './_components/disponibilizar-horarios'
 import CriarSlotsBulk from './_components/fnc-criaSlotsBulk'
@@ -48,15 +48,21 @@ const Horarios = () => {
     setEmpreendimentos(data.data)
   }
 
+  const initRef = useRef(false)
+
   const checkSlots = async () => {
-    const result = await vrfCriaSlot()
-    if (!result) {
-      CriarSlotsBulk()
-      setIsLoading(false)
+    setIsLoading(true)
+    // retorna lista de empreendimentos sem agenda completa
+    const missingIds = await vrfCriaSlot()
+    if (missingIds && missingIds.length > 0) {
+      await CriarSlotsBulk(missingIds)
     }
+    setIsLoading(false)
   }
 
   useEffect(() => {
+    if (initRef.current) return
+    initRef.current = true
     getEmpreendimentos()
     checkSlots()
   }, [])

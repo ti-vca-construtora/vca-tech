@@ -180,7 +180,7 @@ export function Calendar({
                   </tr>
                 </thead>
                 <tbody>
-                  {Array.from({ length: 4 }, (_, rowIndex) => (
+                  {Array.from({ length: 10 }, (_, rowIndex) => (
                     <tr key={rowIndex}>
                       {nextDays.map((day) => {
                         const slot = groupedSlots[day]?.[rowIndex]
