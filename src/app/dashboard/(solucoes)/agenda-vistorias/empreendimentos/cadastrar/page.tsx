@@ -35,6 +35,40 @@ const optionsLotear = {
   },
 }
 
+const fetchCustomerData = async (
+  vendidaId: string,
+  isVca: boolean
+): Promise<string> => {
+  if (!vendidaId) return 'SEM CLIENTE'
+
+  try {
+    const baseUrl = isVca
+      ? 'https://vca.cvcrm.com.br'
+      : 'https://vcalotear.cvcrm.com.br'
+    const options = isVca ? optionsVca : optionsLotear
+
+    const response = await fetch(
+      `${baseUrl}/api/v1/comercial/reservas/${vendidaId}`,
+      options
+    )
+
+    if (!response.ok) {
+      console.warn(
+        `Erro ao buscar dados do cliente para vendidaId: ${vendidaId}`
+      )
+      return 'SEM CLIENTE'
+    }
+
+    const data = await response.json()
+    const clientName = data[vendidaId]?.titular?.nome
+
+    return clientName && clientName.trim() !== '' ? clientName : 'SEM CLIENTE'
+  } catch (error) {
+    console.error(`Erro ao buscar cliente para vendidaId ${vendidaId}:`, error)
+    return 'SEM CLIENTE'
+  }
+}
+
 const CadastrarEmpreendimento = () => {
   const [empreendimentoId, setEmpreendimentoId] = useState<number>(0)
   const [empreendimentosCV, setEmpreendimentosCV] = useState<
@@ -90,7 +124,13 @@ const CadastrarEmpreendimento = () => {
       nome: '',
       id: '',
     }
-    const unitsOfEmp: { nome: string; id: string }[] = []
+    const unitsOfEmp: {
+      nome: string
+      id: string
+      bloco: string
+      vendidaId: string | null
+      isVca: boolean
+    }[] = []
 
     try {
       const responseVca = await fetch(
@@ -111,6 +151,9 @@ const CadastrarEmpreendimento = () => {
                   ...bloco.unidades.map((u: any) => ({
                     nome: u.nome,
                     id: u.idunidade.toString(),
+                    bloco: bloco.nome,
+                    vendidaId: u.situacao?.vendida?.toString() || null,
+                    isVca: true,
                   }))
                 )
               }
@@ -145,6 +188,9 @@ const CadastrarEmpreendimento = () => {
                   ...bloco.unidades.map((u: any) => ({
                     nome: u.nome,
                     id: u.idunidade.toString(),
+                    bloco: bloco.nome,
+                    vendidaId: u.situacao?.vendida?.toString() || null,
+                    isVca: false,
                   }))
                 )
               }
@@ -165,7 +211,13 @@ const CadastrarEmpreendimento = () => {
       nome: string
       id: string
     },
-    unitsOf: { nome: string; id: string }[]
+    unitsOf: {
+      nome: string
+      id: string
+      bloco: string
+      vendidaId: string | null
+      isVca: boolean
+    }[]
   ) => {
     setSubmiting(true)
     setSubmitingProgress(0)
@@ -189,6 +241,17 @@ const CadastrarEmpreendimento = () => {
       return
     }
     const data = await response.json()
+
+    if (!data?.data?.id) {
+      console.error(
+        'Erro: ID do empreendimento não encontrado na resposta',
+        data
+      )
+      errorNotif()
+      setSubmiting(false)
+      return
+    }
+
     const apiId: string = data.data.id
     await createUnits(apiId, unitsOf)
     console.log('Empreendimento criado:', data)
@@ -201,7 +264,13 @@ const CadastrarEmpreendimento = () => {
 
   const createUnits = async (
     apiId: string,
-    unitsOf: { nome: string; id: string }[]
+    unitsOf: {
+      nome: string
+      id: string
+      bloco: string
+      vendidaId: string | null
+      isVca: boolean
+    }[]
   ) => {
     if (!apiId) {
       console.error('apiId não foi fornecido!')
@@ -218,6 +287,11 @@ const CadastrarEmpreendimento = () => {
       setSubmitingProgress((prev) => prev + progressQuantity)
 
       try {
+        // Buscar dados do cliente se houver vendidaId
+        const customerName = unit.vendidaId
+          ? await fetchCustomerData(unit.vendidaId, unit.isVca)
+          : 'SEM CLIENTE'
+
         const response = await fetch('/api/vistorias/unidades', {
           method: 'POST',
           headers: {
@@ -227,6 +301,8 @@ const CadastrarEmpreendimento = () => {
             developmentId: apiId,
             unit: unit.nome,
             externalId: unit.id,
+            block: unit.bloco,
+            customerName,
           }),
         })
 
