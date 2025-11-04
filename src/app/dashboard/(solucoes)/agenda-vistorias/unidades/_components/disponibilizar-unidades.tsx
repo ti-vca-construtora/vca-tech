@@ -10,12 +10,26 @@ import {
 } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Check, ChevronsUpDown } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { ToastContainer, toast } from 'react-toastify'
 
@@ -24,6 +38,9 @@ type ValidationType = 'QUALITY' | 'RELATIONSHIP' | 'FINANCIAL'
 type Unidade = {
   id: string
   unit: string
+  block: string
+  customerName: string
+  externalId: string
   isEnabled: boolean
   validations: ValidationType[]
   developmentId: string
@@ -39,7 +56,10 @@ type Empreendimento = {
 
 const DisponibilizarUnidades = () => {
   const [enterprises, setEnterprises] = useState<Empreendimento[]>([])
-  const [selectedEnterprise, setSelectedEnterprise] = useState<string>('TODOS')
+  const [selectedEnterprise, setSelectedEnterprise] = useState<string>('')
+  const [selectedBlock, setSelectedBlock] = useState<string>('ALL')
+  const [selectedCustomer, setSelectedCustomer] = useState<string>('ALL')
+  const [openCustomerPopover, setOpenCustomerPopover] = useState(false)
   const [units, setUnits] = useState<Unidade[]>([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({
@@ -47,7 +67,7 @@ const DisponibilizarUnidades = () => {
     quality: false,
     relationship: false,
   })
-  const [selectedUnit, setSelectedUnit] = useState<string>('TODOS')
+  const [selectedUnit, setSelectedUnit] = useState<string>('ALL')
   const [modifiedUnits, setModifiedUnits] = useState<
     Record<string, ValidationType[]>
   >({})
@@ -97,28 +117,35 @@ const DisponibilizarUnidades = () => {
   }
 
   const getUnitsByEnterprise = (enterpriseId: string) => {
-    if (enterpriseId === 'TODOS') {
-      const allUnits: Unidade[] = []
-      enterprises.forEach((emp) => {
-        if (emp.units) {
-          allUnits.push(
-            ...emp.units.map((u) => ({
-              ...u,
-              enterpriseName: emp.name,
-            }))
-          )
-        }
-      })
-      return allUnits
-    } else {
-      const enterprise = enterprises.find((emp) => emp.id === enterpriseId)
-      return (
-        enterprise?.units?.map((u) => ({
-          ...u,
-          enterpriseName: enterprise.name,
-        })) || []
-      )
-    }
+    if (!enterpriseId) return []
+
+    const enterprise = enterprises.find((emp) => emp.id === enterpriseId)
+    return (
+      enterprise?.units?.map((u) => ({
+        ...u,
+        enterpriseName: enterprise.name,
+      })) || []
+    )
+  }
+
+  // Obter blocos únicos das unidades do empreendimento selecionado
+  const getAvailableBlocks = () => {
+    if (!selectedEnterprise) return []
+    const blocks = Array.from(new Set(units.map((u) => u.block)))
+    return blocks.filter(Boolean).sort((a, b) => a.localeCompare(b))
+  }
+
+  // Obter unidades únicas do empreendimento selecionado
+  const getAvailableUnits = () => {
+    if (!selectedEnterprise) return []
+    return Array.from(units).sort((a, b) => a.unit.localeCompare(b.unit))
+  }
+
+  // Obter clientes únicos do empreendimento selecionado
+  const getAvailableCustomers = () => {
+    if (!selectedEnterprise) return []
+    const customers = Array.from(new Set(units.map((u) => u.customerName)))
+    return customers.filter(Boolean).sort((a, b) => a.localeCompare(b))
   }
 
   useEffect(() => {
@@ -126,16 +153,22 @@ const DisponibilizarUnidades = () => {
   }, [])
 
   useEffect(() => {
-    if (enterprises.length > 0) {
+    if (enterprises.length > 0 && selectedEnterprise) {
       const units = getUnitsByEnterprise(selectedEnterprise)
       setUnits(units)
       setModifiedUnits({})
+    } else {
+      setUnits([])
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedEnterprise, enterprises])
 
   const handleEnterpriseChange = (value: string) => {
     setSelectedEnterprise(value)
+    // Reset outros filtros quando mudar empreendimento
+    setSelectedBlock('ALL')
+    setSelectedUnit('ALL')
+    setSelectedCustomer('ALL')
   }
 
   const hasValidation = (unit: Unidade, validation: ValidationType) => {
@@ -211,25 +244,47 @@ const DisponibilizarUnidades = () => {
     }, 3000)
   }
 
-  const filteredUnits = units.filter((unit) => {
-    if (selectedUnit !== 'TODOS' && unit.id !== selectedUnit) {
-      return false
-    }
+  const filteredUnits = units
+    .filter((unit) => {
+      // Filtro de bloco
+      if (
+        selectedBlock &&
+        selectedBlock !== 'ALL' &&
+        unit.block !== selectedBlock
+      ) {
+        return false
+      }
 
-    const unitValidations = modifiedUnits[unit.id] || unit.validations
+      // Filtro de unidade
+      if (selectedUnit && selectedUnit !== 'ALL' && unit.id !== selectedUnit) {
+        return false
+      }
 
-    if (!filters.financial && !filters.quality && !filters.relationship) {
-      return true
-    }
+      // Filtro de cliente
+      if (
+        selectedCustomer &&
+        selectedCustomer !== 'ALL' &&
+        unit.customerName !== selectedCustomer
+      ) {
+        return false
+      }
 
-    const matches = []
-    if (filters.financial) matches.push(unitValidations.includes('FINANCIAL'))
-    if (filters.quality) matches.push(unitValidations.includes('QUALITY'))
-    if (filters.relationship)
-      matches.push(unitValidations.includes('RELATIONSHIP'))
+      const unitValidations = modifiedUnits[unit.id] || unit.validations
 
-    return matches.length > 0 && matches.every((m) => m)
-  })
+      // Filtros de validação (checkboxes)
+      if (!filters.financial && !filters.quality && !filters.relationship) {
+        return true
+      }
+
+      const matches = []
+      if (filters.financial) matches.push(unitValidations.includes('FINANCIAL'))
+      if (filters.quality) matches.push(unitValidations.includes('QUALITY'))
+      if (filters.relationship)
+        matches.push(unitValidations.includes('RELATIONSHIP'))
+
+      return matches.length > 0 && matches.every((m) => m)
+    })
+    .sort((a, b) => a.unit.localeCompare(b.unit)) // Ordenar por unidade alfabeticamente
 
   const renderUnitCards = () => {
     if (loading) {
@@ -245,7 +300,9 @@ const DisponibilizarUnidades = () => {
         <Card className="flex flex-row items-center justify-between">
           <CardHeader>
             <CardTitle>{unit.enterpriseName}</CardTitle>
-            <CardDescription>{unit.unit}</CardDescription>
+            <CardDescription>
+              {unit.unit} {unit.customerName && ` - ${unit.customerName}`}
+            </CardDescription>
           </CardHeader>
           <div className="mr-6">
             <div className="flex items-center space-x-2 my-2">
@@ -313,21 +370,19 @@ const DisponibilizarUnidades = () => {
         pauseOnHover
         theme="light"
       />
-      <div className="flex">
-        <div className="mr-2 w-1/2">
-          <h1 className="font-medium ml-1">Selecione o empreendimento:</h1>
+      <div className="flex gap-2">
+        {/* Filtro de Empreendimento */}
+        <div className="flex-1 min-w-0">
+          <h1 className="font-medium ml-1 mb-1 text-xs">Empreendimento:</h1>
           <Select
             value={selectedEnterprise}
             onValueChange={handleEnterpriseChange}
             disabled={loading}
           >
-            <SelectTrigger className="bg-white">
-              <SelectValue placeholder="SELECIONE O EMPREENDIMENTO" />
+            <SelectTrigger className="bg-white w-full h-8 text-xs">
+              <SelectValue placeholder="SELECIONE" className="truncate" />
             </SelectTrigger>
             <SelectContent className="cursor-pointer">
-              <SelectItem className="cursor-pointer" value="TODOS">
-                TODOS
-              </SelectItem>
               {enterprises.map((enterprise) => (
                 <SelectItem
                   className="cursor-pointer"
@@ -341,21 +396,50 @@ const DisponibilizarUnidades = () => {
           </Select>
         </div>
 
-        <div className="ml-2 w-2/4">
-          <h1 className="font-medium ml-1">Selecione a unidade:</h1>
+        {/* Filtro de Bloco */}
+        <div className="flex-1 min-w-0">
+          <h1 className="font-medium ml-1 mb-1 text-xs">Bloco:</h1>
+          <Select
+            value={selectedBlock}
+            onValueChange={(value) => setSelectedBlock(value)}
+            disabled={!selectedEnterprise}
+          >
+            <SelectTrigger className="bg-white w-full h-8 text-xs">
+              <SelectValue placeholder="TODOS" className="truncate" />
+            </SelectTrigger>
+            <SelectContent className="cursor-pointer">
+              <SelectItem className="cursor-pointer" value="ALL">
+                TODOS OS BLOCOS
+              </SelectItem>
+              {getAvailableBlocks().map((block) => (
+                <SelectItem
+                  className="cursor-pointer"
+                  key={block}
+                  value={block}
+                >
+                  {block}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Filtro de Unidade */}
+        <div className="flex-1 min-w-0">
+          <h1 className="font-medium ml-1 mb-1 text-xs">Unidade:</h1>
           <Select
             value={selectedUnit}
             onValueChange={(value) => setSelectedUnit(value)}
-            disabled={loading}
+            disabled={!selectedEnterprise}
           >
-            <SelectTrigger className="bg-white">
-              <SelectValue placeholder="SELECIONE A UNIDADE" />
+            <SelectTrigger className="bg-white w-full h-8 text-xs">
+              <SelectValue placeholder="TODAS" className="truncate" />
             </SelectTrigger>
             <SelectContent className="cursor-pointer">
-              <SelectItem className="cursor-pointer" value="TODOS">
-                TODOS
+              <SelectItem className="cursor-pointer" value="ALL">
+                TODAS AS UNIDADES
               </SelectItem>
-              {units.map((unit) => (
+              {getAvailableUnits().map((unit) => (
                 <SelectItem
                   className="cursor-pointer"
                   key={unit.id}
@@ -368,9 +452,88 @@ const DisponibilizarUnidades = () => {
           </Select>
         </div>
 
-        <div className="mr-6 ml-2 w-1/6">
-          <h2 className="font-medium mb-2">Filtrar por:</h2>
-          <div className="flex items-center space-x-2 my-2">
+        {/* Filtro de Cliente */}
+        <div className="flex-1 min-w-0">
+          <h1 className="font-medium ml-1 mb-1 text-xs">Cliente:</h1>
+          <Popover
+            open={openCustomerPopover}
+            onOpenChange={setOpenCustomerPopover}
+          >
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={openCustomerPopover}
+                className="w-full h-8 justify-between text-xs bg-white"
+                disabled={!selectedEnterprise}
+              >
+                <span className="truncate">
+                  {selectedCustomer === 'ALL'
+                    ? 'TODOS'
+                    : getAvailableCustomers().find(
+                        (c) => c === selectedCustomer
+                      ) || 'TODOS'}
+                </span>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[300px] p-0">
+              <Command>
+                <CommandInput
+                  placeholder="Buscar cliente..."
+                  className="h-8 text-xs"
+                />
+                <CommandList>
+                  <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value="ALL"
+                      onSelect={() => {
+                        setSelectedCustomer('ALL')
+                        setOpenCustomerPopover(false)
+                      }}
+                      className="text-xs"
+                    >
+                      <Check
+                        className={`mr-2 h-4 w-4 ${
+                          selectedCustomer === 'ALL'
+                            ? 'opacity-100'
+                            : 'opacity-0'
+                        }`}
+                      />
+                      TODOS OS CLIENTES
+                    </CommandItem>
+                    {getAvailableCustomers().map((customer) => (
+                      <CommandItem
+                        key={customer}
+                        value={customer}
+                        onSelect={() => {
+                          setSelectedCustomer(customer)
+                          setOpenCustomerPopover(false)
+                        }}
+                        className="text-xs"
+                      >
+                        <Check
+                          className={`mr-2 h-4 w-4 ${
+                            selectedCustomer === customer
+                              ? 'opacity-100'
+                              : 'opacity-0'
+                          }`}
+                        />
+                        {customer}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        {/* Filtros de Validação */}
+        <div className="w-32 min-w-0">
+          <h2 className="font-medium mb-1 text-xs">Filtrar por:</h2>
+          <div className="flex items-center space-x-1 my-1.5">
             <Checkbox
               id="filter-financial"
               checked={filters.financial}
@@ -380,12 +543,12 @@ const DisponibilizarUnidades = () => {
             />
             <label
               htmlFor="filter-financial"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
               Financeiro
             </label>
           </div>
-          <div className="flex items-center space-x-2 my-2">
+          <div className="flex items-center space-x-1 my-1.5">
             <Checkbox
               id="filter-quality"
               checked={filters.quality}
@@ -395,12 +558,12 @@ const DisponibilizarUnidades = () => {
             />
             <label
               htmlFor="filter-quality"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
               Qualidade
             </label>
           </div>
-          <div className="flex items-center space-x-2 my-2">
+          <div className="flex items-center space-x-1 my-1.5">
             <Checkbox
               id="filter-relationship"
               checked={filters.relationship}
@@ -410,7 +573,7 @@ const DisponibilizarUnidades = () => {
             />
             <label
               htmlFor="filter-relationship"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
               Relacionamento
             </label>
