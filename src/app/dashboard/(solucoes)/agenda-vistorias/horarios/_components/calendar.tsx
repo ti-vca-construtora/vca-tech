@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
+import { useInspectionConfig } from '@/hooks/use-inspection-config'
 import { addHours, format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale/pt-BR'
 import { useEffect, useMemo, useState } from 'react'
@@ -31,9 +32,10 @@ export function Calendar({
   selectedDevelopment?: string
 }) {
   const [slots, setSlots] = useState<Slot[]>([])
+  const { config } = useInspectionConfig()
 
-  const diasPrazo = 3 - 3
-  const diasDuracao = 60
+  const diasPrazo = config?.minDaysToSchedule ?? 3
+  const diasDuracao = config?.maxDaysToSchedule ?? 60
 
   useEffect(() => {
     if (!selectedDevelopment) return

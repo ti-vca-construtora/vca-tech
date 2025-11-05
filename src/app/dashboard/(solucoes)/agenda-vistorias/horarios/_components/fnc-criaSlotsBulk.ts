@@ -2,10 +2,24 @@
 
 import RetornaEmpAtivos from './fnc-empativos'
 
+// Busca as configurações de agendamento
+const fetchInspectionConfig = async () => {
+  try {
+    const response = await fetch('/api/vistorias/inspection-config')
+    if (response.ok) {
+      const result = await response.json()
+      return result.data
+    }
+  } catch (error) {
+    console.error('Erro ao buscar configurações:', error)
+  }
+  return null
+}
+
 // Cria slots para todos os empreendimentos ou somente para os IDs informados
 const CriarSlotsBulk = (onlyIds?: (string | number)[]) => {
-  const diasPrazo = 3 - 3
-  const diasDuracao = 60
+  let diasPrazo = 3
+  let diasDuracao = 60
   const horarios = [
     { inicio: '08:00', fim: '09:00' },
     { inicio: '09:00', fim: '10:00' },
@@ -20,6 +34,13 @@ const CriarSlotsBulk = (onlyIds?: (string | number)[]) => {
   ]
 
   const executar = async () => {
+    // Buscar configurações primeiro
+    const config = await fetchInspectionConfig()
+    if (config) {
+      diasPrazo = config.minDaysToSchedule
+      diasDuracao = config.maxDaysToSchedule
+    }
+
     const ids =
       onlyIds && onlyIds.length > 0 ? onlyIds : await RetornaEmpAtivos()
     if (!ids || ids.length === 0) return

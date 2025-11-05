@@ -1,10 +1,26 @@
 /* eslint-disable prettier/prettier */
 import RetornaEmpAtivos from './fnc-empativos'
 
+// Busca as configurações de agendamento
+const fetchInspectionConfig = async () => {
+  try {
+    const response = await fetch('/api/vistorias/inspection-config')
+    if (response.ok) {
+      const result = await response.json()
+      return result.data
+    }
+  } catch (error) {
+    console.error('Erro ao buscar configurações:', error)
+  }
+  return null
+}
+
 // Retorna a lista de empreendimentos que NÃO possuem slots até a data alvo
 const vrfCriaSlot = async (): Promise<(string | number)[]> => {
-  const diasPrazo = 3 - 3
-  const diasDuracao = 60
+  // Buscar configurações
+  const config = await fetchInspectionConfig()
+  const diasPrazo = config?.minDaysToSchedule ?? 3
+  const diasDuracao = config?.maxDaysToSchedule ?? 60
 
   // data alvo: último dia que deveria existir slot
   const paramDate = new Date()
