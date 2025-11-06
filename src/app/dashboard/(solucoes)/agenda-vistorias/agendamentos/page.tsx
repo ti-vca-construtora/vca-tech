@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 'use client'
 
 import { Badge } from '@/components/ui/badge'
@@ -17,9 +18,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { addDays, addHours, format, isSameDay, parseISO } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { addHours, format, isWithinInterval, parseISO } from 'date-fns'
+import { Download } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { ToastContainer, toast } from 'react-toastify'
 
@@ -40,10 +49,24 @@ interface Inspection {
   }
 }
 
+interface Development {
+  id: string
+  name: string
+  isActive: boolean
+}
+
 const ScheduledInspectionsPage = () => {
-  const [currentDate, setCurrentDate] = useState<Date>(new Date())
   const [inspections, setInspections] = useState<Inspection[]>([])
+  const [developments, setDevelopments] = useState<Development[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState<boolean>(false)
+  const [selectedDevelopment, setSelectedDevelopment] = useState<string>('ALL')
+  const [startDate, setStartDate] = useState<string>(
+    format(new Date(), 'yyyy-MM-dd')
+  )
+  const [endDate, setEndDate] = useState<string>(
+    format(new Date(), 'yyyy-MM-dd')
+  )
 
   const sucessNotif = () =>
     toast.success('Registro registrado!', {
@@ -69,7 +92,79 @@ const ScheduledInspectionsPage = () => {
       theme: 'light',
     })
 
+  const handleExportPDF = async () => {
+    if (isGeneratingPDF) return // Previne cliques duplicados
+
+    setIsGeneratingPDF(true)
+    try {
+      const response = await fetch('/api/pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'agendamentos',
+          data: {
+            inspections: filteredInspections,
+            filters: {
+              startDate,
+              endDate,
+              development:
+                selectedDevelopment === 'ALL'
+                  ? 'Todos os empreendimentos'
+                  : selectedDevelopment,
+            },
+          },
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Erro ao gerar relatório')
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `agendamentos-${format(new Date(), 'dd-MM-yyyy-HHmmss')}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+
+      toast.success('Relatório gerado com sucesso!')
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error)
+      toast.error('Erro ao gerar relatório')
+    } finally {
+      setIsGeneratingPDF(false)
+    }
+  }
+
   useEffect(() => {
+    const fetchDevelopments = async () => {
+      try {
+        const response = await fetch(
+          '/api/vistorias/empreendimentos?page=1&pageSize=500&isActive=1',
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        )
+
+        if (!response.ok) {
+          throw new Error('Erro ao carregar empreendimentos')
+        }
+
+        const data = await response.json()
+        setDevelopments(data.data)
+      } catch (error) {
+        console.error(error)
+      }
+    }
+
     const fetchInspections = async () => {
       setIsLoading(true)
       try {
@@ -97,7 +192,93 @@ const ScheduledInspectionsPage = () => {
             // eslint-disable-next-line prettier/prettier
             item.status === 'RESCHEDULED'
         )
-        setInspections(scheduledInspections)
+
+        // ==================== MOCK DATA - REMOVER DEPOIS ====================
+        const mockInspections: Inspection[] = [
+          {
+            id: 'mock-1',
+            status: 'SCHEDULED',
+            inspectionSlot: {
+              startAt: '2025-11-06T08:00:00.000Z',
+              endAt: '2025-11-06T09:00:00.000Z',
+              status: 'AVAILABLE',
+            },
+            unitId: 'mock-unit-1',
+            unit: {
+              unit: '101',
+              development: {
+                name: 'CONDE RESIDENCIAL - VITÓRIA DA CONQUISTA',
+              },
+            },
+          },
+          {
+            id: 'mock-2',
+            status: 'COMPLETED',
+            inspectionSlot: {
+              startAt: '2025-11-06T14:00:00.000Z',
+              endAt: '2025-11-06T15:00:00.000Z',
+              status: 'AVAILABLE',
+            },
+            unitId: 'mock-unit-2',
+            unit: {
+              unit: '202',
+              development: {
+                name: 'Residencial Teste 2',
+              },
+            },
+          },
+          {
+            id: 'mock-3',
+            status: 'SCHEDULED',
+            inspectionSlot: {
+              startAt: '2025-11-07T09:00:00.000Z',
+              endAt: '2025-11-07T10:00:00.000Z',
+              status: 'AVAILABLE',
+            },
+            unitId: 'mock-unit-3',
+            unit: {
+              unit: '303',
+              development: {
+                name: 'Residencial Teste 1',
+              },
+            },
+          },
+          {
+            id: 'mock-4',
+            status: 'RESCHEDULED',
+            inspectionSlot: {
+              startAt: '2025-11-07T16:00:00.000Z',
+              endAt: '2025-11-07T17:00:00.000Z',
+              status: 'AVAILABLE',
+            },
+            unitId: 'mock-unit-4',
+            unit: {
+              unit: '404',
+              development: {
+                name: 'Residencial Teste 3',
+              },
+            },
+          },
+          {
+            id: 'mock-5',
+            status: 'SCHEDULED',
+            inspectionSlot: {
+              startAt: '2025-11-09T10:00:00.000Z',
+              endAt: '2025-11-09T11:00:00.000Z',
+              status: 'AVAILABLE',
+            },
+            unitId: 'mock-unit-5',
+            unit: {
+              unit: '505',
+              development: {
+                name: 'Residencial Teste 2',
+              },
+            },
+          },
+        ]
+        // ==================== FIM MOCK DATA ====================
+
+        setInspections([...scheduledInspections, ...mockInspections])
       } catch (error) {
         console.error(error)
       } finally {
@@ -105,20 +286,9 @@ const ScheduledInspectionsPage = () => {
       }
     }
 
+    fetchDevelopments()
     fetchInspections()
   }, [])
-
-  const goToPreviousDay = () => {
-    setCurrentDate(addDays(currentDate, -1))
-  }
-
-  const goToNextDay = () => {
-    setCurrentDate(addDays(currentDate, 1))
-  }
-
-  const formatDate = (date: Date) => {
-    return format(date, "EEEE, d 'de' MMMM", { locale: ptBR })
-  }
 
   const formatTime = (date: string | Date) => {
     if (date instanceof Date) {
@@ -144,8 +314,20 @@ const ScheduledInspectionsPage = () => {
   }
 
   const filteredInspections = inspections.filter((inspection) => {
-    const startDate = normalizeDate(inspection.inspectionSlot.startAt)
-    return isSameDay(startDate, currentDate)
+    const inspectionDate = normalizeDate(inspection.inspectionSlot.startAt)
+
+    // Filtro de empreendimento
+    if (selectedDevelopment !== 'ALL') {
+      if (inspection.unit.development.name !== selectedDevelopment) {
+        return false
+      }
+    }
+
+    // Filtro de data (intervalo de/até)
+    const start = parseISO(startDate + 'T00:00:00')
+    const end = parseISO(endDate + 'T23:59:59')
+
+    return isWithinInterval(inspectionDate, { start, end })
   })
 
   const renderInspections = () => {
@@ -341,19 +523,63 @@ const ScheduledInspectionsPage = () => {
               <div>
                 <CardTitle>Vistorias Agendadas</CardTitle>
                 <CardDescription className="mt-2">
-                  Visualize as vistorias agendadas por dia
+                  Visualize as vistorias agendadas por período
                 </CardDescription>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="icon" onClick={goToPreviousDay}>
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <div className="text-lg font-medium">
-                  {formatDate(currentDate)}
-                </div>
-                <Button variant="outline" size="icon" onClick={goToNextDay}>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+              <Button
+                onClick={handleExportPDF}
+                disabled={filteredInspections.length === 0 || isGeneratingPDF}
+                className="flex items-center gap-2 bg-azul-claro-vca text-white hover:bg-azul-vca"
+              >
+                <Download className="h-4 w-4" />
+                {isGeneratingPDF ? 'Gerando...' : 'Exportar Relatório'}
+              </Button>
+            </div>
+
+            {/* Filtros */}
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Filtro de Empreendimento */}
+              <div className="space-y-2">
+                <Label htmlFor="development">Empreendimento</Label>
+                <Select
+                  value={selectedDevelopment}
+                  onValueChange={setSelectedDevelopment}
+                  disabled={isLoading}
+                >
+                  <SelectTrigger id="development">
+                    <SelectValue placeholder="Selecione o empreendimento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">Todos</SelectItem>
+                    {developments.map((dev) => (
+                      <SelectItem key={dev.id} value={dev.name}>
+                        {dev.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Filtro Data Inicial */}
+              <div className="space-y-2">
+                <Label htmlFor="startDate">Data inicial</Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+              </div>
+
+              {/* Filtro Data Final */}
+              <div className="space-y-2">
+                <Label htmlFor="endDate">Data final</Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
               </div>
             </div>
           </CardHeader>
