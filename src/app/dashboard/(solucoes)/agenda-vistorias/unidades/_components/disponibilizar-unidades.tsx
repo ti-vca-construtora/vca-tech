@@ -29,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useUser } from '@/hooks/use-user'
 import { Check, ChevronsUpDown } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { ToastContainer, toast } from 'react-toastify'
@@ -55,6 +56,7 @@ type Empreendimento = {
 }
 
 const DisponibilizarUnidades = () => {
+  const { user } = useUser()
   const [enterprises, setEnterprises] = useState<Empreendimento[]>([])
   const [selectedEnterprise, setSelectedEnterprise] = useState<string>('')
   const [selectedBlock, setSelectedBlock] = useState<string>('ALL')
@@ -72,6 +74,27 @@ const DisponibilizarUnidades = () => {
     Record<string, ValidationType[]>
   >({})
   const [isSaving, setIsSaving] = useState(false)
+
+  // Mapear department do usuário para os tipos de validação permitidos
+  const getAllowedValidations = (): ValidationType[] => {
+    if (!user?.department) return []
+
+    const departmentMap: Record<string, ValidationType[]> = {
+      Financeiro: ['FINANCIAL'],
+      Qualidade: ['QUALITY'],
+      Entregas: ['RELATIONSHIP'],
+    }
+
+    return departmentMap[user.department] || []
+  }
+
+  const allowedValidations = getAllowedValidations()
+
+  // Verificar se o checkbox deve estar habilitado
+  const isCheckboxEnabled = (validation: ValidationType): boolean => {
+    if (!user?.department) return false
+    return allowedValidations.includes(validation)
+  }
 
   const toastConfig = {
     position: 'top-right' as const,
@@ -188,6 +211,18 @@ const DisponibilizarUnidades = () => {
       const updatedValidations = checked
         ? [...currentValidations, validation]
         : currentValidations.filter((v) => v !== validation)
+
+      // Se as validações voltarem ao estado original, remover do modifiedUnits
+      const originalValidations = unit.validations
+      const isSameAsOriginal =
+        updatedValidations.length === originalValidations.length &&
+        updatedValidations.every((v) => originalValidations.includes(v))
+
+      if (isSameAsOriginal) {
+        const newModified = { ...prev }
+        delete newModified[unit.id]
+        return newModified
+      }
 
       return {
         ...prev,
@@ -312,10 +347,15 @@ const DisponibilizarUnidades = () => {
                 onCheckedChange={(checked) =>
                   handleCheckboxChange(unit, 'FINANCIAL', checked as boolean)
                 }
+                disabled={!isCheckboxEnabled('FINANCIAL')}
               />
               <label
                 htmlFor={`financial-${unit.id}`}
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                className={`text-sm font-medium leading-none ${
+                  !isCheckboxEnabled('FINANCIAL')
+                    ? 'cursor-not-allowed opacity-50'
+                    : 'cursor-pointer'
+                }`}
               >
                 Financeiro
               </label>
@@ -327,10 +367,15 @@ const DisponibilizarUnidades = () => {
                 onCheckedChange={(checked) =>
                   handleCheckboxChange(unit, 'QUALITY', checked as boolean)
                 }
+                disabled={!isCheckboxEnabled('QUALITY')}
               />
               <label
                 htmlFor={`quality-${unit.id}`}
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                className={`text-sm font-medium leading-none ${
+                  !isCheckboxEnabled('QUALITY')
+                    ? 'cursor-not-allowed opacity-50'
+                    : 'cursor-pointer'
+                }`}
               >
                 Qualidade
               </label>
@@ -342,10 +387,15 @@ const DisponibilizarUnidades = () => {
                 onCheckedChange={(checked) =>
                   handleCheckboxChange(unit, 'RELATIONSHIP', checked as boolean)
                 }
+                disabled={!isCheckboxEnabled('RELATIONSHIP')}
               />
               <label
                 htmlFor={`relationship-${unit.id}`}
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                className={`text-sm font-medium leading-none ${
+                  !isCheckboxEnabled('RELATIONSHIP')
+                    ? 'cursor-not-allowed opacity-50'
+                    : 'cursor-pointer'
+                }`}
               >
                 Entregas
               </label>
