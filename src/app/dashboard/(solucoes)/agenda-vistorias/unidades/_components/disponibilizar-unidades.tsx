@@ -347,7 +347,7 @@ const DisponibilizarUnidades = () => {
                 htmlFor={`relationship-${unit.id}`}
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                Relacionamento
+                Entregas
               </label>
             </div>
           </div>
@@ -575,7 +575,7 @@ const DisponibilizarUnidades = () => {
               htmlFor="filter-relationship"
               className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
-              Relacionamento
+              Entregas
             </label>
           </div>
         </div>

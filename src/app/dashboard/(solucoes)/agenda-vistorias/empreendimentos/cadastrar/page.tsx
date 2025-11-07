@@ -415,24 +415,41 @@ const CadastrarEmpreendimento = () => {
         </div>
         <div className="w-full flex justify-end gap-2">
           <Link href="/dashboard/agenda-vistorias/empreendimentos">
-            <Button variant="destructive">Cancelar</Button>
+            <Button
+              variant="destructive"
+              onClick={(e) => {
+                if (submiting) {
+                  e.preventDefault()
+                  window.location.reload()
+                }
+              }}
+            >
+              {submiting ? 'Abortar' : 'Cancelar'}
+            </Button>
           </Link>
-          <Button
-            onClick={buscaCv}
-            variant="default"
-            className="bg-azul-claro-vca hover:bg-verde-vca"
-          >
-            Salvar
-          </Button>
+          {!submiting && (
+            <Button
+              onClick={buscaCv}
+              variant="default"
+              className="bg-azul-claro-vca hover:bg-verde-vca"
+            >
+              Salvar
+            </Button>
+          )}
         </div>
 
         {submiting ? (
           <div className="mt-20">
-            <h2 className="text-lg font-semibold">Progresso</h2>
+            <h2 className="text-lg font-semibold">Progresso do Cadastro</h2>
             <p className="text-sm text-muted-foreground">
               Cadastrando empreendimento e unidades ...
             </p>
-            <Progress value={submitingProgress} />
+            <div className="flex items-center gap-3 mt-2">
+              <Progress value={submitingProgress} className="flex-1" />
+              <span className="text-sm font-medium text-azul-vca min-w-[50px]">
+                {Math.round(submitingProgress)}%
+              </span>
+            </div>
           </div>
         ) : (
           ''
