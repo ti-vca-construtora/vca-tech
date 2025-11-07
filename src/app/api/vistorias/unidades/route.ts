@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { NextRequest, NextResponse } from 'next/server'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_TECH_API_URL
@@ -45,13 +46,23 @@ export async function PATCH(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')
 
+  console.log('🔵 [API PATCH] Recebida requisição PATCH')
+  console.log('🔵 [API PATCH] ID da unidade:', id)
+
   if (!id) {
+    console.error('🔴 [API PATCH] ID não fornecido!')
     return NextResponse.json({ error: 'ID is required' }, { status: 400 })
   }
 
   const body = await req.json()
+  console.log('🔵 [API PATCH] Body recebido:', body)
+  console.log('🔵 [API PATCH] Validations:', body.validations)
 
-  await fetch(`${API_BASE_URL}/${API_ENDPOINT}/${id}`, {
+  const apiUrl = `${API_BASE_URL}/${API_ENDPOINT}/${id}`
+  console.log('🔵 [API PATCH] URL da API externa:', apiUrl)
+  console.log('🔵 [API PATCH] Enviando requisição para API externa...')
+
+  const externalResponse = await fetch(apiUrl, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -60,7 +71,25 @@ export async function PATCH(req: NextRequest) {
     body: JSON.stringify(body),
   })
 
-  return NextResponse.json({ status: 200 })
+  console.log(
+    '🟢 [API PATCH] Status da resposta da API externa:',
+    externalResponse.status
+  )
+  console.log('🟢 [API PATCH] Status text:', externalResponse.statusText)
+
+  const responseData = await externalResponse.json().catch(() => null)
+  console.log('🟢 [API PATCH] Response data da API externa:', responseData)
+
+  if (!externalResponse.ok) {
+    console.error('🔴 [API PATCH] Erro na API externa!')
+    return NextResponse.json(
+      { error: 'Failed to update unit', details: responseData },
+      { status: externalResponse.status }
+    )
+  }
+
+  console.log('🟢 [API PATCH] PATCH executado com sucesso!')
+  return NextResponse.json({ status: 200, data: responseData })
 }
 
 export async function DELETE(req: NextRequest) {

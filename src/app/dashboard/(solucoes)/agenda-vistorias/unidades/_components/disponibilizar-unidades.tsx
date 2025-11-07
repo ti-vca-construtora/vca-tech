@@ -18,6 +18,15 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -30,7 +39,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useUser } from '@/hooks/use-user'
-import { Check, ChevronsUpDown } from 'lucide-react'
+import { Check, ChevronsUpDown, Lock, Unlock } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { ToastContainer, toast } from 'react-toastify'
 
@@ -74,9 +83,17 @@ const DisponibilizarUnidades = () => {
     Record<string, ValidationType[]>
   >({})
   const [isSaving, setIsSaving] = useState(false)
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false)
+  const [showAdminDialog, setShowAdminDialog] = useState(false)
+  const [adminPassword, setAdminPassword] = useState('')
 
   // Mapear department do usuário para os tipos de validação permitidos
   const getAllowedValidations = (): ValidationType[] => {
+    // Se admin está desbloqueado, liberar tudo
+    if (isAdminUnlocked) {
+      return ['FINANCIAL', 'QUALITY', 'RELATIONSHIP']
+    }
+
     if (!user?.department) return []
 
     const departmentMap: Record<string, ValidationType[]> = {
@@ -92,8 +109,55 @@ const DisponibilizarUnidades = () => {
 
   // Verificar se o checkbox deve estar habilitado
   const isCheckboxEnabled = (validation: ValidationType): boolean => {
+    if (isAdminUnlocked) return true
     if (!user?.department) return false
     return allowedValidations.includes(validation)
+  }
+
+  const handleAdminUnlock = () => {
+    const correctPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD
+
+    if (adminPassword === correctPassword) {
+      setIsAdminUnlocked(true)
+      setShowAdminDialog(false)
+      setAdminPassword('')
+      toast.success('Modo admin ativado! Todos os checkboxes liberados.', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: 'light',
+      })
+    } else {
+      toast.error('Senha incorreta!', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: 'light',
+      })
+      setAdminPassword('')
+    }
+  }
+
+  const handleAdminLock = () => {
+    setIsAdminUnlocked(false)
+    toast.info('Modo admin desativado.', {
+      position: 'top-right',
+      autoClose: 2000,
+      hideProgressBar: false,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: 'light',
+    })
   }
 
   const toastConfig = {
@@ -241,10 +305,22 @@ const DisponibilizarUnidades = () => {
   const handleSaveChanges = async () => {
     if (Object.keys(modifiedUnits).length === 0) return
 
+    console.log('🔵 [SAVE] Iniciando salvamento...')
+    console.log('🔵 [SAVE] Unidades modificadas:', modifiedUnits)
+    console.log(
+      '🔵 [SAVE] Total de unidades a salvar:',
+      Object.keys(modifiedUnits).length
+    )
+
     setIsSaving(true)
     try {
       for (const [unitId, validations] of Object.entries(modifiedUnits)) {
-        console.log(validations)
+        console.log(`🟡 [SAVE] Salvando unidade ${unitId}`)
+        console.log(
+          `🟡 [SAVE] Validations para unidade ${unitId}:`,
+          validations
+        )
+
         const response = await fetch(`/api/vistorias/unidades?id=${unitId}`, {
           method: 'PATCH',
           headers: {
@@ -253,11 +329,26 @@ const DisponibilizarUnidades = () => {
           body: JSON.stringify({ validations }),
         })
 
+        console.log(
+          `🟢 [SAVE] Response status para ${unitId}:`,
+          response.status
+        )
+
         if (!response.ok) {
+          console.error(
+            `🔴 [SAVE] Erro ao atualizar unidade ${unitId}:`,
+            response.statusText
+          )
           errorNotifPatch()
           throw new Error(`Erro ao atualizar unidade ${unitId}`)
         }
+
+        const responseData = await response.json()
+        console.log(`🟢 [SAVE] Response data para ${unitId}:`, responseData)
       }
+
+      console.log('🟢 [SAVE] Todas as unidades salvas com sucesso!')
+      console.log('🟢 [SAVE] Atualizando estado local...')
 
       setUnits((prevUnits) =>
         prevUnits.map((unit) =>
@@ -268,12 +359,14 @@ const DisponibilizarUnidades = () => {
       )
 
       setModifiedUnits({})
+      console.log('🟢 [SAVE] Estado local atualizado!')
     } catch (error) {
-      console.error('Erro ao salvar alterações:', error)
+      console.error('🔴 [SAVE] Erro ao salvar alterações:', error)
     } finally {
       setIsSaving(false)
     }
     sucessNotifPatch()
+    console.log('🔵 [SAVE] Recarregando página em 3 segundos...')
     setTimeout(() => {
       window.location.reload()
     }, 3000)
@@ -582,7 +675,30 @@ const DisponibilizarUnidades = () => {
 
         {/* Filtros de Validação */}
         <div className="w-32 min-w-0">
-          <h2 className="font-medium mb-1 text-xs">Filtrar por:</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="font-medium mb-1 text-xs">Filtrar por:</h2>
+            <button
+              onClick={() => {
+                if (isAdminUnlocked) {
+                  handleAdminLock()
+                } else {
+                  setShowAdminDialog(true)
+                }
+              }}
+              className="mb-1 text-xs hover:scale-110 transition-transform"
+              title={
+                isAdminUnlocked
+                  ? 'Modo Admin Ativado - Clique para desativar'
+                  : 'Desbloquear modo Admin'
+              }
+            >
+              {isAdminUnlocked ? (
+                <Unlock className="h-3 w-3 text-green-600" />
+              ) : (
+                <Lock className="h-3 w-3 text-gray-500" />
+              )}
+            </button>
+          </div>
           <div className="flex items-center space-x-1 my-1.5">
             <Checkbox
               id="filter-financial"
@@ -643,6 +759,51 @@ const DisponibilizarUnidades = () => {
       )}
 
       {renderUnitCards()}
+
+      {/* Dialog de senha admin */}
+      <Dialog open={showAdminDialog} onOpenChange={setShowAdminDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Modo Administrador</DialogTitle>
+            <DialogDescription>
+              Digite a senha de administrador para desbloquear todos os
+              checkboxes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="admin-password" className="text-right text-sm">
+                Senha:
+              </label>
+              <Input
+                id="admin-password"
+                type="password"
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleAdminUnlock()
+                  }
+                }}
+                className="col-span-3"
+                autoFocus
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowAdminDialog(false)
+                setAdminPassword('')
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleAdminUnlock}>Desbloquear</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
