@@ -1,6 +1,8 @@
+/* eslint-disable prettier/prettier */
 const RetornaEmpAtivos = async () => {
+  console.log('[EMPATIVOS] Buscando empreendimentos ativos...')
   const response = await fetch(
-    '/api/vistorias/empreendimentos?page=1&pageSize=20&isActive=1',
+    '/api/vistorias/empreendimentos?page=1&pageSize=99&isActive=1',
     {
       method: 'GET',
       headers: {
@@ -11,12 +13,21 @@ const RetornaEmpAtivos = async () => {
   )
 
   if (!response.ok) {
-    console.error('Erro ao carregar empreendimentos')
+    console.error(
+      '[EMPATIVOS] Erro ao carregar empreendimentos:',
+      response.status,
+      response.statusText
+    )
     return
   }
 
   const data = await response.json()
   const empreendimentosAtivos = data.data.map((emp: { id: string }) => emp.id)
+  console.log(
+    '[EMPATIVOS] Empreendimentos ativos encontrados:',
+    empreendimentosAtivos.length,
+    empreendimentosAtivos
+  )
 
   return empreendimentosAtivos
 }

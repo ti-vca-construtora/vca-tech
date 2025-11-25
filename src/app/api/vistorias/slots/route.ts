@@ -48,17 +48,39 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const body = await req.json()
 
-  const res = await fetch(`${API_BASE_URL}/${API_ENDPOINT}/bulk`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.NEXT_PUBLIC_VISTORIAS_TOKEN}`,
-    },
-    body: JSON.stringify(body),
+  console.log('[API SLOTS POST] Recebido:', {
+    totalSlots: body.slots?.length ?? 0,
+    amostra: body.slots?.slice(0, 2) ?? [],
   })
+  console.log('[API SLOTS POST] URL:', `${API_BASE_URL}/${API_ENDPOINT}/bulk`)
 
-  const data = await res.json()
-  return NextResponse.json(data)
+  try {
+    const res = await fetch(`${API_BASE_URL}/${API_ENDPOINT}/bulk`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.NEXT_PUBLIC_VISTORIAS_TOKEN}`,
+      },
+      body: JSON.stringify(body),
+    })
+
+    console.log(
+      '[API SLOTS POST] Status da resposta:',
+      res.status,
+      res.statusText
+    )
+
+    const data = await res.json()
+    console.log('[API SLOTS POST] Resposta:', data)
+
+    return NextResponse.json(data, { status: res.status })
+  } catch (error) {
+    console.error('[API SLOTS POST] Erro:', error)
+    return NextResponse.json(
+      { error: 'Erro ao criar slots', details: String(error) },
+      { status: 500 }
+    )
+  }
 }
 
 export async function PATCH(req: NextRequest) {

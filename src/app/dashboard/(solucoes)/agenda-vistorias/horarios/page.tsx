@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 'use client'
 
 import { Card } from '@/components/ui/card'
@@ -51,13 +52,31 @@ const Horarios = () => {
   const initRef = useRef(false)
 
   const checkSlots = async () => {
+    console.log('[HORARIOS] Iniciando verificação de slots...')
     setIsLoading(true)
-    // retorna lista de empreendimentos sem agenda completa
-    const missingIds = await vrfCriaSlot()
-    if (missingIds && missingIds.length > 0) {
-      await CriarSlotsBulk(missingIds)
+    try {
+      // retorna lista de empreendimentos sem agenda completa
+      console.log('[HORARIOS] Chamando vrfCriaSlot...')
+      const missingIds = await vrfCriaSlot()
+      console.log('[HORARIOS] Empreendimentos faltantes:', missingIds)
+
+      if (missingIds && missingIds.length > 0) {
+        console.log(
+          '[HORARIOS] Criando slots para',
+          missingIds.length,
+          'empreendimentos'
+        )
+        await CriarSlotsBulk(missingIds)
+        console.log('[HORARIOS] Slots criados com sucesso')
+      } else {
+        console.log('[HORARIOS] Nenhum empreendimento precisa de slots')
+      }
+    } catch (error) {
+      console.error('[HORARIOS] Erro ao verificar/criar slots:', error)
+    } finally {
+      setIsLoading(false)
+      console.log('[HORARIOS] Verificação finalizada')
     }
-    setIsLoading(false)
   }
 
   useEffect(() => {

@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 'use client'
 
 import RetornaEmpAtivos from './fnc-empativos'
@@ -34,20 +35,43 @@ const CriarSlotsBulk = (onlyIds?: (string | number)[]) => {
   ]
 
   const executar = async () => {
+    console.log('[CRIASLOTS] Iniciando criação de slots bulk...')
+    console.log('[CRIASLOTS] IDs recebidos:', onlyIds)
+
     // Buscar configurações primeiro
     const config = await fetchInspectionConfig()
     if (config) {
       diasPrazo = config.minDaysToSchedule
       diasDuracao = config.maxDaysToSchedule
+      console.log('[CRIASLOTS] Configurações carregadas:', {
+        diasPrazo,
+        diasDuracao,
+      })
+    } else {
+      console.log('[CRIASLOTS] Usando configurações padrão:', {
+        diasPrazo,
+        diasDuracao,
+      })
     }
 
     const ids =
       onlyIds && onlyIds.length > 0 ? onlyIds : await RetornaEmpAtivos()
-    if (!ids || ids.length === 0) return
+    console.log(
+      '[CRIASLOTS] IDs finais para criar slots:',
+      ids?.length ?? 0,
+      ids
+    )
+
+    if (!ids || ids.length === 0) {
+      console.log('[CRIASLOTS] Nenhum ID para processar. Abortando.')
+      return
+    }
     await createSlots(ids)
   }
 
   const createSlots = async (ids: (string | number)[]) => {
+    console.log('[CRIASLOTS] Criando slots para IDs:', ids)
+
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     today.setDate(today.getDate() + diasPrazo)
@@ -59,6 +83,12 @@ const CriarSlotsBulk = (onlyIds?: (string | number)[]) => {
     const fromIso = today.toISOString()
     const toIso = endDate.toISOString()
 
+    console.log('[CRIASLOTS] Período de criação:', {
+      de: fromIso,
+      até: toIso,
+      dias: diasDuracao,
+    })
+
     const newSlots: Array<{
       startAt: string
       endAt: string
@@ -66,6 +96,8 @@ const CriarSlotsBulk = (onlyIds?: (string | number)[]) => {
     }> = []
 
     for (const id of ids) {
+      console.log(`[CRIASLOTS] Processando empreendimento ${id}...`)
+
       // Busca slots existentes no período para o empreendimento
       const existingRes = await fetch(
         // eslint-disable-next-line prettier/prettier
@@ -75,6 +107,10 @@ const CriarSlotsBulk = (onlyIds?: (string | number)[]) => {
       const existed: Set<string> = new Set(
         // eslint-disable-next-line prettier/prettier
         (existingData?.data ?? []).map((s: { startAt: string }) => s.startAt)
+      )
+      console.log(
+        `[CRIASLOTS] Empreendimento ${id} - slots existentes no período:`,
+        existed.size
       )
 
       for (let i = 0; i < diasDuracao; i++) {
@@ -102,22 +138,69 @@ const CriarSlotsBulk = (onlyIds?: (string | number)[]) => {
       }
     }
 
-    if (newSlots.length === 0) return
-
-    console.log('Criando slots faltantes:', newSlots.length)
-    const response = await fetch('/api/vistorias/slots', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slots: newSlots }),
-    })
-
-    if (!response.ok) {
-      console.error('Erro ao criar slots')
+    if (newSlots.length === 0) {
+      console.log('[CRIASLOTS] Nenhum slot novo para criar. Todos já existem.')
       return
     }
 
-    const data = await response.json()
-    console.log('Slots criados:', data)
+    console.log(
+      '[CRIASLOTS] Total de slots faltantes a criar:',
+      newSlots.length
+    )
+    console.log(
+      '[CRIASLOTS] Amostra dos primeiros 3 slots:',
+      newSlots.slice(0, 3)
+    )
+
+    // Dividir em lotes de 100 slots para evitar problemas com payloads grandes
+    const batchSize = 100
+    const batches = []
+    for (let i = 0; i < newSlots.length; i += batchSize) {
+      batches.push(newSlots.slice(i, i + batchSize))
+    }
+
+    console.log(
+      `[CRIASLOTS] Dividindo em ${batches.length} lotes de até ${batchSize} slots`
+    )
+
+    // Enviar cada lote
+    for (let i = 0; i < batches.length; i++) {
+      const batch = batches[i]
+      console.log(
+        `[CRIASLOTS] Enviando lote ${i + 1}/${batches.length} (${batch.length} slots)...`
+      )
+
+      const payload = { slots: batch }
+      console.log(`[CRIASLOTS] Lote ${i + 1} - Amostra:`, {
+        totalSlots: payload.slots.length,
+        primeiroSlot: payload.slots[0],
+        ultimoSlot: payload.slots[payload.slots.length - 1],
+      })
+
+      const response = await fetch('/api/vistorias/slots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await response.json()
+      console.log(`[CRIASLOTS] Lote ${i + 1} - Resposta:`, data)
+
+      if (!response.ok) {
+        console.error(
+          `[CRIASLOTS] Erro ao criar lote ${i + 1}:`,
+          response.status,
+          response.statusText
+        )
+        console.error(`[CRIASLOTS] Lote ${i + 1} - Detalhes do erro:`, data)
+        // Continua com os próximos lotes mesmo se um falhar
+        continue
+      }
+
+      console.log(`[CRIASLOTS] Lote ${i + 1} criado com sucesso!`)
+    }
+
+    console.log('[CRIASLOTS] Processo de criação de slots finalizado!')
   }
 
   return executar()

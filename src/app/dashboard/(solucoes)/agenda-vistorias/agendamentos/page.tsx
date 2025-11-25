@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { addHours, format, isWithinInterval, parseISO } from 'date-fns'
-import { Download } from 'lucide-react'
+import { Download, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { ToastContainer, toast } from 'react-toastify'
 
@@ -39,14 +39,14 @@ interface Inspection {
     startAt: string | Date
     endAt: string | Date
     status: string
+    developmentId: string
   }
   unitId: string
   unit: {
     unit: string
-    development: {
-      name: string
-    }
+    developmentId: string
   }
+  developmentName?: string // Nome do empreendimento carregado posteriormente
 }
 
 interface Development {
@@ -66,6 +66,10 @@ const ScheduledInspectionsPage = () => {
   )
   const [endDate, setEndDate] = useState<string>(
     format(new Date(), 'yyyy-MM-dd')
+  )
+  const [cancelModalOpen, setCancelModalOpen] = useState<boolean>(false)
+  const [inspectionToCancel, setInspectionToCancel] = useState<string | null>(
+    null
   )
 
   const sucessNotif = () =>
@@ -91,6 +95,39 @@ const ScheduledInspectionsPage = () => {
       progress: undefined,
       theme: 'light',
     })
+
+  const handleCancelInspection = async () => {
+    if (!inspectionToCancel) return
+
+    try {
+      const response = await fetch(
+        `/api/vistorias/inspections?id=${inspectionToCancel}`,
+        {
+          method: 'DELETE',
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error('Erro ao cancelar agendamento')
+      }
+
+      toast.success('Agendamento cancelado com sucesso!')
+      setCancelModalOpen(false)
+      setInspectionToCancel(null)
+
+      setTimeout(() => {
+        window.location.reload()
+      }, 2000)
+    } catch (error) {
+      console.error('Erro ao cancelar agendamento:', error)
+      toast.error('Erro ao cancelar agendamento')
+    }
+  }
+
+  const openCancelModal = (inspectionId: string) => {
+    setInspectionToCancel(inspectionId)
+    setCancelModalOpen(true)
+  }
 
   const handleExportPDF = async () => {
     if (isGeneratingPDF) return // Previne cliques duplicados
@@ -184,6 +221,8 @@ const ScheduledInspectionsPage = () => {
         }
 
         const data = await response.json()
+        console.log('[AGENDAMENTOS] Dados brutos da API:', data)
+
         const scheduledInspections = data.data.filter(
           // eslint-disable-next-line prettier/prettier
           (item: Inspection) =>
@@ -193,7 +232,64 @@ const ScheduledInspectionsPage = () => {
             item.status === 'RESCHEDULED'
         )
 
-        setInspections(scheduledInspections)
+        console.log('[AGENDAMENTOS] Inspeções filtradas:', scheduledInspections)
+        console.log(
+          '[AGENDAMENTOS] Amostra da primeira inspeção:',
+          scheduledInspections[0]
+        )
+
+        // Buscar nomes dos empreendimentos para cada inspeção
+        const inspectionsWithDevelopmentNames = await Promise.all(
+          scheduledInspections.map(async (inspection: Inspection) => {
+            const developmentId = inspection.unit.developmentId
+            console.log(
+              `[AGENDAMENTOS] Buscando nome do empreendimento ${developmentId}...`
+            )
+
+            try {
+              const devResponse = await fetch(
+                `/api/vistorias/empreendimentos/development?id=${developmentId}`
+              )
+
+              if (devResponse.ok) {
+                const devData = await devResponse.json()
+                console.log(
+                  `[AGENDAMENTOS] Empreendimento ${developmentId}:`,
+                  devData
+                )
+                return {
+                  ...inspection,
+                  developmentName: devData.data?.name || 'Nome não disponível',
+                }
+              } else {
+                console.error(
+                  `[AGENDAMENTOS] Erro ao buscar empreendimento ${developmentId}:`,
+                  devResponse.status
+                )
+                return {
+                  ...inspection,
+                  developmentName: 'Nome não disponível',
+                }
+              }
+            } catch (error) {
+              console.error(
+                `[AGENDAMENTOS] Erro ao buscar empreendimento ${developmentId}:`,
+                error
+              )
+              return {
+                ...inspection,
+                developmentName: 'Nome não disponível',
+              }
+            }
+          })
+        )
+
+        console.log(
+          '[AGENDAMENTOS] Inspeções com nomes dos empreendimentos:',
+          inspectionsWithDevelopmentNames
+        )
+
+        setInspections(inspectionsWithDevelopmentNames)
       } catch (error) {
         console.error(error)
       } finally {
@@ -233,7 +329,7 @@ const ScheduledInspectionsPage = () => {
 
     // Filtro de empreendimento
     if (selectedDevelopment !== 'ALL') {
-      if (inspection.unit.development.name !== selectedDevelopment) {
+      if (inspection.developmentName !== selectedDevelopment) {
         return false
       }
     }
@@ -289,39 +385,57 @@ const ScheduledInspectionsPage = () => {
       // eslint-disable-next-line prettier/prettier
       unitId: string
     ) => {
-      const response = await fetch(`/api/vistorias/inspections?id=${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          status,
-        }),
-      })
+      console.log('[ATUALIZAR VISTORIA] Iniciando atualização...')
+      console.log('[ATUALIZAR VISTORIA] ID:', id)
+      console.log('[ATUALIZAR VISTORIA] Status:', status)
+      console.log('[ATUALIZAR VISTORIA] UnitId:', unitId)
 
-      if (!response.ok) {
-        console.error('Erro ao atualizar agendamento.')
+      try {
+        const response = await fetch(`/api/vistorias/inspections?id=${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            status,
+          }),
+        })
+
+        console.log('[ATUALIZAR VISTORIA] Response status:', response.status)
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          console.error('[ATUALIZAR VISTORIA] Erro na resposta:', errorData)
+          errorNotif()
+          return
+        }
+
+        const data = await response.json()
+        console.log('[ATUALIZAR VISTORIA] Resposta sucesso:', data)
+
+        if (status === 'COMPLETED') {
+          sucessNotif()
+          setTimeout(() => {
+            window.location.reload()
+          }, 3000)
+        } else if (status === 'RESCHEDULED') {
+          atualizarCheckUnidade(unitId)
+        }
+      } catch (error) {
+        console.error('[ATUALIZAR VISTORIA] Exception:', error)
         errorNotif()
-        return
-      }
-
-      if (status === 'COMPLETED') {
-        const data = await response.json()
-        console.log(data)
-        sucessNotif()
-        setTimeout(() => {
-          window.location.reload()
-        }, 3000)
-      } else if (status === 'RESCHEDULED') {
-        const data = await response.json()
-        console.log(data)
-        atualizarCheckUnidade(unitId)
       }
     }
 
     return filteredInspections.map((inspection) => {
       const startDate = normalizeDate(inspection.inspectionSlot.startAt)
       const endDate = normalizeDate(inspection.inspectionSlot.endAt)
+
+      console.log('[AGENDAMENTOS RENDER] Inspection:', inspection)
+      console.log(
+        '[AGENDAMENTOS RENDER] Development Name:',
+        inspection.developmentName
+      )
 
       return (
         <div
@@ -330,7 +444,7 @@ const ScheduledInspectionsPage = () => {
         >
           <div>
             <h2 className="font-semibold">
-              {inspection.unit.development.name}
+              {inspection.developmentName || 'Nome não disponível'}
             </h2>
             <p>{`Unidade: ${inspection.unit.unit}`}</p>
             <p className="text-sm text-muted-foreground">
@@ -370,7 +484,14 @@ const ScheduledInspectionsPage = () => {
             </div>
           )}
 
-          <div className="sm:mt-0 mt-3">
+          <div className="sm:mt-0 mt-3 flex gap-2 items-center">
+            <Button
+              variant="destructive"
+              size="icon"
+              onClick={() => openCancelModal(inspection.id)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
             <DialogTrigger className="w-full h-full flex justify-center items-center py-4 px-3">
               <Button variant="outline">Registrar</Button>
             </DialogTrigger>
@@ -431,6 +552,39 @@ const ScheduledInspectionsPage = () => {
         pauseOnHover
         theme="light"
       />
+      {/* Modal de Cancelamento */}
+      <Dialog open={cancelModalOpen} onOpenChange={setCancelModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar cancelamento</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja cancelar este agendamento? Esta ação não
+              pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-4 mt-4">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                setCancelModalOpen(false)
+                setInspectionToCancel(null)
+              }}
+            >
+              Voltar
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={handleCancelInspection}
+            >
+              Confirmar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Registro */}
       <Dialog>
         <Card className="size-full">
           <CardHeader>
