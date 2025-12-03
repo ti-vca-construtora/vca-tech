@@ -1,14 +1,14 @@
 /* eslint-disable prettier/prettier */
-'use client'
+"use client";
 
-import { Cliente } from '@/components/search-form'
+import { Cliente } from "@/components/search-form";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -16,28 +16,28 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { calcularDiferencaDias, formatarData, formatarValor } from '@/util'
-import classNames from 'classnames'
+} from "@/components/ui/table";
+import { calcularDiferencaDias, formatarData, formatarValor } from "@/util";
+import classNames from "classnames";
 
-import { DueInstallment } from '@/app/api/avp/current-debit-balance/route'
-import { contratos } from '@/data/contratos'
-import { LOGO_BASE64 } from '@/util/logo-base64'
-import { Contrato } from './contratos-tabela'
-import { CalculoPorParcela } from './visualizacao-calculo'
+import { DueInstallment } from "@/app/api/avp/current-debit-balance/route";
+import { contratos } from "@/data/contratos";
+import { LOGO_BASE64 } from "@/util/logo-base64";
+import { Contrato } from "./contratos-tabela";
+import { CalculoPorParcela } from "./visualizacao-calculo";
 
 export type PdfProps = {
-  valorTotalGeral: number
-  valorAnteriorVencidas: number
-  valorPresenteVencidas: number
-  valorAnteriorFuturas: number
-  valorPresenteFuturas: number
-  dataAPagar: string
-  currentDebit: DueInstallment[]
-  cliente: Cliente
-  contrato: Contrato
-  incomeByBills: CalculoPorParcela[]
-}
+  valorTotalGeral: number;
+  valorAnteriorVencidas: number;
+  valorPresenteVencidas: number;
+  valorAnteriorFuturas: number;
+  valorPresenteFuturas: number;
+  dataAPagar: string;
+  currentDebit: DueInstallment[];
+  cliente: Cliente;
+  contrato: Contrato;
+  incomeByBills: CalculoPorParcela[];
+};
 
 export function Pdf({
   cliente,
@@ -53,7 +53,7 @@ export function Pdf({
 }: PdfProps) {
   const taxaTotal =
     contratos.find((contrato) => contrato.cliente === cliente.name)
-      ?.taxaReferencia || null
+      ?.taxaReferencia || null;
 
   return (
     <div
@@ -63,7 +63,7 @@ export function Pdf({
       <img
         src={LOGO_BASE64}
         alt="Logo da VCA Construtora"
-        style={{ width: '150px', height: 'auto' }}
+        style={{ width: "150px", height: "auto" }}
       />
       <h1 className="font-bold text-center m-6 text-2xl">
         Simulação de Antecipação de Parcelas
@@ -82,18 +82,18 @@ export function Pdf({
               Cliente: <span className="font-semibold">{cliente.name}</span>
             </p>
             <p className="border-b w-full">
-              Empreendimento:{' '}
+              Empreendimento:{" "}
               <span className="font-semibold">{contrato.enterpriseName}</span>
             </p>
             <p className="border-b w-full">
-              Contrato:{' '}
+              Contrato:{" "}
               <span className="font-semibold">{contrato.contractNumber}</span>
             </p>
             <p className="border-b w-full">
               Unidade: <span className="font-semibold">{contrato.unit}</span>
             </p>
             <p className="border-b w-full">
-              Quantidade de Parcelas:{' '}
+              Quantidade de Parcelas:{" "}
               <span className="font-semibold">
                 {currentDebit.length + incomeByBills.length}
               </span>
@@ -102,19 +102,19 @@ export function Pdf({
               <div className="flex flex-col gap-2 mt-4">
                 <span className="font-bold">Subtotal parcelas vencidas</span>
                 <p className="border-b w-full">
-                  Quantidade de Parcelas:{' '}
+                  Quantidade de Parcelas:{" "}
                   <span className="font-semibold">{currentDebit.length}</span>
                 </p>
                 <p className="border-b w-full">
-                  Valor Anterior de Parcelas Vencidas:{' '}
+                  Valor Anterior de Parcelas Vencidas:{" "}
                   <span className="font-semibold">{`RS ${formatarValor(valorAnteriorVencidas)}`}</span>
                 </p>
                 <p className="border-b w-full">
-                  Valor Presente de Parcelas Vencidas:{' '}
+                  Valor Presente de Parcelas Vencidas:{" "}
                   <span className="font-semibold">{`RS ${formatarValor(valorPresenteVencidas)}`}</span>
                 </p>
                 <p className="border-b w-full">
-                  Valor Acréscimo:{' '}
+                  Valor Acréscimo:{" "}
                   <span className="font-semibold">{`RS ${formatarValor(valorPresenteVencidas - valorAnteriorVencidas)}`}</span>
                 </p>
               </div>
@@ -123,19 +123,19 @@ export function Pdf({
               <div className="flex flex-col gap-2 mt-4">
                 <span className="font-bold">Subtotal parcelas futuras</span>
                 <p className="border-b w-full">
-                  Quantidade de Parcelas:{' '}
+                  Quantidade de Parcelas:{" "}
                   <span className="font-semibold">{incomeByBills.length}</span>
                 </p>
                 <p className="border-b w-full">
-                  Valor Anterior de Parcelas Futuras:{' '}
+                  Valor Anterior de Parcelas Futuras:{" "}
                   <span className="font-semibold">{`RS ${formatarValor(valorAnteriorFuturas)}`}</span>
                 </p>
                 <p className="border-b w-full">
-                  Valor Presente de Parcelas Futuras:{' '}
+                  Valor Presente de Parcelas Futuras:{" "}
                   <span className="font-semibold">{`RS ${formatarValor(valorPresenteFuturas)}`}</span>
                 </p>
                 <p className="border-b w-full">
-                  Valor Desconto:{' '}
+                  Valor Desconto:{" "}
                   <span className="font-semibold">{`RS ${formatarValor(valorAnteriorFuturas - valorPresenteFuturas)}`}</span>
                 </p>
               </div>
@@ -143,7 +143,7 @@ export function Pdf({
             <div className="flex flex-col gap-2 mt-4">
               <span className="font-bold">Resumo</span>
               <p className="border-b w-full">
-                Data a Pagar:{' '}
+                Data a Pagar:{" "}
                 <span className="font-semibold">
                   {formatarData(dataAPagar)}
                 </span>
@@ -189,7 +189,7 @@ export function Pdf({
                     {incomeByBills.map((item, index) => (
                       <TableRow
                         className={classNames(
-                          index % 2 === 0 && 'bg-neutral-100'
+                          index % 2 === 0 && "bg-neutral-100",
                         )}
                         key={index}
                       >
@@ -200,9 +200,9 @@ export function Pdf({
                           R$ {formatarValor(item.valorPresente)}
                         </TableCell>
                         <TableCell>
-                          R${' '}
+                          R${" "}
                           {formatarValor(
-                            item.valorAnterior - item.valorPresente
+                            item.valorAnterior - item.valorPresente,
                           )}
                         </TableCell>
                         <TableCell>
@@ -212,7 +212,7 @@ export function Pdf({
                         <TableCell>
                           {calcularDiferencaDias(
                             item.dataAPagar,
-                            item.dataVencimento
+                            item.dataVencimento,
                           )}
                         </TableCell>
                         <TableCell>{taxaTotal}</TableCell>
@@ -247,7 +247,7 @@ export function Pdf({
                     {currentDebit.map((item, index) => (
                       <TableRow
                         className={classNames(
-                          index % 2 === 0 && 'bg-neutral-100'
+                          index % 2 === 0 && "bg-neutral-100",
                         )}
                         key={index}
                       >
@@ -255,17 +255,17 @@ export function Pdf({
                           R$ {formatarValor(item.adjustedValue)}
                         </TableCell>
                         <TableCell>
-                          R${' '}
+                          R${" "}
                           {formatarValor(
-                            item.adjustedValue + item.additionalValue
+                            item.adjustedValue + item.additionalValue,
                           )}
                         </TableCell>
                         <TableCell>
-                          R${' '}
+                          R${" "}
                           {formatarValor(
                             item.adjustedValue +
                               item.additionalValue -
-                              item.adjustedValue
+                              item.adjustedValue,
                           )}
                         </TableCell>
                         <TableCell>{formatarData(item.dueDate)}</TableCell>
@@ -283,5 +283,5 @@ export function Pdf({
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

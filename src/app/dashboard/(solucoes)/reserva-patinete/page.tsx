@@ -1,277 +1,277 @@
-'use client'
+"use client";
 
-import { Button } from '@/components/ui/button'
-import { useUser } from '@/hooks/use-user'
-import { db, rtdb } from '@/lib/firebase'
-import { get, ref, set } from 'firebase/database'
-import { addDoc, collection } from 'firebase/firestore'
-import Image from 'next/image'
-import Link from 'next/link'
-import { useEffect, useState } from 'react'
-import { ToastContainer, toast } from 'react-toastify'
-import { Carousel } from './_components/Carousel'
-import { checkUserHasReservation } from './_components/hasReservation'
+import { Button } from "@/components/ui/button";
+import { useUser } from "@/hooks/use-user";
+import { db, rtdb } from "@/lib/firebase";
+import { get, ref, set } from "firebase/database";
+import { addDoc, collection } from "firebase/firestore";
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import { Carousel } from "./_components/Carousel";
+import { checkUserHasReservation } from "./_components/hasReservation";
 
 export default function ReservarPatinete() {
-  const { user } = useUser()
+  const { user } = useUser();
 
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
-  const [availableCount, setAvailableCount] = useState(0)
-  const [userLoggedId, setUserLoggedId] = useState<string | null>(null)
-  const [userLoggedName, setUserLoggedName] = useState<string | null>(null)
-  const [hasReservation, setHasReservation] = useState<string | null>(null)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [modalOpenCheckout, setModalOpenCheckout] = useState(false)
-  const [obsCheckin, setObsCheckin] = useState<string>('')
-  const [obsCheckout, setObsCheckout] = useState<string>('')
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [availableCount, setAvailableCount] = useState(0);
+  const [userLoggedId, setUserLoggedId] = useState<string | null>(null);
+  const [userLoggedName, setUserLoggedName] = useState<string | null>(null);
+  const [hasReservation, setHasReservation] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalOpenCheckout, setModalOpenCheckout] = useState(false);
+  const [obsCheckin, setObsCheckin] = useState<string>("");
+  const [obsCheckout, setObsCheckout] = useState<string>("");
 
   const sucessNotif = () =>
-    toast.success('Reserva realizada!', {
-      position: 'top-right',
+    toast.success("Reserva realizada!", {
+      position: "top-right",
       autoClose: 3000,
       hideProgressBar: false,
       closeOnClick: false,
       pauseOnHover: true,
       draggable: true,
       progress: undefined,
-      theme: 'light',
-    })
+      theme: "light",
+    });
 
   const sucessNotifCheckout = () =>
-    toast.success('Check-Out realizado!', {
-      position: 'top-right',
+    toast.success("Check-Out realizado!", {
+      position: "top-right",
       autoClose: 3000,
       hideProgressBar: false,
       closeOnClick: false,
       pauseOnHover: true,
       draggable: true,
       progress: undefined,
-      theme: 'light',
-    })
+      theme: "light",
+    });
 
   const warnNotif = () =>
-    toast.warn('Tente novamente mais tarde.', {
-      position: 'top-right',
+    toast.warn("Tente novamente mais tarde.", {
+      position: "top-right",
       autoClose: 3000,
       hideProgressBar: false,
       closeOnClick: false,
       pauseOnHover: true,
       draggable: true,
       progress: undefined,
-      theme: 'light',
-    })
+      theme: "light",
+    });
 
   const warnNotifUser = () =>
-    toast.warn('Erro! Procure o TECH.', {
-      position: 'top-right',
+    toast.warn("Erro! Procure o TECH.", {
+      position: "top-right",
       autoClose: 3000,
       hideProgressBar: false,
       closeOnClick: false,
       pauseOnHover: true,
       draggable: true,
       progress: undefined,
-      theme: 'light',
-    })
+      theme: "light",
+    });
 
   const fridayDay = () =>
     toast.warn(
-      'OS PATINETES NÃO PODEM SER LEVADOS PARA CASA NAS SEXTAS-FEIRAS',
+      "OS PATINETES NÃO PODEM SER LEVADOS PARA CASA NAS SEXTAS-FEIRAS",
       {
-        position: 'top-right',
+        position: "top-right",
         autoClose: 20000,
         hideProgressBar: false,
         closeOnClick: false,
         pauseOnHover: true,
         draggable: true,
         progress: undefined,
-        theme: 'colored',
+        theme: "colored",
         // eslint-disable-next-line prettier/prettier
-      }
-    )
+      },
+    );
 
   const errorNotif = () =>
-    toast.error('Falha na reserva.', {
-      position: 'top-right',
+    toast.error("Falha na reserva.", {
+      position: "top-right",
       autoClose: 3000,
       hideProgressBar: false,
       closeOnClick: false,
       pauseOnHover: true,
       draggable: true,
       progress: undefined,
-      theme: 'light',
-    })
+      theme: "light",
+    });
 
   const errorNotifOut = () =>
-    toast.error('Falha no check-out.', {
-      position: 'top-right',
+    toast.error("Falha no check-out.", {
+      position: "top-right",
       autoClose: 3000,
       hideProgressBar: false,
       closeOnClick: false,
       pauseOnHover: true,
       draggable: true,
       progress: undefined,
-      theme: 'light',
-    })
+      theme: "light",
+    });
 
-  const equipmentNames = ['vca001', 'vca002', 'vca003', 'vca004', 'vca005']
+  const equipmentNames = ["vca001", "vca002", "vca003", "vca004", "vca005"];
   const selectedEquipmentName =
-    selectedIndex !== null ? equipmentNames[selectedIndex] : null
+    selectedIndex !== null ? equipmentNames[selectedIndex] : null;
 
   const openModal = async () => {
-    if (!userLoggedId) return
+    if (!userLoggedId) return;
 
     // se hoje for sexta-feira, warn toast
-    const today = new Date()
+    const today = new Date();
     // console.log('Hoje é:', today.getDay())
     if (today.getDay() === 5) {
-      fridayDay()
+      fridayDay();
     }
 
     // Verifica se o usuário está no target_limits
-    const userLimitRef = ref(rtdb, `target_limits/${userLoggedId}`)
-    const snapshot = await get(userLimitRef)
+    const userLimitRef = ref(rtdb, `target_limits/${userLoggedId}`);
+    const snapshot = await get(userLimitRef);
 
     if (snapshot.exists()) {
-      const limitData = snapshot.val()
-      const reserveLimit = new Date(limitData.reserveLimit)
-      const now = new Date()
+      const limitData = snapshot.val();
+      const reserveLimit = new Date(limitData.reserveLimit);
+      const now = new Date();
 
       if (now < reserveLimit) {
         toast.error(
           `Você só pode reservar novamente após ${reserveLimit.toLocaleString()}`,
           {
-            position: 'top-right',
+            position: "top-right",
             autoClose: 5000,
             // eslint-disable-next-line prettier/prettier
-          }
-        )
-        return
+          },
+        );
+        return;
       }
     }
 
-    setModalOpen(true)
-  }
+    setModalOpen(true);
+  };
 
   const openModalCheckout = () => {
-    setModalOpenCheckout(true)
-  }
+    setModalOpenCheckout(true);
+  };
 
   const checkAndAutoCheckout = async () => {
-    if (!hasReservation || !userLoggedId) return
+    if (!hasReservation || !userLoggedId) return;
 
-    const equipmentRef = ref(rtdb, `equipments/${hasReservation}`)
-    const snapshot = await get(equipmentRef)
-    const equipmentData = snapshot.val()
+    const equipmentRef = ref(rtdb, `equipments/${hasReservation}`);
+    const snapshot = await get(equipmentRef);
+    const equipmentData = snapshot.val();
 
     if (equipmentData && equipmentData.reservedUntil) {
-      const reservedUntil = new Date(equipmentData.reservedUntil)
-      const now = new Date()
+      const reservedUntil = new Date(equipmentData.reservedUntil);
+      const now = new Date();
 
       if (now > reservedUntil) {
         // Faz checkout automático
         await set(equipmentRef, {
           available: true,
-          currentUser: '',
-          reservedUntil: '',
-        })
+          currentUser: "",
+          reservedUntil: "",
+        });
 
         // Registra no Firestore
-        const date = new Date()
-        date.setHours(date.getHours() - 3)
-        const logsRef = collection(db, 'logs')
+        const date = new Date();
+        date.setHours(date.getHours() - 3);
+        const logsRef = collection(db, "logs");
 
         await addDoc(logsRef, {
           equipment: hasReservation,
-          obs: 'CHECKOUT AUTOMÁTICO - LIMITE EXPIRADO',
+          obs: "CHECKOUT AUTOMÁTICO - LIMITE EXPIRADO",
           photos: [],
           time: date.toISOString(),
-          type: 'out',
+          type: "out",
           userName: user?.name,
-        })
+        });
 
         // Remove o limite do usuárioopenModal
-        const userLimitRef = ref(rtdb, `target_limits/${userLoggedId}`)
-        await set(userLimitRef, null)
+        const userLimitRef = ref(rtdb, `target_limits/${userLoggedId}`);
+        await set(userLimitRef, null);
 
-        setHasReservation(null)
-        window.location.reload()
+        setHasReservation(null);
+        window.location.reload();
       }
     }
-  }
+  };
 
   useEffect(() => {
     if (user) {
-      setUserLoggedId(user.id)
-      setUserLoggedName(user.name ?? null)
+      setUserLoggedId(user.id);
+      setUserLoggedName(user.name ?? null);
     }
 
     const checkReservations = async () => {
-      await checkUserReservation()
-      await checkAndAutoCheckout()
-    }
+      await checkUserReservation();
+      await checkAndAutoCheckout();
+    };
 
-    checkReservations()
+    checkReservations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedIndex, user])
+  }, [selectedIndex, user]);
 
   const checkUserReservation = async () => {
-    if (!userLoggedId) return
+    if (!userLoggedId) return;
 
-    const hasReservation = await checkUserHasReservation(userLoggedId)
+    const hasReservation = await checkUserHasReservation(userLoggedId);
     if (hasReservation) {
-      setHasReservation(hasReservation)
+      setHasReservation(hasReservation);
     }
-  }
+  };
 
   const reservarPatineteRealtimeDb = async () => {
     if (!userLoggedId || !userLoggedName) {
-      warnNotifUser()
-      return
+      warnNotifUser();
+      return;
     }
 
-    const prazoDevolucao = new Date()
-    prazoDevolucao.setHours(prazoDevolucao.getHours() + 12 - 3)
-    const reservedUntil = prazoDevolucao.toISOString()
+    const prazoDevolucao = new Date();
+    prazoDevolucao.setHours(prazoDevolucao.getHours() + 12 - 3);
+    const reservedUntil = prazoDevolucao.toISOString();
 
-    const limiteReserva = new Date()
-    limiteReserva.setHours(limiteReserva.getHours() + 48 - 3)
-    const reserveLimit = limiteReserva.toISOString()
+    const limiteReserva = new Date();
+    limiteReserva.setHours(limiteReserva.getHours() + 48 - 3);
+    const reserveLimit = limiteReserva.toISOString();
 
-    const equipmentIds = ['vca001', 'vca002', 'vca003', 'vca004', 'vca005']
+    const equipmentIds = ["vca001", "vca002", "vca003", "vca004", "vca005"];
     const selectedEquipmentId =
-      selectedIndex !== null ? equipmentIds[selectedIndex] : null
+      selectedIndex !== null ? equipmentIds[selectedIndex] : null;
 
-    const equipmentRef = ref(rtdb, `equipments/${selectedEquipmentId}`)
-    const userLimitRef = ref(rtdb, `target_limits/${userLoggedId}`)
+    const equipmentRef = ref(rtdb, `equipments/${selectedEquipmentId}`);
+    const userLimitRef = ref(rtdb, `target_limits/${userLoggedId}`);
 
     try {
       await set(equipmentRef, {
         available: false,
         currentUser: userLoggedId,
         reservedUntil,
-      })
+      });
 
       await set(userLimitRef, {
         userId: userLoggedId,
         reserveLimit,
-      })
+      });
 
-      reservarPatineteFirestoreDb()
+      reservarPatineteFirestoreDb();
     } catch (error) {
-      console.error('Erro ao reservar patinete na realtimeDb:', error)
-      warnNotif()
+      console.error("Erro ao reservar patinete na realtimeDb:", error);
+      warnNotif();
     }
-  }
+  };
 
   const reservarPatineteFirestoreDb = async () => {
-    const date = new Date()
-    date.setHours(date.getHours() - 3)
+    const date = new Date();
+    date.setHours(date.getHours() - 3);
 
-    const equipmentIds = ['vca001', 'vca002', 'vca003', 'vca004', 'vca005']
+    const equipmentIds = ["vca001", "vca002", "vca003", "vca004", "vca005"];
     const selectedEquipmentId =
-      selectedIndex !== null ? equipmentIds[selectedIndex] : null
+      selectedIndex !== null ? equipmentIds[selectedIndex] : null;
 
-    const logsRef = collection(db, 'logs')
+    const logsRef = collection(db, "logs");
 
     try {
       await addDoc(logsRef, {
@@ -279,46 +279,46 @@ export default function ReservarPatinete() {
         obs: obsCheckin,
         photos: [],
         time: date.toISOString(),
-        type: 'in',
+        type: "in",
         userName: user?.name,
-      })
-      console.log(`Reserva feita com sucesso para ${selectedEquipmentId}`)
-      sucessNotif()
+      });
+      console.log(`Reserva feita com sucesso para ${selectedEquipmentId}`);
+      sucessNotif();
       setTimeout(() => {
-        window.location.reload()
-      }, 3000)
+        window.location.reload();
+      }, 3000);
     } catch (error) {
-      console.error('Erro ao reservar patinete no firestoreDb:', error)
-      errorNotif()
+      console.error("Erro ao reservar patinete no firestoreDb:", error);
+      errorNotif();
     }
-  }
+  };
 
   const devolverPatineteRealtimeDb = async () => {
     if (!userLoggedId || !userLoggedName) {
-      alert('Erro ao devolver. Procure o setor TECH.')
-      return
+      alert("Erro ao devolver. Procure o setor TECH.");
+      return;
     }
 
-    const equipmentRef = ref(rtdb, `equipments/${hasReservation}`)
+    const equipmentRef = ref(rtdb, `equipments/${hasReservation}`);
 
     try {
       await set(equipmentRef, {
         available: true,
-        currentUser: '',
-        reservedUntil: '',
-      })
-      devolverPatineteFirestoreDb()
+        currentUser: "",
+        reservedUntil: "",
+      });
+      devolverPatineteFirestoreDb();
     } catch (error) {
-      console.error('Erro ao devolver patinete no realtimeDb:', error)
-      errorNotifOut()
+      console.error("Erro ao devolver patinete no realtimeDb:", error);
+      errorNotifOut();
     }
-  }
+  };
 
   const devolverPatineteFirestoreDb = async () => {
-    const date = new Date()
-    date.setHours(date.getHours() - 3)
+    const date = new Date();
+    date.setHours(date.getHours() - 3);
 
-    const logsRef = collection(db, 'logs')
+    const logsRef = collection(db, "logs");
 
     try {
       await addDoc(logsRef, {
@@ -326,19 +326,19 @@ export default function ReservarPatinete() {
         obs: obsCheckout,
         photos: [],
         time: date.toISOString(),
-        type: 'out',
+        type: "out",
         userName: user?.name,
-      })
-      sucessNotifCheckout()
-      console.log(`Checkout feito com sucesso para ${hasReservation}`)
+      });
+      sucessNotifCheckout();
+      console.log(`Checkout feito com sucesso para ${hasReservation}`);
       setTimeout(() => {
-        window.location.reload()
-      }, 3000)
+        window.location.reload();
+      }, 3000);
     } catch (error) {
-      console.error('Erro ao devolver patinete no firestoreDb:', error)
-      errorNotifOut()
+      console.error("Erro ao devolver patinete no firestoreDb:", error);
+      errorNotifOut();
     }
-  }
+  };
 
   return (
     <>
@@ -378,7 +378,7 @@ export default function ReservarPatinete() {
                 variant="default"
                 className="bg-green-600 hover:bg-green-700"
                 onClick={() => {
-                  reservarPatineteRealtimeDb()
+                  reservarPatineteRealtimeDb();
                 }}
               >
                 Reservar
@@ -410,7 +410,7 @@ export default function ReservarPatinete() {
                 variant="default"
                 className="bg-green-600 hover:bg-green-700"
                 onClick={() => {
-                  devolverPatineteRealtimeDb()
+                  devolverPatineteRealtimeDb();
                 }}
               >
                 Check-Out
@@ -476,5 +476,5 @@ export default function ReservarPatinete() {
         )}
       </>
     </>
-  )
+  );
 }

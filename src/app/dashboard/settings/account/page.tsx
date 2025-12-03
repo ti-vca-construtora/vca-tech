@@ -1,3 +1,3 @@
 export default function Page() {
-  return <div>Configurações da Conta</div>
+  return <div>Configurações da Conta</div>;
 }

@@ -1,19 +1,19 @@
-'use client'
+"use client";
 
-import { GiKickScooter } from 'react-icons/gi'
+import { GiKickScooter } from "react-icons/gi";
 
-import { Solucoes, SolucoesCard } from '@/components/solucoes-card'
+import { Solucoes, SolucoesCard } from "@/components/solucoes-card";
 
 const solucoesData: Solucoes[] = [
   {
-    titulo: 'Reservar Patinete',
-    descricao: 'Reserva de patinete para os colaboradores VCA.',
+    titulo: "Reservar Patinete",
+    descricao: "Reserva de patinete para os colaboradores VCA.",
     Icon: GiKickScooter,
-    href: 'reserva-patinete?title=Reserva de Patinete',
-    area: 'publico',
-    permission: 'reservar-patinete',
+    href: "reserva-patinete?title=Reserva de Patinete",
+    area: "publico",
+    permission: "reservar-patinete",
   },
-]
+];
 // 8
 const Publico = () => {
   return (
@@ -30,7 +30,7 @@ const Publico = () => {
         />
       ))}
     </div>
-  )
-}
+  );
+};
 
-export default Publico
+export default Publico;

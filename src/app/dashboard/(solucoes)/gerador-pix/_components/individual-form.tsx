@@ -1,19 +1,19 @@
-'use client'
+"use client";
 
-import { generatePix } from '@/util'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { toPng } from 'html-to-image'
-import Image from 'next/image'
-import * as qrcode from 'qrcode'
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { FormSchema, formSchema } from '../schema/pix-schema'
+import { generatePix } from "@/util";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toPng } from "html-to-image";
+import Image from "next/image";
+import * as qrcode from "qrcode";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { FormSchema, formSchema } from "../schema/pix-schema";
 
 type PixData = {
-  qrCodeLink: string
-  payload: string
-  identificador: string
-}
+  qrCodeLink: string;
+  payload: string;
+  identificador: string;
+};
 
 export function IndividualForm() {
   const {
@@ -22,52 +22,52 @@ export function IndividualForm() {
     formState: { errors },
   } = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
-  })
+  });
   const [pixData, setPixData] = useState<PixData>({
-    qrCodeLink: '',
-    payload: '',
-    identificador: '',
-  })
+    qrCodeLink: "",
+    payload: "",
+    identificador: "",
+  });
 
   const handleGenerateQrCode = async (data: FormSchema) => {
     try {
       const response = generatePix([
         {
           name: data.nomeBeneficiario,
-          key: data.keyType === 'tel' ? `+55${data.key}` : data.key,
+          key: data.keyType === "tel" ? `+55${data.key}` : data.key,
           transactionId: data.identificador.trim(),
           city: data.cidade,
           value: Number(data.valor) || 0,
         },
-      ])
-      const payload = response.payload()
-      const qrCodeUrl = await qrcode.toDataURL(payload)
+      ]);
+      const payload = response.payload();
+      const qrCodeUrl = await qrcode.toDataURL(payload);
 
       setPixData({
         payload: response.payload(),
         qrCodeLink: qrCodeUrl,
         identificador: data.identificador.trim(),
-      })
+      });
     } catch (error) {
-      console.error(error)
+      console.error(error);
     }
-  }
+  };
 
   const handleDownload = () => {
-    const divElement = document.getElementById('capture')
-    if (!divElement) return
+    const divElement = document.getElementById("capture");
+    if (!divElement) return;
 
-    toPng(divElement, { backgroundColor: 'white' })
+    toPng(divElement, { backgroundColor: "white" })
       .then((dataUrl) => {
-        const link = document.createElement('a')
-        link.href = dataUrl
-        link.download = `pix-${Date.now()}.png`
-        link.click()
+        const link = document.createElement("a");
+        link.href = dataUrl;
+        link.download = `pix-${Date.now()}.png`;
+        link.click();
       })
       .catch((error) => {
-        console.error('Erro na geração do QR:', error)
-      })
-  }
+        console.error("Erro na geração do QR:", error);
+      });
+  };
 
   return (
     <form
@@ -101,7 +101,7 @@ export function IndividualForm() {
           </div>
           <button
             onClick={() =>
-              setPixData({ qrCodeLink: '', payload: '', identificador: '' })
+              setPixData({ qrCodeLink: "", payload: "", identificador: "" })
             }
             className="bg-azul-claro-vca mt-6 self-center font-semibold text-sm rounded text-white w-fit p-2"
           >
@@ -115,7 +115,7 @@ export function IndividualForm() {
               Tipo de Chave:
             </label>
             <select
-              {...register('keyType')}
+              {...register("keyType")}
               className="border h-10 p-2 w-full rounded shadow-md"
             >
               <option className="text-sm" value="tel">
@@ -142,7 +142,7 @@ export function IndividualForm() {
               Chave PIX:
             </label>
             <input
-              {...register('key')}
+              {...register("key")}
               placeholder="Chave PIX"
               className="border h-10 p-2 w-full rounded shadow-md"
               type="text"
@@ -158,7 +158,7 @@ export function IndividualForm() {
               Nome do Beneficiário:
             </label>
             <input
-              {...register('nomeBeneficiario')}
+              {...register("nomeBeneficiario")}
               placeholder="Nome do Beneficiário"
               className="border h-10 p-2 w-full rounded shadow-md"
               type="text"
@@ -174,7 +174,7 @@ export function IndividualForm() {
               Cidade do Beneficiário:
             </label>
             <input
-              {...register('cidade')}
+              {...register("cidade")}
               placeholder="Cidade do Beneficiário"
               className="border h-10 p-2 w-full rounded shadow-md"
               type="text"
@@ -187,16 +187,16 @@ export function IndividualForm() {
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-azul-vca font-semibold text-sm">
-              {'Valor (opcional)'}:
+              {"Valor (opcional)"}:
             </label>
             <input
-              {...register('valor')}
+              {...register("valor")}
               placeholder="100.99"
               className="border h-10 p-2 w-full rounded shadow-md"
               type="text"
               onInput={(e) => {
-                const target = e.target as HTMLInputElement
-                target.value = target.value.replace(/,/g, '')
+                const target = e.target as HTMLInputElement;
+                target.value = target.value.replace(/,/g, "");
               }}
             />
             {errors.valor?.message && (
@@ -207,16 +207,16 @@ export function IndividualForm() {
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-azul-vca font-semibold text-sm">
-              {'Identificador'}:
+              {"Identificador"}:
             </label>
             <input
-              {...register('identificador')}
+              {...register("identificador")}
               placeholder="Identificador"
               className="border h-10 p-2 w-full rounded shadow-md"
               type="text"
               onInput={(e) => {
-                const target = e.target as HTMLInputElement
-                target.value = target.value.replace(/\s/g, '')
+                const target = e.target as HTMLInputElement;
+                target.value = target.value.replace(/\s/g, "");
               }}
             />
             {errors.identificador?.message && (
@@ -234,5 +234,5 @@ export function IndividualForm() {
         </div>
       )}
     </form>
-  )
+  );
 }

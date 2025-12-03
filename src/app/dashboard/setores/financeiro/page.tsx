@@ -1,29 +1,29 @@
-'use client'
+"use client";
 
-import React from 'react'
-import { CiCalculator1 } from 'react-icons/ci'
-import { PiPixLogo } from 'react-icons/pi'
+import React from "react";
+import { CiCalculator1 } from "react-icons/ci";
+import { PiPixLogo } from "react-icons/pi";
 
-import { Solucoes, SolucoesCard } from '@/components/solucoes-card'
+import { Solucoes, SolucoesCard } from "@/components/solucoes-card";
 
 const solucoesData: Solucoes[] = [
   {
-    titulo: 'Calculadora de Antecipação de Parcelas',
-    descricao: 'Efetua o cálculo de juros para antecipação de parcelas.',
+    titulo: "Calculadora de Antecipação de Parcelas",
+    descricao: "Efetua o cálculo de juros para antecipação de parcelas.",
     Icon: CiCalculator1,
-    href: 'calculadora-juros?title=AVP - Calculadora de Juros de Parcelas',
-    area: 'financeiro',
-    permission: 'avp',
+    href: "calculadora-juros?title=AVP - Calculadora de Juros de Parcelas",
+    area: "financeiro",
+    permission: "avp",
   },
   {
-    titulo: 'Gerador de Pix',
-    descricao: 'Gera QR Codes individuais ou em massa identificáveis.',
+    titulo: "Gerador de Pix",
+    descricao: "Gera QR Codes individuais ou em massa identificáveis.",
     Icon: PiPixLogo,
-    href: 'gerador-pix?title=Gerador de Pix',
-    area: 'financeiro',
-    permission: 'gerador-pix',
+    href: "gerador-pix?title=Gerador de Pix",
+    area: "financeiro",
+    permission: "gerador-pix",
   },
-]
+];
 
 const Financeiro = () => {
   return (
@@ -40,7 +40,7 @@ const Financeiro = () => {
         />
       ))}
     </div>
-  )
-}
+  );
+};
 
-export default Financeiro
+export default Financeiro;

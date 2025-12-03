@@ -1,71 +1,71 @@
-'use client'
+"use client";
 
 /* eslint-disable @next/next/no-img-element */
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import { useState } from 'react'
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { useState } from "react";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL as string
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 const SUPABASE_PUBLISHABLE_KEY = process.env
-  .NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as string
+  .NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as string;
 
-const supabase: SupabaseClient = (typeof window !== 'undefined' &&
-  createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)) as SupabaseClient
+const supabase: SupabaseClient = (typeof window !== "undefined" &&
+  createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)) as SupabaseClient;
 
 type Submission = {
-  id: number
-  uid: string | null
-  nome: string | null
-  cpf: string | null
-  obra: string | null
-  auth: string | null
-  data: string | null
-  base64: string | null
-}
+  id: number;
+  uid: string | null;
+  nome: string | null;
+  cpf: string | null;
+  obra: string | null;
+  auth: string | null;
+  data: string | null;
+  base64: string | null;
+};
 
 const Validador = () => {
-  const [code, setCode] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<Submission | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<Submission | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleCheck = async (value?: string) => {
     // normalize scanner output: replace semicolons with hyphens
-    const authCode = (value ?? code).trim().replace(/;/g, '-')
+    const authCode = (value ?? code).trim().replace(/;/g, "-");
     if (!authCode) {
-      setError('Informe o código ou escaneie o QR')
-      setResult(null)
-      return
+      setError("Informe o código ou escaneie o QR");
+      setResult(null);
+      return;
     }
-    setLoading(true)
-    setError(null)
-    setResult(null)
+    setLoading(true);
+    setError(null);
+    setResult(null);
     try {
       const { data, error: supError } = await supabase
-        .from('submits')
-        .select('*')
-        .eq('auth', authCode)
-        .limit(1)
+        .from("submits")
+        .select("*")
+        .eq("auth", authCode)
+        .limit(1);
 
       if (supError) {
-        setError(supError.message)
+        setError(supError.message);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } else if (!data || (data as any[]).length === 0) {
-        setError('Autenticação inválida')
+        setError("Autenticação inválida");
       } else {
-        setResult((data as Submission[])[0])
+        setResult((data as Submission[])[0]);
       }
     } catch (err) {
-      setError(String(err))
+      setError(String(err));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const reset = () => {
-    setCode('')
-    setResult(null)
-    setError(null)
-  }
+    setCode("");
+    setResult(null);
+    setError(null);
+  };
 
   return (
     <div className="p-6 w-3/4">
@@ -126,11 +126,11 @@ const Validador = () => {
               <span className="font-medium">Auth:</span> {result.auth}
             </div>
             <div>
-              <span className="font-medium">Imagem:</span>{' '}
+              <span className="font-medium">Imagem:</span>{" "}
               {result.base64 ? (
                 <img
                   src={
-                    result.base64.startsWith('data:')
+                    result.base64.startsWith("data:")
                       ? result.base64
                       : `data:image/png;base64,${result.base64}`
                   }
@@ -145,7 +145,7 @@ const Validador = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default Validador
+export default Validador;

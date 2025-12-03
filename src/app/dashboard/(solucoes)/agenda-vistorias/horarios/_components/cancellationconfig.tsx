@@ -1,51 +1,51 @@
-'use client'
+"use client";
 
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { useInspectionConfig } from '@/hooks/use-inspection-config'
-import { useState } from 'react'
-import { toast } from 'react-toastify'
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useInspectionConfig } from "@/hooks/use-inspection-config";
+import { useState } from "react";
+import { toast } from "react-toastify";
 
 export function CancellationConfig() {
-  const { config, loading, updateConfig } = useInspectionConfig()
-  const [maxDaysToCancel, setMaxDaysToCancel] = useState<number>(0)
-  const [isSaving, setIsSaving] = useState(false)
+  const { config, loading, updateConfig } = useInspectionConfig();
+  const [maxDaysToCancel, setMaxDaysToCancel] = useState<number>(0);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Atualizar valor local quando o config carregar
   useState(() => {
     if (config) {
-      setMaxDaysToCancel(config.maxDaysToCancel)
+      setMaxDaysToCancel(config.maxDaysToCancel);
     }
-  })
+  });
 
   const handleSave = async () => {
     if (maxDaysToCancel < 0) {
-      toast.error('O valor deve ser positivo')
-      return
+      toast.error("O valor deve ser positivo");
+      return;
     }
 
     if (!config) {
-      toast.error('Configuração não carregada')
-      return
+      toast.error("Configuração não carregada");
+      return;
     }
 
-    setIsSaving(true)
+    setIsSaving(true);
     try {
       // Enviar TODAS as configurações, não apenas a alterada
       await updateConfig({
         ...config,
         maxDaysToCancel,
-      })
-      toast.success('Configuração salva com sucesso!')
+      });
+      toast.success("Configuração salva com sucesso!");
     } catch (error) {
-      toast.error('Erro ao salvar configuração')
+      toast.error("Erro ao salvar configuração");
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   if (loading) {
-    return <div>Carregando...</div>
+    return <div>Carregando...</div>;
   }
 
   return (
@@ -68,9 +68,9 @@ export function CancellationConfig() {
           onClick={handleSave}
           disabled={isSaving}
         >
-          {isSaving ? 'Salvando...' : 'Salvar'}
+          {isSaving ? "Salvando..." : "Salvar"}
         </Button>
       </div>
     </div>
-  )
+  );
 }

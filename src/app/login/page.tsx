@@ -1,5 +1,5 @@
-import bannerDesktop from '../../../public/assets/banner-vca-tech.jpg'
-import { LoginForm } from './_components/login-form'
+import bannerDesktop from "../../../public/assets/banner-vca-tech.jpg";
+import { LoginForm } from "./_components/login-form";
 
 export default function Login() {
   return (
@@ -16,5 +16,5 @@ export default function Login() {
         <LoginForm />
       </div>
     </main>
-  )
+  );
 }

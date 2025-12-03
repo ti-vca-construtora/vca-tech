@@ -1,5 +1,5 @@
-import { RouteGuard } from '@/components/route-guard'
-import ControleCargasTools from './_components/options'
+import { RouteGuard } from "@/components/route-guard";
+import ControleCargasTools from "./_components/options";
 
 export default function ControleCargas() {
   return (
@@ -8,5 +8,5 @@ export default function ControleCargas() {
         <ControleCargasTools />
       </div>
     </RouteGuard>
-  )
+  );
 }

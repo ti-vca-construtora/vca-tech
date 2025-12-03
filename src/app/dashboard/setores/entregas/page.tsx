@@ -1,20 +1,20 @@
-'use client'
+"use client";
 
-import React from 'react'
-import { PiCalendarCheckDuotone } from 'react-icons/pi'
+import React from "react";
+import { PiCalendarCheckDuotone } from "react-icons/pi";
 
-import { Solucoes, SolucoesCard } from '@/components/solucoes-card'
+import { Solucoes, SolucoesCard } from "@/components/solucoes-card";
 
 const solucoesData: Solucoes[] = [
   {
-    titulo: 'Agenda de Vistorias',
-    descricao: 'Configura e relaciona a agenda de vistorias do cliente.',
+    titulo: "Agenda de Vistorias",
+    descricao: "Configura e relaciona a agenda de vistorias do cliente.",
     Icon: PiCalendarCheckDuotone,
-    href: 'agenda-vistorias?title=Agenda de Vistorias',
-    area: 'entregas',
-    permission: 'agendamento-vistorias',
+    href: "agenda-vistorias?title=Agenda de Vistorias",
+    area: "entregas",
+    permission: "agendamento-vistorias",
   },
-]
+];
 // 8
 const Entregas = () => {
   return (
@@ -31,7 +31,7 @@ const Entregas = () => {
         />
       ))}
     </div>
-  )
-}
+  );
+};
 
-export default Entregas
+export default Entregas;

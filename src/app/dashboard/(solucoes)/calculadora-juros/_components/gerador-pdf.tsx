@@ -1,26 +1,26 @@
-'use client'
+"use client";
 
-import { usePdf } from '@/hooks/use-pdf'
-import { PiDownload } from 'react-icons/pi'
-import React, { useState } from 'react'
+import { usePdf } from "@/hooks/use-pdf";
+import { PiDownload } from "react-icons/pi";
+import React, { useState } from "react";
 
 export function GeradorPdf<T extends object>({
   Component,
   props,
   fileName,
 }: {
-  Component: React.ComponentType<T>
-  props: T
-  fileName: string
+  Component: React.ComponentType<T>;
+  props: T;
+  fileName: string;
 }) {
-  const { generatePdf } = usePdf<T>({ Component, props, fileName })
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const { generatePdf } = usePdf<T>({ Component, props, fileName });
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const handleDownloadPdf = async () => {
-    setIsLoading(true)
-    await generatePdf()
-    setIsLoading(false)
-  }
+    setIsLoading(true);
+    await generatePdf();
+    setIsLoading(false);
+  };
 
   return (
     <div>
@@ -39,5 +39,5 @@ export function GeradorPdf<T extends object>({
         </button>
       )}
     </div>
-  )
+  );
 }

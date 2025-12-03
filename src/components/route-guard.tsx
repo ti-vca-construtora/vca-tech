@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import { memo, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuthStore } from '@/store/auth-store'
+import { memo, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/auth-store";
 
 export const RouteGuard = memo(
   ({
@@ -11,21 +11,21 @@ export const RouteGuard = memo(
     requiredPermission,
     requiredRole,
   }: {
-    children: React.ReactNode
-    requiredArea: string
-    requiredPermission: string
-    requiredRole?: 'MASTER' | 'ADMIN' | undefined
+    children: React.ReactNode;
+    requiredArea: string;
+    requiredPermission: string;
+    requiredRole?: "MASTER" | "ADMIN" | undefined;
   }) => {
-    const router = useRouter()
-    const { user, isLoading, hasPermission, hasRequiredRole } = useAuthStore()
+    const router = useRouter();
+    const { user, isLoading, hasPermission, hasRequiredRole } = useAuthStore();
 
     useEffect(() => {
       if (!isLoading && !hasPermission(requiredArea, requiredPermission)) {
-        router.push('/dashboard/unauthorized')
+        router.push("/dashboard/unauthorized");
       }
 
       if (requiredRole && !isLoading && !hasRequiredRole(requiredRole)) {
-        router.push('/dashboard/unauthorized')
+        router.push("/dashboard/unauthorized");
       }
     }, [
       user,
@@ -34,17 +34,17 @@ export const RouteGuard = memo(
       requiredArea,
       requiredPermission,
       requiredRole,
-    ])
+    ]);
 
     if (isLoading)
       return (
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-azul-claro-vca"></div>
-      )
+      );
 
-    if (!hasPermission(requiredArea, requiredPermission)) return null
+    if (!hasPermission(requiredArea, requiredPermission)) return null;
 
-    return <>{children}</>
+    return <>{children}</>;
   },
-)
+);
 
-RouteGuard.displayName = 'RouteGuard'
+RouteGuard.displayName = "RouteGuard";

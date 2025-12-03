@@ -3,10 +3,10 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion'
+} from "@/components/ui/accordion";
 
-import { CalendarConfig } from './calendarconfig'
-import { CancellationConfig } from './cancellationconfig'
+import { CalendarConfig } from "./calendarconfig";
+import { CancellationConfig } from "./cancellationconfig";
 
 export function DisponibilizarHorarios() {
   return (
@@ -26,5 +26,5 @@ export function DisponibilizarHorarios() {
         </AccordionItem>
       </Accordion>
     </div>
-  )
+  );
 }

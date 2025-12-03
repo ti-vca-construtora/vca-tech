@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import {
   Table,
@@ -7,20 +7,20 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import classNames from 'classnames'
-import { useState } from 'react'
-import { Cliente } from '@/components/search-form'
-import { Loader2Icon } from 'lucide-react'
-import { VisualizaoCalculo } from './visualizacao-calculo'
-import { formatarData, formatarValor } from '@/util'
+} from "@/components/ui/table";
+import classNames from "classnames";
+import { useState } from "react";
+import { Cliente } from "@/components/search-form";
+import { Loader2Icon } from "lucide-react";
+import { VisualizaoCalculo } from "./visualizacao-calculo";
+import { formatarData, formatarValor } from "@/util";
 import {
   IncomeByBillsApiResponse,
   Parcela,
-} from '@/app/api/avp/income-by-bills/route'
-import { ClienteInfo } from '@/components/cliente-info'
-import { Contrato } from './contratos-tabela'
-import { CurrentDebitBalanceApiResponse } from '@/app/api/avp/current-debit-balance/route'
+} from "@/app/api/avp/income-by-bills/route";
+import { ClienteInfo } from "@/components/cliente-info";
+import { Contrato } from "./contratos-tabela";
+import { CurrentDebitBalanceApiResponse } from "@/app/api/avp/current-debit-balance/route";
 import {
   Card,
   CardContent,
@@ -28,18 +28,18 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
+} from "@/components/ui/card";
 
 type ParcelasTabelaProps = {
-  cliente: Cliente
-  incomeByBills: IncomeByBillsApiResponse
-  currentDebitBalance: CurrentDebitBalanceApiResponse
-  contrato: Contrato
-}
+  cliente: Cliente;
+  incomeByBills: IncomeByBillsApiResponse;
+  currentDebitBalance: CurrentDebitBalanceApiResponse;
+  contrato: Contrato;
+};
 
 export type ParcelaSelecionada = Parcela & {
-  index: number
-}
+  index: number;
+};
 
 export function ParcelasTabela({
   cliente,
@@ -48,15 +48,15 @@ export function ParcelasTabela({
   contrato,
 }: ParcelasTabelaProps) {
   const [parcelasValidasSelecionadas, setParcelasValidasSelecionadas] =
-    useState<ParcelaSelecionada[]>([])
-  const [calculo, setCalculo] = useState<boolean>(false)
-  const [selectedDate, setSelectedDate] = useState('')
+    useState<ParcelaSelecionada[]>([]);
+  const [calculo, setCalculo] = useState<boolean>(false);
+  const [selectedDate, setSelectedDate] = useState("");
 
   const handleSelectTodasParcelas = () => {
     if (parcelasValidasSelecionadas.length === updateParcelas.length) {
-      setParcelasValidasSelecionadas([])
+      setParcelasValidasSelecionadas([]);
 
-      return
+      return;
     }
 
     setParcelasValidasSelecionadas(
@@ -64,10 +64,10 @@ export function ParcelasTabela({
         return {
           ...item,
           index,
-        }
+        };
       }),
-    )
-  }
+    );
+  };
 
   const handleParcelasPorTipo = (tipo: string) => {
     setParcelasValidasSelecionadas(
@@ -77,113 +77,113 @@ export function ParcelasTabela({
           return {
             ...item,
             index,
-          }
+          };
         }),
-    )
-  }
+    );
+  };
 
   const handleSelectParcela = (parcela: Parcela, index: number) => {
     setParcelasValidasSelecionadas((prev) => {
       const parcelaJaSelecionada = prev.some(
         (p) => p.installmentId === parcela.installmentId,
-      )
+      );
 
       if (parcelaJaSelecionada) {
-        return prev.filter((p) => p.installmentId !== parcela.installmentId)
+        return prev.filter((p) => p.installmentId !== parcela.installmentId);
       } else {
-        return [...prev, { ...parcela, index }]
+        return [...prev, { ...parcela, index }];
       }
-    })
-  }
+    });
+  };
 
   const isParcelaSelecionada = (parcela: Parcela) =>
     parcelasValidasSelecionadas.some(
       (p) => p.installmentId === parcela.installmentId,
-    )
+    );
 
   const calcularTotalParcelasSelecionadas = () => {
     return parcelasValidasSelecionadas.reduce((total, parcela) => {
       const valorNumerico = parseFloat(
-        parcela.correctedBalanceAmount.toString().replace(',', '.').trim(),
-      )
-      return total + (isNaN(valorNumerico) ? 0 : valorNumerico)
-    }, 0)
-  }
+        parcela.correctedBalanceAmount.toString().replace(",", ".").trim(),
+      );
+      return total + (isNaN(valorNumerico) ? 0 : valorNumerico);
+    }, 0);
+  };
 
   const sortByDueDateDesc = (array: Parcela[]) => {
-    if (array.length <= 1) return array
+    if (array.length <= 1) return array;
 
     const validParcels = array.filter(
       (parcela) => parcela.correctedBalanceAmount !== 0,
-    )
+    );
 
-    if (validParcels.length === 0) return []
+    if (validParcels.length === 0) return [];
 
     const closestParcel = validParcels.reduce((prev, curr) =>
       new Date(prev.dueDate) < new Date(curr.dueDate) ? prev : curr,
-    )
+    );
 
     const sortedValidParcels = [...validParcels].sort(
       (a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime(),
-    )
+    );
 
-    const index = sortedValidParcels.findIndex((p) => p === closestParcel)
+    const index = sortedValidParcels.findIndex((p) => p === closestParcel);
 
     if (index !== -1) {
-      sortedValidParcels.splice(index, 1)
+      sortedValidParcels.splice(index, 1);
     }
 
-    return [closestParcel, ...sortedValidParcels]
-  }
+    return [closestParcel, ...sortedValidParcels];
+  };
 
   const handleCalculo = () => {
     const isDateValid = parcelasValidasSelecionadas.every(
       (parcela: Parcela) => new Date(selectedDate) <= new Date(parcela.dueDate),
-    )
+    );
 
     if (!isDateValid) {
       alert(
-        'A data de pagamento deve ser anterior ao vencimento de todas as parcelas selecionadas.',
-      )
+        "A data de pagamento deve ser anterior ao vencimento de todas as parcelas selecionadas.",
+      );
 
-      return
+      return;
     }
 
-    setCalculo(true)
-  }
+    setCalculo(true);
+  };
 
   const excludedPaymentTerms = [
-    'F',
-    'FB',
-    'FG',
-    'FI',
-    'SU',
-    'Su',
-    'PU',
-    'PE',
-    'MB',
-  ]
+    "F",
+    "FB",
+    "FG",
+    "FI",
+    "SU",
+    "Su",
+    "PU",
+    "PE",
+    "MB",
+  ];
 
   const excludedFullPaymentTerms = [
-    'Financiamento CEF',
-    'Financiamento Outros Bancos',
-    'FGTS Financiável',
-    'Subsídio Financiável',
-    'Parcela Única',
-    'Permuta',
-    'Morar Bem - PE',
-  ]
+    "Financiamento CEF",
+    "Financiamento Outros Bancos",
+    "FGTS Financiável",
+    "Subsídio Financiável",
+    "Parcela Única",
+    "Permuta",
+    "Morar Bem - PE",
+  ];
 
   const updateParcelas = sortByDueDateDesc(incomeByBills.data)
     .filter((parcela) => {
-      const paymentTermId = parcela.paymentTerm.id.toUpperCase()
+      const paymentTermId = parcela.paymentTerm.id.toUpperCase();
 
       return !excludedPaymentTerms
         .map((term) => term.toUpperCase())
-        .includes(paymentTermId)
+        .includes(paymentTermId);
     })
     .filter((parcela) => parcela.correctedBalanceAmount !== 0)
-    .filter((parcela) => new Date(parcela.dueDate) > new Date())
+    .filter((parcela) => new Date(parcela.dueDate) > new Date());
 
   const tiposDeParcela = Array.from(
     new Set(
@@ -192,7 +192,7 @@ export function ParcelasTabela({
         .map((parcela) => parcela.paymentTerm?.id?.trim())
         .filter((id): id is string => !!id),
     ),
-  )
+  );
 
   return (
     <div className="w-full h-full flex flex-col items-center justify-center gap-6 text-xs">
@@ -225,12 +225,12 @@ export function ParcelasTabela({
               currentDebitBalance.data[0].dueInstallments.filter((parcela) => {
                 const paymentTermId = parcela.conditionType
                   .trim()
-                  .replaceAll(' ', '')
-                  .toUpperCase()
+                  .replaceAll(" ", "")
+                  .toUpperCase();
 
                 return !excludedFullPaymentTerms
-                  .map((term) => term.trim().replaceAll(' ', '').toUpperCase())
-                  .includes(paymentTermId)
+                  .map((term) => term.trim().replaceAll(" ", "").toUpperCase())
+                  .includes(paymentTermId);
               }).length > 0 ? (
                 <span className="font-bold text-red-500 text-lg uppercase">
                   {`Este cliente possui ${currentDebitBalance.data[0].dueInstallments.length} parcelas em aberto.
@@ -261,8 +261,8 @@ export function ParcelasTabela({
                     incomeByBills.data.filter(
                       (parcela) => parcela.correctedBalanceAmount !== 0,
                     ).length
-                      ? 'Desmarcar todas'
-                      : 'Selecionar todas'}
+                      ? "Desmarcar todas"
+                      : "Selecionar todas"}
                   </button>
                   <div className="self-end flex items-center justify-center gap-2">
                     <select
@@ -292,7 +292,7 @@ export function ParcelasTabela({
                       <TableHead className="w-[200px]">VALOR</TableHead>
                       <TableHead className="w-[200px]">ID CONDIÇÃO</TableHead>
                       <TableHead className="w-[200px]">
-                        NOME INDEXADOR{' '}
+                        NOME INDEXADOR{" "}
                       </TableHead>
                       <TableHead className="w-[150px] text-center">
                         SELECIONAR
@@ -304,8 +304,8 @@ export function ParcelasTabela({
                       <TableRow
                         key={index}
                         className={classNames(
-                          index % 2 === 0 && 'bg-neutral-100',
-                          index === 0 && 'bg-green-100',
+                          index % 2 === 0 && "bg-neutral-100",
+                          index === 0 && "bg-green-100",
                         )}
                       >
                         <TableCell className="font-medium">
@@ -339,7 +339,7 @@ export function ParcelasTabela({
               <div className="w-full flex justify-between items-start">
                 <div className="rounded flex items-center justify-center w-full text-xs gap-2">
                   <span className="text-azul-vca">
-                    Quantidade de títulos:{' '}
+                    Quantidade de títulos:{" "}
                     <span className="font-bold">{updateParcelas.length}</span>
                   </span>
                 </div>
@@ -349,32 +349,32 @@ export function ParcelasTabela({
           <div className="bg-white shadow-md rounded w-full p-2 flex justify-between items-start">
             <div className="rounded p-2 flex flex-col gap-2">
               <span className="text-azul-vca">
-                Títulos Selecionados:{' '}
+                Títulos Selecionados:{" "}
                 <span className="font-bold">
                   {parcelasValidasSelecionadas.length}
                 </span>
               </span>
               <span className="text-azul-vca">
-                Total das Parcelas:{' '}
+                Total das Parcelas:{" "}
                 <span className="font-bold">{`R$ ${formatarValor(Number(calcularTotalParcelasSelecionadas().toFixed(2)))}`}</span>
               </span>
             </div>
             <div className="rounded p-2 flex flex-col items-center gap-2">
               <span className="text-azul-vca">
-                Data a Pagar:{' '}
+                Data a Pagar:{" "}
                 <input
                   id="date"
                   type="date"
                   className="font-bold"
                   value={selectedDate}
-                  min={new Date().toISOString().split('T')[0]}
+                  min={new Date().toISOString().split("T")[0]}
                   max={
                     new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
                       .toISOString()
-                      .split('T')[0]
+                      .split("T")[0]
                   }
                   onChange={(e) => {
-                    setSelectedDate(e.target.value)
+                    setSelectedDate(e.target.value);
                   }}
                 />
               </span>
@@ -392,5 +392,5 @@ export function ParcelasTabela({
         <Loader2Icon className="animate-spin duration-1000 text-neutral-500" />
       )}
     </div>
-  )
+  );
 }

@@ -5,13 +5,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { User } from '@/store/auth-store'
-import { MoreHorizontalIcon } from 'lucide-react'
+} from "@/components/ui/table";
+import { User } from "@/store/auth-store";
+import { MoreHorizontalIcon } from "lucide-react";
 
 type UsersTableProps = {
-  users: User[]
-}
+  users: User[];
+};
 
 export function UsersTable({ users }: UsersTableProps) {
   return (
@@ -28,9 +28,9 @@ export function UsersTable({ users }: UsersTableProps) {
       <TableBody>
         {users.map((item) => (
           <TableRow key={item.id}>
-            <TableCell>{item.name || 'Não cadastrado'}</TableCell>
+            <TableCell>{item.name || "Não cadastrado"}</TableCell>
             <TableCell>{item.email}</TableCell>
-            <TableCell>{item.department || 'Não cadastrado'}</TableCell>
+            <TableCell>{item.department || "Não cadastrado"}</TableCell>
             <TableCell>{item.role}</TableCell>
             <TableCell className="text-center">
               <MoreHorizontalIcon />
@@ -39,5 +39,5 @@ export function UsersTable({ users }: UsersTableProps) {
         ))}
       </TableBody>
     </Table>
-  )
+  );
 }

@@ -1,15 +1,15 @@
 /* eslint-disable prettier/prettier */
-'use client'
+"use client";
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -17,333 +17,336 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { addHours, format, isWithinInterval, parseISO } from 'date-fns'
-import { Download, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { ToastContainer, toast } from 'react-toastify'
+} from "@/components/ui/select";
+import { addHours, format, isWithinInterval, parseISO } from "date-fns";
+import { Download, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ToastContainer, toast } from "react-toastify";
 
 interface Inspection {
-  id: string
-  status: string
+  id: string;
+  status: string;
   inspectionSlot: {
-    startAt: string | Date
-    endAt: string | Date
-    status: string
-    developmentId: string
-  }
-  unitId: string
+    startAt: string | Date;
+    endAt: string | Date;
+    status: string;
+    developmentId: string;
+  };
+  unitId: string;
   unit: {
-    unit: string
-    developmentId: string
-  }
-  developmentName?: string // Nome do empreendimento carregado posteriormente
+    unit: string;
+    developmentId: string;
+  };
+  developmentName?: string; // Nome do empreendimento carregado posteriormente
 }
 
 interface Development {
-  id: string
-  name: string
-  isActive: boolean
+  id: string;
+  name: string;
+  isActive: boolean;
 }
 
 const ScheduledInspectionsPage = () => {
-  const [inspections, setInspections] = useState<Inspection[]>([])
-  const [developments, setDevelopments] = useState<Development[]>([])
-  const [isLoading, setIsLoading] = useState<boolean>(true)
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState<boolean>(false)
-  const [selectedDevelopment, setSelectedDevelopment] = useState<string>('ALL')
+  const [inspections, setInspections] = useState<Inspection[]>([]);
+  const [developments, setDevelopments] = useState<Development[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState<boolean>(false);
+  const [selectedDevelopment, setSelectedDevelopment] = useState<string>("ALL");
   const [startDate, setStartDate] = useState<string>(
-    format(new Date(), 'yyyy-MM-dd')
-  )
+    format(new Date(), "yyyy-MM-dd"),
+  );
   const [endDate, setEndDate] = useState<string>(
-    format(new Date(), 'yyyy-MM-dd')
-  )
-  const [cancelModalOpen, setCancelModalOpen] = useState<boolean>(false)
+    format(new Date(), "yyyy-MM-dd"),
+  );
+  const [cancelModalOpen, setCancelModalOpen] = useState<boolean>(false);
   const [inspectionToCancel, setInspectionToCancel] = useState<string | null>(
-    null
-  )
+    null,
+  );
 
   const sucessNotif = () =>
-    toast.success('Registro registrado!', {
-      position: 'top-right',
+    toast.success("Registro registrado!", {
+      position: "top-right",
       autoClose: 3000,
       hideProgressBar: false,
       closeOnClick: false,
       pauseOnHover: true,
       draggable: true,
       progress: undefined,
-      theme: 'light',
-    })
+      theme: "light",
+    });
 
   const errorNotif = () =>
-    toast.error('Falha no registro.', {
-      position: 'top-right',
+    toast.error("Falha no registro.", {
+      position: "top-right",
       autoClose: 3000,
       hideProgressBar: false,
       closeOnClick: false,
       pauseOnHover: true,
       draggable: true,
       progress: undefined,
-      theme: 'light',
-    })
+      theme: "light",
+    });
 
   const handleCancelInspection = async () => {
-    if (!inspectionToCancel) return
+    if (!inspectionToCancel) return;
 
     try {
       const response = await fetch(
         `/api/vistorias/inspections?id=${inspectionToCancel}`,
         {
-          method: 'DELETE',
-        }
-      )
+          method: "DELETE",
+        },
+      );
 
       if (!response.ok) {
-        throw new Error('Erro ao cancelar agendamento')
+        throw new Error("Erro ao cancelar agendamento");
       }
 
-      toast.success('Agendamento cancelado com sucesso!')
-      setCancelModalOpen(false)
-      setInspectionToCancel(null)
+      toast.success("Agendamento cancelado com sucesso!");
+      setCancelModalOpen(false);
+      setInspectionToCancel(null);
 
       setTimeout(() => {
-        window.location.reload()
-      }, 2000)
+        window.location.reload();
+      }, 2000);
     } catch (error) {
-      console.error('Erro ao cancelar agendamento:', error)
-      toast.error('Erro ao cancelar agendamento')
+      console.error("Erro ao cancelar agendamento:", error);
+      toast.error("Erro ao cancelar agendamento");
     }
-  }
+  };
 
   const openCancelModal = (inspectionId: string) => {
-    setInspectionToCancel(inspectionId)
-    setCancelModalOpen(true)
-  }
+    setInspectionToCancel(inspectionId);
+    setCancelModalOpen(true);
+  };
 
   const handleExportPDF = async () => {
-    if (isGeneratingPDF) return // Previne cliques duplicados
+    if (isGeneratingPDF) return; // Previne cliques duplicados
 
-    setIsGeneratingPDF(true)
+    setIsGeneratingPDF(true);
     try {
-      const response = await fetch('/api/pdf', {
-        method: 'POST',
+      const response = await fetch("/api/pdf", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          type: 'agendamentos',
+          type: "agendamentos",
           data: {
             inspections: filteredInspections,
             filters: {
               startDate,
               endDate,
               development:
-                selectedDevelopment === 'ALL'
-                  ? 'Todos os empreendimentos'
+                selectedDevelopment === "ALL"
+                  ? "Todos os empreendimentos"
                   : selectedDevelopment,
             },
           },
         }),
-      })
+      });
 
       if (!response.ok) {
-        throw new Error('Erro ao gerar relatório')
+        throw new Error("Erro ao gerar relatório");
       }
 
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `agendamentos-${format(new Date(), 'dd-MM-yyyy-HHmmss')}.pdf`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `agendamentos-${format(new Date(), "dd-MM-yyyy-HHmmss")}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
 
-      toast.success('Relatório gerado com sucesso!')
+      toast.success("Relatório gerado com sucesso!");
     } catch (error) {
-      console.error('Erro ao exportar PDF:', error)
-      toast.error('Erro ao gerar relatório')
+      console.error("Erro ao exportar PDF:", error);
+      toast.error("Erro ao gerar relatório");
     } finally {
-      setIsGeneratingPDF(false)
+      setIsGeneratingPDF(false);
     }
-  }
+  };
 
   useEffect(() => {
     const fetchDevelopments = async () => {
       try {
         const response = await fetch(
-          '/api/vistorias/empreendimentos?page=1&pageSize=500&isActive=1',
+          "/api/vistorias/empreendimentos?page=1&pageSize=500&isActive=1",
           {
-            method: 'GET',
+            method: "GET",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
-          }
-        )
+          },
+        );
 
         if (!response.ok) {
-          throw new Error('Erro ao carregar empreendimentos')
+          throw new Error("Erro ao carregar empreendimentos");
         }
 
-        const data = await response.json()
-        setDevelopments(data.data)
+        const data = await response.json();
+        setDevelopments(data.data);
       } catch (error) {
-        console.error(error)
+        console.error(error);
       }
-    }
+    };
 
     const fetchInspections = async () => {
-      setIsLoading(true)
+      setIsLoading(true);
       try {
         const response = await fetch(
-          '/api/vistorias/inspections?page=1&pageSize=999999',
+          "/api/vistorias/inspections?page=1&pageSize=999999",
           {
-            method: 'GET',
+            method: "GET",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
             // eslint-disable-next-line prettier/prettier
-          }
-        )
+          },
+        );
 
         if (!response.ok) {
-          throw new Error('Erro ao carregar vistorias')
+          throw new Error("Erro ao carregar vistorias");
         }
 
-        const data = await response.json()
-        console.log('[AGENDAMENTOS] Dados brutos da API:', data)
+        const data = await response.json();
+        console.log("[AGENDAMENTOS] Dados brutos da API:", data);
 
         const scheduledInspections = data.data.filter(
           // eslint-disable-next-line prettier/prettier
           (item: Inspection) =>
-            item.status === 'SCHEDULED' ||
-            item.status === 'COMPLETED' ||
+            item.status === "SCHEDULED" ||
+            item.status === "COMPLETED" ||
             // eslint-disable-next-line prettier/prettier
-            item.status === 'RESCHEDULED'
-        )
+            item.status === "RESCHEDULED",
+        );
 
-        console.log('[AGENDAMENTOS] Inspeções filtradas:', scheduledInspections)
         console.log(
-          '[AGENDAMENTOS] Amostra da primeira inspeção:',
-          scheduledInspections[0]
-        )
+          "[AGENDAMENTOS] Inspeções filtradas:",
+          scheduledInspections,
+        );
+        console.log(
+          "[AGENDAMENTOS] Amostra da primeira inspeção:",
+          scheduledInspections[0],
+        );
 
         // Buscar nomes dos empreendimentos para cada inspeção
         const inspectionsWithDevelopmentNames = await Promise.all(
           scheduledInspections.map(async (inspection: Inspection) => {
-            const developmentId = inspection.unit.developmentId
+            const developmentId = inspection.unit.developmentId;
             console.log(
-              `[AGENDAMENTOS] Buscando nome do empreendimento ${developmentId}...`
-            )
+              `[AGENDAMENTOS] Buscando nome do empreendimento ${developmentId}...`,
+            );
 
             try {
               const devResponse = await fetch(
-                `/api/vistorias/empreendimentos/development?id=${developmentId}`
-              )
+                `/api/vistorias/empreendimentos/development?id=${developmentId}`,
+              );
 
               if (devResponse.ok) {
-                const devData = await devResponse.json()
+                const devData = await devResponse.json();
                 console.log(
                   `[AGENDAMENTOS] Empreendimento ${developmentId}:`,
-                  devData
-                )
+                  devData,
+                );
                 return {
                   ...inspection,
-                  developmentName: devData.data?.name || 'Nome não disponível',
-                }
+                  developmentName: devData.data?.name || "Nome não disponível",
+                };
               } else {
                 console.error(
                   `[AGENDAMENTOS] Erro ao buscar empreendimento ${developmentId}:`,
-                  devResponse.status
-                )
+                  devResponse.status,
+                );
                 return {
                   ...inspection,
-                  developmentName: 'Nome não disponível',
-                }
+                  developmentName: "Nome não disponível",
+                };
               }
             } catch (error) {
               console.error(
                 `[AGENDAMENTOS] Erro ao buscar empreendimento ${developmentId}:`,
-                error
-              )
+                error,
+              );
               return {
                 ...inspection,
-                developmentName: 'Nome não disponível',
-              }
+                developmentName: "Nome não disponível",
+              };
             }
-          })
-        )
+          }),
+        );
 
         console.log(
-          '[AGENDAMENTOS] Inspeções com nomes dos empreendimentos:',
-          inspectionsWithDevelopmentNames
-        )
+          "[AGENDAMENTOS] Inspeções com nomes dos empreendimentos:",
+          inspectionsWithDevelopmentNames,
+        );
 
-        setInspections(inspectionsWithDevelopmentNames)
+        setInspections(inspectionsWithDevelopmentNames);
       } catch (error) {
-        console.error(error)
+        console.error(error);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    fetchDevelopments()
-    fetchInspections()
-  }, [])
+    fetchDevelopments();
+    fetchInspections();
+  }, []);
 
   const formatTime = (date: string | Date) => {
     if (date instanceof Date) {
-      return format(date, 'HH:mm')
+      return format(date, "HH:mm");
     }
-    if (typeof date === 'string') {
-      return format(parseISO(date), 'HH:mm')
+    if (typeof date === "string") {
+      return format(parseISO(date), "HH:mm");
     }
-    return ''
-  }
+    return "";
+  };
 
   const normalizeDate = (date: string | Date): Date => {
-    let dateObj: Date
+    let dateObj: Date;
 
     if (date instanceof Date) {
-      dateObj = date
+      dateObj = date;
     } else {
-      dateObj = parseISO(date)
+      dateObj = parseISO(date);
     }
 
     // Adiciona 3 horas para ajuste de fuso horário
-    return addHours(dateObj, 3)
-  }
+    return addHours(dateObj, 3);
+  };
 
   const filteredInspections = inspections.filter((inspection) => {
-    const inspectionDate = normalizeDate(inspection.inspectionSlot.startAt)
+    const inspectionDate = normalizeDate(inspection.inspectionSlot.startAt);
 
     // Filtro de empreendimento
-    if (selectedDevelopment !== 'ALL') {
+    if (selectedDevelopment !== "ALL") {
       if (inspection.developmentName !== selectedDevelopment) {
-        return false
+        return false;
       }
     }
 
     // Filtro de data (intervalo de/até)
-    const start = parseISO(startDate + 'T00:00:00')
-    const end = parseISO(endDate + 'T23:59:59')
+    const start = parseISO(startDate + "T00:00:00");
+    const end = parseISO(endDate + "T23:59:59");
 
-    return isWithinInterval(inspectionDate, { start, end })
-  })
+    return isWithinInterval(inspectionDate, { start, end });
+  });
 
   const renderInspections = () => {
     if (isLoading) {
-      return <div className="text-center py-4">Carregando...</div>
+      return <div className="text-center py-4">Carregando...</div>;
     }
 
     if (filteredInspections.length === 0) {
@@ -351,91 +354,91 @@ const ScheduledInspectionsPage = () => {
         <div className="text-center py-4 text-muted-foreground">
           Nenhuma vistoria agendada para este dia.
         </div>
-      )
+      );
     }
 
     const atualizarCheckUnidade = async (id: string) => {
       const response = await fetch(`/api/vistorias/unidades?id=${id}`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          validations: ['FINANCIAL', 'QUALITY'],
+          validations: ["FINANCIAL", "QUALITY"],
         }),
-      })
+      });
 
       if (!response.ok) {
-        console.error('Erro ao atualizar agendamento.')
-        errorNotif()
-        return
+        console.error("Erro ao atualizar agendamento.");
+        errorNotif();
+        return;
       }
 
-      const data = await response.json()
-      console.log(data)
-      sucessNotif()
+      const data = await response.json();
+      console.log(data);
+      sucessNotif();
       setTimeout(() => {
-        window.location.reload()
-      }, 3000)
-    }
+        window.location.reload();
+      }, 3000);
+    };
 
     const atualizarVistoria = async (
       id: string,
       status: string,
       // eslint-disable-next-line prettier/prettier
-      unitId: string
+      unitId: string,
     ) => {
-      console.log('[ATUALIZAR VISTORIA] Iniciando atualização...')
-      console.log('[ATUALIZAR VISTORIA] ID:', id)
-      console.log('[ATUALIZAR VISTORIA] Status:', status)
-      console.log('[ATUALIZAR VISTORIA] UnitId:', unitId)
+      console.log("[ATUALIZAR VISTORIA] Iniciando atualização...");
+      console.log("[ATUALIZAR VISTORIA] ID:", id);
+      console.log("[ATUALIZAR VISTORIA] Status:", status);
+      console.log("[ATUALIZAR VISTORIA] UnitId:", unitId);
 
       try {
         const response = await fetch(`/api/vistorias/inspections?id=${id}`, {
-          method: 'PUT',
+          method: "PUT",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             status,
           }),
-        })
+        });
 
-        console.log('[ATUALIZAR VISTORIA] Response status:', response.status)
+        console.log("[ATUALIZAR VISTORIA] Response status:", response.status);
 
         if (!response.ok) {
-          const errorData = await response.json()
-          console.error('[ATUALIZAR VISTORIA] Erro na resposta:', errorData)
-          errorNotif()
-          return
+          const errorData = await response.json();
+          console.error("[ATUALIZAR VISTORIA] Erro na resposta:", errorData);
+          errorNotif();
+          return;
         }
 
-        const data = await response.json()
-        console.log('[ATUALIZAR VISTORIA] Resposta sucesso:', data)
+        const data = await response.json();
+        console.log("[ATUALIZAR VISTORIA] Resposta sucesso:", data);
 
-        if (status === 'COMPLETED') {
-          sucessNotif()
+        if (status === "COMPLETED") {
+          sucessNotif();
           setTimeout(() => {
-            window.location.reload()
-          }, 3000)
-        } else if (status === 'RESCHEDULED') {
-          atualizarCheckUnidade(unitId)
+            window.location.reload();
+          }, 3000);
+        } else if (status === "RESCHEDULED") {
+          atualizarCheckUnidade(unitId);
         }
       } catch (error) {
-        console.error('[ATUALIZAR VISTORIA] Exception:', error)
-        errorNotif()
+        console.error("[ATUALIZAR VISTORIA] Exception:", error);
+        errorNotif();
       }
-    }
+    };
 
     return filteredInspections.map((inspection) => {
-      const startDate = normalizeDate(inspection.inspectionSlot.startAt)
-      const endDate = normalizeDate(inspection.inspectionSlot.endAt)
+      const startDate = normalizeDate(inspection.inspectionSlot.startAt);
+      const endDate = normalizeDate(inspection.inspectionSlot.endAt);
 
-      console.log('[AGENDAMENTOS RENDER] Inspection:', inspection)
+      console.log("[AGENDAMENTOS RENDER] Inspection:", inspection);
       console.log(
-        '[AGENDAMENTOS RENDER] Development Name:',
-        inspection.developmentName
-      )
+        "[AGENDAMENTOS RENDER] Development Name:",
+        inspection.developmentName,
+      );
 
       return (
         <div
@@ -444,7 +447,7 @@ const ScheduledInspectionsPage = () => {
         >
           <div>
             <h2 className="font-semibold">
-              {inspection.developmentName || 'Nome não disponível'}
+              {inspection.developmentName || "Nome não disponível"}
             </h2>
             <p>{`Unidade: ${inspection.unit.unit}`}</p>
             <p className="text-sm text-muted-foreground">
@@ -452,20 +455,20 @@ const ScheduledInspectionsPage = () => {
             </p>
           </div>
 
-          {inspection.status === 'COMPLETED' ? (
+          {inspection.status === "COMPLETED" ? (
             <div>
               <Badge
-                variant={'outline'}
+                variant={"outline"}
                 className="flex items-center gap-2 justify-center border-green-500 bg-green-100"
               >
                 <span className="text-xl m-0 p-0 text-green-500">•</span>
                 <p className="text-sm font-medium">Entregue</p>
               </Badge>
             </div>
-          ) : inspection.status === 'RESCHEDULED' ? (
+          ) : inspection.status === "RESCHEDULED" ? (
             <div>
               <Badge
-                variant={'outline'}
+                variant={"outline"}
                 className="flex items-center gap-2 justify-center border-yellow-500 bg-yellow-100"
               >
                 <span className="text-xl m-0 p-0 text-yellow-500">•</span>
@@ -475,7 +478,7 @@ const ScheduledInspectionsPage = () => {
           ) : (
             <div>
               <Badge
-                variant={'outline'}
+                variant={"outline"}
                 className="flex items-center gap-2 justify-center"
               >
                 <span className="text-xl m-0 p-0">•</span>
@@ -509,9 +512,9 @@ const ScheduledInspectionsPage = () => {
                   onClick={() =>
                     atualizarVistoria(
                       inspection.id,
-                      'COMPLETED',
+                      "COMPLETED",
                       // eslint-disable-next-line prettier/prettier
-                      inspection.unitId
+                      inspection.unitId,
                     )
                   }
                 >
@@ -522,9 +525,9 @@ const ScheduledInspectionsPage = () => {
                   onClick={() =>
                     atualizarVistoria(
                       inspection.id,
-                      'RESCHEDULED',
+                      "RESCHEDULED",
                       // eslint-disable-next-line prettier/prettier
-                      inspection.unitId
+                      inspection.unitId,
                     )
                   }
                 >
@@ -534,9 +537,9 @@ const ScheduledInspectionsPage = () => {
             </DialogContent>
           </div>
         </div>
-      )
-    })
-  }
+      );
+    });
+  };
 
   return (
     <div className="size-full p-4">
@@ -567,8 +570,8 @@ const ScheduledInspectionsPage = () => {
               variant="outline"
               className="flex-1"
               onClick={() => {
-                setCancelModalOpen(false)
-                setInspectionToCancel(null)
+                setCancelModalOpen(false);
+                setInspectionToCancel(null);
               }}
             >
               Voltar
@@ -601,7 +604,7 @@ const ScheduledInspectionsPage = () => {
                 className="flex items-center gap-2 bg-azul-claro-vca text-white hover:bg-azul-vca"
               >
                 <Download className="h-4 w-4" />
-                {isGeneratingPDF ? 'Gerando...' : 'Exportar Relatório'}
+                {isGeneratingPDF ? "Gerando..." : "Exportar Relatório"}
               </Button>
             </div>
 
@@ -660,7 +663,7 @@ const ScheduledInspectionsPage = () => {
         </Card>
       </Dialog>
     </div>
-  )
-}
+  );
+};
 
-export default ScheduledInspectionsPage
+export default ScheduledInspectionsPage;

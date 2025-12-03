@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import {
   Card,
@@ -6,35 +6,35 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { UsersTable } from './_components/users-table'
-import { useUser } from '@/hooks/use-user'
-import { useEffect, useState } from 'react'
-import { User } from '@/store/auth-store'
-import { RouteGuard } from '@/components/route-guard'
+} from "@/components/ui/card";
+import { UsersTable } from "./_components/users-table";
+import { useUser } from "@/hooks/use-user";
+import { useEffect, useState } from "react";
+import { User } from "@/store/auth-store";
+import { RouteGuard } from "@/components/route-guard";
 
 export default function Page() {
-  const { getAllUsers, getToken, isLoading } = useUser()
-  const [users, setUsers] = useState<User[]>([])
+  const { getAllUsers, getToken, isLoading } = useUser();
+  const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
     const loadUsers = async () => {
-      const token = getToken()
+      const token = getToken();
 
-      if (!token) throw new Error('Não autenticado')
+      if (!token) throw new Error("Não autenticado");
 
-      const data = await getAllUsers(token, 1, 20)
+      const data = await getAllUsers(token, 1, 20);
 
-      setUsers(data.data)
-    }
+      setUsers(data.data);
+    };
 
-    loadUsers()
-  }, [])
+    loadUsers();
+  }, []);
 
   if (isLoading)
     return (
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-azul-claro-vca"></div>
-    )
+    );
 
   return (
     <RouteGuard
@@ -54,5 +54,5 @@ export default function Page() {
         </Card>
       </section>
     </RouteGuard>
-  )
+  );
 }

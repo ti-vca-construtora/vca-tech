@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import { Badge } from '@/components/ui/badge'
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -17,40 +17,42 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { db } from '@/lib/firebase'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale/pt-BR'
-import { collection, getDocs } from 'firebase/firestore'
-import { Eye } from 'lucide-react'
-import { useEffect, useState } from 'react'
+} from "@/components/ui/table";
+import { db } from "@/lib/firebase";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale/pt-BR";
+import { collection, getDocs } from "firebase/firestore";
+import { Eye } from "lucide-react";
+import { useEffect, useState } from "react";
 
 type Log = {
-  id: string
-  type: 'in' | 'out'
-  time: string
-  equipment: string
-  userName: string
-  obs?: string
-}
+  id: string;
+  type: "in" | "out";
+  time: string;
+  equipment: string;
+  userName: string;
+  obs?: string;
+};
 
 const LogsReservaPatinete = () => {
-  const [logs, setLogs] = useState<Log[]>([])
+  const [logs, setLogs] = useState<Log[]>([]);
 
   useEffect(() => {
     const fetchLogs = async () => {
-      const snapshot = await getDocs(collection(db, 'logs'))
+      const snapshot = await getDocs(collection(db, "logs"));
       const data: Log[] = snapshot.docs
         .map((doc) => ({
           id: doc.id,
-          ...(doc.data() as Omit<Log, 'id'>),
+          ...(doc.data() as Omit<Log, "id">),
         }))
-        .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
-      setLogs(data)
-    }
+        .sort(
+          (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime(),
+        );
+      setLogs(data);
+    };
 
-    fetchLogs()
-  }, [])
+    fetchLogs();
+  }, []);
 
   // Deploy
 
@@ -82,27 +84,27 @@ const LogsReservaPatinete = () => {
             <Table>
               <TableBody>
                 {logs.map((log) => {
-                  const date = new Date(log.time)
-                  date.setHours(date.getHours() + 3)
+                  const date = new Date(log.time);
+                  date.setHours(date.getHours() + 3);
 
                   return (
                     <TableRow key={log.id} className="even:bg-white">
                       <TableCell className="rounded-l-xl">
                         <Badge
                           variant={
-                            log.type === 'in' ? 'default' : 'destructive'
+                            log.type === "in" ? "default" : "destructive"
                           }
                           className={
-                            log.type === 'in'
-                              ? 'bg-green-500 hover:bg-green-600 cursor-pointer'
-                              : 'bg-red-500 hover:bg-red-600 cursor-pointer'
+                            log.type === "in"
+                              ? "bg-green-500 hover:bg-green-600 cursor-pointer"
+                              : "bg-red-500 hover:bg-red-600 cursor-pointer"
                           }
                         >
-                          {log.type === 'in' ? 'Check-In' : 'Check-Out'}
+                          {log.type === "in" ? "Check-In" : "Check-Out"}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {format(date, 'dd/MM/yyyy - HH:mm:ss', {
+                        {format(date, "dd/MM/yyyy - HH:mm:ss", {
                           locale: ptBR,
                         })}
                       </TableCell>
@@ -119,14 +121,14 @@ const LogsReservaPatinete = () => {
                               <DialogDescription className="text-sm text-gray-500">
                                 {log.obs
                                   ? log.obs
-                                  : 'Nenhuma observação registrada.'}
+                                  : "Nenhuma observação registrada."}
                               </DialogDescription>
                             </DialogHeader>
                           </DialogContent>
                         </Dialog>
                       </TableCell>
                     </TableRow>
-                  )
+                  );
                 })}
               </TableBody>
             </Table>
@@ -141,7 +143,7 @@ const LogsReservaPatinete = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default LogsReservaPatinete
+export default LogsReservaPatinete;

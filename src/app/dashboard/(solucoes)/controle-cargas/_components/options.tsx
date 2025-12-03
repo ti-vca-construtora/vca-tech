@@ -1,45 +1,45 @@
-'use client'
+"use client";
 
-import { Solucoes, SolucoesCard } from '@/components/solucoes-card'
-import { FaLaptopCode } from 'react-icons/fa'
-import { HiUsers } from 'react-icons/hi2'
-import { LuScanQrCode } from 'react-icons/lu'
-import { VscTasklist } from 'react-icons/vsc'
+import { Solucoes, SolucoesCard } from "@/components/solucoes-card";
+import { FaLaptopCode } from "react-icons/fa";
+import { HiUsers } from "react-icons/hi2";
+import { LuScanQrCode } from "react-icons/lu";
+import { VscTasklist } from "react-icons/vsc";
 
 const solucoesData: Solucoes[] = [
   {
-    titulo: 'Dashboard de controle',
-    descricao: 'Dashboard para controle de cargas.',
+    titulo: "Dashboard de controle",
+    descricao: "Dashboard para controle de cargas.",
     Icon: VscTasklist,
-    href: 'controle-cargas/dashboard?title=Dashboard de controle',
-    area: 'obras',
-    permission: 'dashboard-controle',
+    href: "controle-cargas/dashboard?title=Dashboard de controle",
+    area: "obras",
+    permission: "dashboard-controle",
   },
   {
-    titulo: 'Validar comprovantes',
-    descricao: 'Permite validar os comprovantes gerados pelos sistema.',
+    titulo: "Validar comprovantes",
+    descricao: "Permite validar os comprovantes gerados pelos sistema.",
     Icon: LuScanQrCode,
-    href: 'controle-cargas/validador?title=Validador de comprovantes',
-    area: 'obras',
-    permission: 'validar-comprovantes',
+    href: "controle-cargas/validador?title=Validador de comprovantes",
+    area: "obras",
+    permission: "validar-comprovantes",
   },
   {
-    titulo: 'Usuários e cartões',
-    descricao: 'Permite gerenciar usuários e cartões de acesso.',
+    titulo: "Usuários e cartões",
+    descricao: "Permite gerenciar usuários e cartões de acesso.",
     Icon: HiUsers,
-    href: 'controle-cargas/usuarios?title=Gerenciar usuários',
-    area: 'obras',
-    permission: 'gerenciar-usuarios',
+    href: "controle-cargas/usuarios?title=Gerenciar usuários",
+    area: "obras",
+    permission: "gerenciar-usuarios",
   },
   {
-    titulo: 'Equipamentos',
-    descricao: 'Permite gerenciar equipamentos.',
+    titulo: "Equipamentos",
+    descricao: "Permite gerenciar equipamentos.",
     Icon: FaLaptopCode,
-    href: 'controle-cargas/equipments?title=Gerenciar equipamentos',
-    area: 'obras',
-    permission: 'gerenciar-equipamentos',
+    href: "controle-cargas/equipments?title=Gerenciar equipamentos",
+    area: "obras",
+    permission: "gerenciar-equipamentos",
   },
-]
+];
 
 const ControleCargasTools = () => {
   return (
@@ -56,7 +56,7 @@ const ControleCargasTools = () => {
         />
       ))}
     </div>
-  )
-}
+  );
+};
 
-export default ControleCargasTools
+export default ControleCargasTools;

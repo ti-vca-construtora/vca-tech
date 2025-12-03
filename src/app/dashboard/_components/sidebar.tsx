@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import { NavMain } from '@/components/nav-main'
-import { NavProjects } from '@/components/nav-projects'
-import { NavUser } from '@/components/nav-user'
+import { NavMain } from "@/components/nav-main";
+import { NavProjects } from "@/components/nav-projects";
+import { NavUser } from "@/components/nav-user";
 import {
   Sidebar,
   SidebarContent,
@@ -10,65 +10,69 @@ import {
   SidebarHeader,
   SidebarRail,
   SidebarTrigger,
-} from '@/components/ui/sidebar'
-import { Settings2, SquareTerminal } from 'lucide-react'
-import { MdOutlinePublic } from 'react-icons/md'
-import { deleteExpiredReservations } from '../(solucoes)/reserva-patinete/_components/deleteReservations'
+} from "@/components/ui/sidebar";
+import { Settings2, SquareTerminal } from "lucide-react";
+import { MdOutlinePublic } from "react-icons/md";
+import { deleteExpiredReservations } from "../(solucoes)/reserva-patinete/_components/deleteReservations";
 
-import * as React from 'react'
+import * as React from "react";
 
 const data = {
   navMain: [
     {
-      title: 'Setores',
-      url: '/dashboard/setores?title=Setores',
+      title: "Setores",
+      url: "/dashboard/setores?title=Setores",
       icon: SquareTerminal,
       isActive: true,
       items: [
         {
-          title: 'Financeiro',
-          url: '/dashboard/setores/financeiro?title=Painel de Soluções - Financeiro',
+          title: "Financeiro",
+          url: "/dashboard/setores/financeiro?title=Painel de Soluções - Financeiro",
         },
         {
-          title: 'Relacionamento',
-          url: '/dashboard/setores/relacionamento?title=Painel de Soluções - Relacionamento',
+          title: "Relacionamento",
+          url: "/dashboard/setores/relacionamento?title=Painel de Soluções - Relacionamento",
         },
         {
-          title: 'Entregas',
-          url: '/dashboard/setores/entregas?title=Painel de Soluções - Entregas',
+          title: "Entregas",
+          url: "/dashboard/setores/entregas?title=Painel de Soluções - Entregas",
         },
         {
-          title: 'Obras',
-          url: '/dashboard/setores/obras?title=Painel de Soluções - Obras',
+          title: "Obras",
+          url: "/dashboard/setores/obras?title=Painel de Soluções - Obras",
+        },
+        {
+          title: "Controladoria",
+          url: "/dashboard/setores/controladoria?title=Painel de Soluções - Controladoria",
         },
       ],
     },
     {
-      title: 'Configurações',
-      url: '/dashboard/settings',
+      title: "Configurações",
+      url: "/dashboard/settings",
       icon: Settings2,
       isActive: true,
       items: [
         {
-          title: 'Geral',
-          url: '/dashboard/settings/general',
+          title: "Geral",
+          url: "/dashboard/settings/general",
         },
       ],
     },
   ],
   projects: [
     {
-      name: 'Público',
-      url: '/dashboard/setores/publico?title=Painel de Soluções - Público',
+      name: "Público",
+      url: "/dashboard/setores/publico?title=Painel de Soluções - Público",
       icon: MdOutlinePublic,
     },
   ],
-}
+};
 
 export function DashboardSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
-  deleteExpiredReservations()
+  deleteExpiredReservations();
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -83,5 +87,5 @@ export function DashboardSidebar({
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }

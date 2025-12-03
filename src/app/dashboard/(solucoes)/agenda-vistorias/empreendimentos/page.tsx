@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import {
   Card,
@@ -6,7 +6,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +22,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -30,61 +30,61 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import classNames from 'classnames'
-import { LoaderCircle, MoreHorizontal } from 'lucide-react'
-import Link from 'next/link'
-import { useEffect, useState } from 'react'
+} from "@/components/ui/table";
+import classNames from "classnames";
+import { LoaderCircle, MoreHorizontal } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 type Empreendimento = {
-  units: []
-  id: string
-  name: string
-  isActive: boolean
-}
+  units: [];
+  id: string;
+  name: string;
+  isActive: boolean;
+};
 
 export default function Empreendimentos() {
-  const [empreendimentos, setEmpreendimentos] = useState<Empreendimento[]>([])
+  const [empreendimentos, setEmpreendimentos] = useState<Empreendimento[]>([]);
   const [selectedEmpreendimento, setSelectedEmpreendimento] =
     useState<Empreendimento>({
-      id: '',
-      name: '',
+      id: "",
+      name: "",
       isActive: true,
       units: [],
-    })
+    });
 
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true);
 
   const getEmpreendimentos = async () => {
     const response = await fetch(
-      '/api/vistorias/empreendimentos?page=1&pageSize=200',
+      "/api/vistorias/empreendimentos?page=1&pageSize=200",
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         // eslint-disable-next-line prettier/prettier
-      }
-    )
+      },
+    );
 
     if (!response.ok) {
-      console.error('Erro ao carregar empreendimentos')
-      return
+      console.error("Erro ao carregar empreendimentos");
+      return;
     }
 
-    const data = await response.json()
-    setEmpreendimentos(data.data)
-    console.log('Empreendimentos lsitados:', data.data)
-  }
+    const data = await response.json();
+    setEmpreendimentos(data.data);
+    console.log("Empreendimentos lsitados:", data.data);
+  };
 
   useEffect(() => {
     const componentRender = async () => {
-      await getEmpreendimentos()
-      setIsLoading(false)
-    }
+      await getEmpreendimentos();
+      setIsLoading(false);
+    };
 
-    componentRender()
-  }, [])
+    componentRender();
+  }, []);
 
   return (
     <section className="flex flex-col items-start gap-6 w-full h-full p-6">
@@ -127,7 +127,7 @@ export default function Empreendimentos() {
                       key={index.id}
                       className={classNames(
                         // eslint-disable-next-line prettier/prettier
-                        i % 2 === 0 ? 'bg-white' : 'bg-neutral-100'
+                        i % 2 === 0 ? "bg-white" : "bg-neutral-100",
                       )}
                     >
                       <TableCell className="flex flex-col w-fit">
@@ -135,7 +135,7 @@ export default function Empreendimentos() {
                       </TableCell>
                       <TableCell className="text-start">
                         <span className="text-sm">
-                          {index.isActive ? 'Ativo' : 'Inativo'}
+                          {index.isActive ? "Ativo" : "Inativo"}
                         </span>
                       </TableCell>
                       <TableCell>
@@ -181,5 +181,5 @@ export default function Empreendimentos() {
         </DialogContent>
       </Dialog>
     </section>
-  )
+  );
 }

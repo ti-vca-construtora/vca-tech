@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { Button } from '@/components/ui/button'
-import { useRouter } from 'next/navigation'
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function UnauthorizedPage() {
-  const router = useRouter()
+  const router = useRouter();
 
   return (
     <div className="size-full flex flex-col items-center justify-center p-6">
@@ -16,5 +16,5 @@ export default function UnauthorizedPage() {
         Voltar
       </Button>
     </div>
-  )
+  );
 }

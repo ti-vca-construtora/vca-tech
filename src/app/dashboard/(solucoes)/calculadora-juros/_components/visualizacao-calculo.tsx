@@ -1,12 +1,12 @@
 /* eslint-disable prettier/prettier */
-'use client'
+"use client";
 
 import {
   CurrentDebitBalanceApiResponse,
   DueInstallment,
-} from '@/app/api/avp/current-debit-balance/route'
-import { IncomeByBillsApiResponse } from '@/app/api/avp/income-by-bills/route'
-import { Cliente } from '@/components/search-form'
+} from "@/app/api/avp/current-debit-balance/route";
+import { IncomeByBillsApiResponse } from "@/app/api/avp/income-by-bills/route";
+import { Cliente } from "@/components/search-form";
 import {
   Card,
   CardContent,
@@ -14,7 +14,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -22,7 +22,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from "@/components/ui/table";
 import {
   buscaTaxaPorContrato,
   calcularDiferencaDias,
@@ -32,30 +32,30 @@ import {
   formatarData,
   formatarValor,
   handleFetchCurrentDebitBalance,
-} from '@/util'
-import classNames from 'classnames'
-import { useEffect, useState } from 'react'
-import { Contrato } from './contratos-tabela'
-import { GeradorPdf } from './gerador-pdf'
-import { Pdf } from './pdf'
+} from "@/util";
+import classNames from "classnames";
+import { useEffect, useState } from "react";
+import { Contrato } from "./contratos-tabela";
+import { GeradorPdf } from "./gerador-pdf";
+import { Pdf } from "./pdf";
 
 type VisualizaoCalculoProps = {
-  currentDebit: CurrentDebitBalanceApiResponse
-  incomeByBills: IncomeByBillsApiResponse
-  originalIncomeByBills: IncomeByBillsApiResponse
-  contrato: Contrato
-  cliente: Cliente
-  dataAPagar: string
-}
+  currentDebit: CurrentDebitBalanceApiResponse;
+  incomeByBills: IncomeByBillsApiResponse;
+  originalIncomeByBills: IncomeByBillsApiResponse;
+  contrato: Contrato;
+  cliente: Cliente;
+  dataAPagar: string;
+};
 
 export type CalculoPorParcela = {
-  valorAnterior: number
-  valorPresente: number
-  dataAPagar: string
-  dataVencimento: string
-  taxa: number
-  indexador?: string
-}
+  valorAnterior: number;
+  valorPresente: number;
+  dataAPagar: string;
+  dataVencimento: string;
+  taxa: number;
+  indexador?: string;
+};
 
 export function VisualizaoCalculo({
   currentDebit,
@@ -67,31 +67,32 @@ export function VisualizaoCalculo({
 }: VisualizaoCalculoProps) {
   const [calculoPorParcela, setCalculoPorParcela] = useState<
     CalculoPorParcela[]
-  >([])
+  >([]);
   const [updatedCurrentDebitDue, setUpdatedCurrentDebitDue] = useState<
     DueInstallment[]
-  >([])
-  const [isLoading, setIsLoading] = useState(true)
+  >([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const excludedFullPaymentTerms = [
-    'Financiamento CEF',
-    'Financiamento Outros Bancos',
-    'FGTS Financiável',
-    'Subsídio Financiável',
-    'Parcela Única',
-    'Permuta',
-    'Morar Bem - PE',
-  ]
+    "Entrada",
+    "Financiamento CEF",
+    "Financiamento Outros Bancos",
+    "FGTS Financiável",
+    "Subsídio Financiável",
+    "Parcela Única",
+    "Permuta",
+    "Morar Bem - PE",
+  ];
 
   const checkOrder = [
     currentDebit.data[0].payableInstallments,
     currentDebit.data[0].paidInstallments,
     currentDebit.data[0].dueInstallments,
-  ]
+  ];
 
   const getParcelaDoMesDoPagamento = () => {
     const isSameMonthYear = (dueDate: string, targetDate: Date): boolean => {
-      const due = new Date(`${dueDate}T04:00:00Z`)
+      const due = new Date(`${dueDate}T04:00:00Z`);
 
       // console.log('Data de pagamento na função: ', targetDate)
       // console.log('Data de cobrança após formatação: ', due)
@@ -106,8 +107,8 @@ export function VisualizaoCalculo({
       return (
         due.getMonth() === targetDate.getMonth() &&
         due.getFullYear() === targetDate.getFullYear()
-      )
-    }
+      );
+    };
 
     // const pagarDate = new Date(
     //   `${new Date().toISOString().split('T')[0]}T04:00:00Z`,
@@ -119,37 +120,37 @@ export function VisualizaoCalculo({
           .filter((parcela) => {
             const paymentTermId = parcela.conditionType
               .trim()
-              .replaceAll(' ', '')
-              .toUpperCase()
+              .replaceAll(" ", "")
+              .toUpperCase();
 
             return !excludedFullPaymentTerms
-              .map((term) => term.trim().replaceAll(' ', '').toUpperCase())
-              .includes(paymentTermId)
+              .map((term) => term.trim().replaceAll(" ", "").toUpperCase())
+              .includes(paymentTermId);
           })
           .find(
             (inst) =>
               inst.dueDate &&
               isSameMonthYear(
                 inst.dueDate,
-                new Date(`${dataAPagar}T04:00:00Z`)
+                new Date(`${dataAPagar}T04:00:00Z`),
               ) &&
-              ((inst.conditionType.toUpperCase().includes('MENSAL') &&
-                inst.conditionType.toUpperCase().includes('ANO')) ||
-                inst.conditionType.toUpperCase().includes('MENSAL HABITAR'))
-          )
+              ((inst.conditionType.toUpperCase().includes("MENSAL") &&
+                inst.conditionType.toUpperCase().includes("ANO")) ||
+                inst.conditionType.toUpperCase().includes("MENSAL HABITAR")),
+          );
 
         if (found) {
           return {
             originalAmount: found.adjustedValue,
-          }
+          };
         }
       }
     }
 
-    return undefined
-  }
+    return undefined;
+  };
 
-  const parcelaDoMesDoPagamento = getParcelaDoMesDoPagamento()
+  const parcelaDoMesDoPagamento = getParcelaDoMesDoPagamento();
 
   const getPrimeiraParcelaMensalDoContrato = () => {
     for (const installments of checkOrder) {
@@ -158,203 +159,203 @@ export function VisualizaoCalculo({
           .filter((parcela) => {
             const paymentTermId = parcela.conditionType
               .trim()
-              .replaceAll(' ', '')
-              .toUpperCase()
+              .replaceAll(" ", "")
+              .toUpperCase();
 
             return !excludedFullPaymentTerms
-              .map((term) => term.trim().replaceAll(' ', '').toUpperCase())
-              .includes(paymentTermId)
+              .map((term) => term.trim().replaceAll(" ", "").toUpperCase())
+              .includes(paymentTermId);
           })
           .find((inst) => {
             return (
               inst.dueDate &&
-              inst.conditionType.replaceAll(' ', '').toUpperCase() ===
-                'MENSALANO01'
-            )
-          })
+              inst.conditionType.replaceAll(" ", "").toUpperCase() ===
+                "MENSALANO01"
+            );
+          });
 
         if (found) {
           return {
             originalAmount: found.adjustedValue,
-          }
+          };
         }
       }
     }
 
-    return undefined
-  }
+    return undefined;
+  };
 
   const hasFP = originalIncomeByBills.data.some(
     (item) =>
-      (item.paymentTerm.id.trim() === 'FP' ||
-        item.paymentTerm.id.trim() === 'FS') &&
-      Number(item.correctedBalanceAmount) > 0
-  )
+      (item.paymentTerm.id.trim() === "FP" ||
+        item.paymentTerm.id.trim() === "FS") &&
+      Number(item.correctedBalanceAmount) > 0,
+  );
 
   let hasPP = originalIncomeByBills.data.some(
     (item) =>
-      item.paymentTerm.id.trim() === 'PP' &&
-      Number(item.correctedBalanceAmount) > 0
-  )
+      item.paymentTerm.id.trim() === "PP" &&
+      Number(item.correctedBalanceAmount) > 0,
+  );
 
   if (hasPP) {
     const hasM = originalIncomeByBills.data.some(
       (item) =>
         item.paymentTerm.id.trim().match(/^M\d+$/)?.input ||
-        item.paymentTerm.id.trim().match(/^\d{2,}$/)?.input
-    )
+        item.paymentTerm.id.trim().match(/^\d{2,}$/)?.input,
+    );
 
     if (hasM) {
-      hasPP = false
+      hasPP = false;
     }
   }
 
-  const conditionTypeId = hasFP ? 'FP' : hasPP ? 'PP' : null
+  const conditionTypeId = hasFP ? "FP" : hasPP ? "PP" : null;
 
   const getValorPresentePorParcela = () => {
-    const taxaAdm = buscaTaxaPorContrato(contrato.contractNumber)?.taxaAdm
-    const taxaTotal = buscaTaxaPorContrato(contrato.contractNumber)?.taxaTotal
+    const taxaAdm = buscaTaxaPorContrato(contrato.contractNumber)?.taxaAdm;
+    const taxaTotal = buscaTaxaPorContrato(contrato.contractNumber)?.taxaTotal;
 
-    let taxaAnual: number
+    let taxaAnual: number;
 
     const calculoParcelas = incomeByBills.data
       .map((parcela) => {
         if (conditionTypeId) {
-          return { ...parcela, paymentTerm: { id: conditionTypeId } }
+          return { ...parcela, paymentTerm: { id: conditionTypeId } };
         }
-        return parcela
+        return parcela;
       })
       .map((item) => {
-        const tipoDeParcela = item.paymentTerm.id
+        const tipoDeParcela = item.paymentTerm.id;
         const diferencaDias = dias360(
           new Date(
-            `${new Date(dataAPagar).toISOString().split('T')[0]}T04:00:00Z`
+            `${new Date(dataAPagar).toISOString().split("T")[0]}T04:00:00Z`,
           ),
-          new Date(`${item.dueDate}T04:00:00Z`)
-        )
+          new Date(`${item.dueDate}T04:00:00Z`),
+        );
 
         if (taxaTotal && taxaAdm) {
-          taxaAnual = taxaTotal - taxaAdm
+          taxaAnual = taxaTotal - taxaAdm;
         }
 
-        let valorPorParcela = 0
+        let valorPorParcela = 0;
 
         switch (tipoDeParcela.trim()) {
-          case 'FP': {
+          case "FP": {
             const dataAPagarDate = new Date(
-              `${new Date(dataAPagar).toISOString().split('T')[0]}T04:00:00Z`
-            )
-            const dataVencimento = new Date(`${item.dueDate}T04:00:00Z`)
+              `${new Date(dataAPagar).toISOString().split("T")[0]}T04:00:00Z`,
+            );
+            const dataVencimento = new Date(`${item.dueDate}T04:00:00Z`);
 
             const isMesAtual =
               dataVencimento.getFullYear() === dataAPagarDate.getFullYear() &&
-              dataVencimento.getMonth() === dataAPagarDate.getMonth()
+              dataVencimento.getMonth() === dataAPagarDate.getMonth();
 
             if (isMesAtual) {
-              valorPorParcela = item.correctedBalanceAmount
+              valorPorParcela = item.correctedBalanceAmount;
             } else if (taxaAnual) {
-              const taxaDeJurosMensal = calcularTJM(taxaAnual)
-              const mesesDeDiferenca = diferencaDias / 30
+              const taxaDeJurosMensal = calcularTJM(taxaAnual);
+              const mesesDeDiferenca = diferencaDias / 30;
 
               valorPorParcela = calcularVPA(
                 taxaDeJurosMensal,
                 mesesDeDiferenca,
-                item.correctedBalanceAmount
-              )
+                item.correctedBalanceAmount,
+              );
             }
-            break
+            break;
           }
 
-          case 'PP':
-          case 'M':
-            valorPorParcela = item.correctedBalanceAmount * 1
-            break
+          case "PP":
+          case "M":
+            valorPorParcela = item.correctedBalanceAmount * 1;
+            break;
 
           // Para tipos 'M1', 'M2', ..., 'M9' ou '10', '11', '12', etc.
           case tipoDeParcela.match(/^M\d+$/)?.input:
           case tipoDeParcela.match(/^\d{2,}$/)?.input:
-          case 'MH':
+          case "MH":
             if (parcelaDoMesDoPagamento) {
-              valorPorParcela = parcelaDoMesDoPagamento.originalAmount
+              valorPorParcela = parcelaDoMesDoPagamento.originalAmount;
 
-              break
+              break;
             }
 
             valorPorParcela =
-              getPrimeiraParcelaMensalDoContrato()?.originalAmount || 0
+              getPrimeiraParcelaMensalDoContrato()?.originalAmount || 0;
 
-            break
+            break;
 
           default:
-            valorPorParcela = item.correctedBalanceAmount
-            break
+            valorPorParcela = item.correctedBalanceAmount;
+            break;
         }
 
         return {
           valorAnterior: item.correctedBalanceAmount,
           valorPresente: valorPorParcela,
-          dataAPagar: new Date(dataAPagar).toISOString().split('T')[0],
+          dataAPagar: new Date(dataAPagar).toISOString().split("T")[0],
           dataVencimento: item.dueDate,
           taxa: taxaAnual,
           indexador: item.indexerName,
-        }
-      })
+        };
+      });
 
-    setCalculoPorParcela(calculoParcelas)
-  }
+    setCalculoPorParcela(calculoParcelas);
+  };
 
   const calculaValorTotalPresenteVencidas = () => {
-    let total = 0
+    let total = 0;
 
     if (updatedCurrentDebitDue) {
       total += updatedCurrentDebitDue.reduce((total, parcela) => {
         const valorString = (parcela.adjustedValue + parcela.additionalValue)
           .toString()
-          .replace(',', '.')
+          .replace(",", ".");
 
-        const valorNumerico = parseFloat(valorString) || 0
+        const valorNumerico = parseFloat(valorString) || 0;
 
-        return total + valorNumerico
-      }, 0)
+        return total + valorNumerico;
+      }, 0);
     }
 
-    return total
-  }
+    return total;
+  };
 
   const calculaValorTotalPresenteFuturas = () => {
     return calculoPorParcela.reduce(
       (soma, parcela) => soma + (parcela.valorPresente || 0),
-      0
-    )
-  }
+      0,
+    );
+  };
 
   const valorTotalGeral = () => {
     return (
       calculaValorTotalPresenteVencidas() + calculaValorTotalPresenteFuturas()
-    )
-  }
+    );
+  };
 
   const calculaQuantidadeTitulosVencidos = () => {
     return currentDebit.data[0].dueInstallments
       ? currentDebit.data[0].dueInstallments.filter((parcela) => {
           const paymentTermId = parcela.conditionType
             .trim()
-            .replaceAll(' ', '')
-            .toUpperCase()
+            .replaceAll(" ", "")
+            .toUpperCase();
 
           return !excludedFullPaymentTerms
-            .map((term) => term.trim().replaceAll(' ', '').toUpperCase())
-            .includes(paymentTermId)
+            .map((term) => term.trim().replaceAll(" ", "").toUpperCase())
+            .includes(paymentTermId);
         }).length
-      : 0
-  }
+      : 0;
+  };
 
   const calculaQuantidadeTotalTitulos = () => {
-    return calculoPorParcela.length + calculaQuantidadeTitulosVencidos()
-  }
+    return calculoPorParcela.length + calculaQuantidadeTitulosVencidos();
+  };
 
   const atualizaCurrentDebit = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
       const response: CurrentDebitBalanceApiResponse =
@@ -364,64 +365,64 @@ export function VisualizaoCalculo({
           contrato.origem,
           cliente.documentNumber,
           cliente.documentType,
-          dataAPagar
-        )
+          dataAPagar,
+        );
 
       if (response.data[0].dueInstallments) {
         setUpdatedCurrentDebitDue(
           response.data[0].dueInstallments.filter((parcela) => {
             const paymentTermId = parcela.conditionType
               .trim()
-              .replaceAll(' ', '')
-              .toUpperCase()
+              .replaceAll(" ", "")
+              .toUpperCase();
 
             return !excludedFullPaymentTerms
-              .map((term) => term.trim().replaceAll(' ', '').toUpperCase())
-              .includes(paymentTermId)
-          })
-        )
+              .map((term) => term.trim().replaceAll(" ", "").toUpperCase())
+              .includes(paymentTermId);
+          }),
+        );
       }
     } catch (error) {
-      console.log(error)
+      console.log(error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const calcularTotalParcelasFuturas = () => {
     return incomeByBills.data.reduce((total, parcela) => {
       const valorNumerico = parseFloat(
-        parcela.correctedBalanceAmount.toString().replace(',', '.').trim()
-      )
-      return total + (isNaN(valorNumerico) ? 0 : valorNumerico)
-    }, 0)
-  }
+        parcela.correctedBalanceAmount.toString().replace(",", ".").trim(),
+      );
+      return total + (isNaN(valorNumerico) ? 0 : valorNumerico);
+    }, 0);
+  };
 
   const calcularTotalParcelasVencidas = () => {
-    let total = 0
+    let total = 0;
 
     if (updatedCurrentDebitDue) {
       total += updatedCurrentDebitDue.reduce((total, parcela) => {
         const valorNumerico = parseFloat(
-          parcela.originalValue.toString().replace(',', '.').trim()
-        )
+          parcela.originalValue.toString().replace(",", ".").trim(),
+        );
 
-        return total + (isNaN(valorNumerico) ? 0 : valorNumerico)
-      }, 0)
+        return total + (isNaN(valorNumerico) ? 0 : valorNumerico);
+      }, 0);
     }
 
-    return total
-  }
+    return total;
+  };
 
   useEffect(() => {
     if (incomeByBills.data.length > 0) {
-      getValorPresentePorParcela()
+      getValorPresentePorParcela();
     }
 
     if (currentDebit.data.length > 0) {
-      atualizaCurrentDebit()
+      atualizaCurrentDebit();
     }
-  }, [incomeByBills.data, contrato, currentDebit.data])
+  }, [incomeByBills.data, contrato, currentDebit.data]);
 
   return (
     <div className="flex flex-col gap-4 justify-between w-full items-center h-full text-xs">
@@ -443,23 +444,23 @@ export function VisualizaoCalculo({
                   Cliente: <span className="font-semibold">{cliente.name}</span>
                 </p>
                 <p className="border-b w-full">
-                  Empreendimento:{' '}
+                  Empreendimento:{" "}
                   <span className="font-semibold">
                     {contrato.enterpriseName}
                   </span>
                 </p>
                 <p className="border-b w-full">
-                  Contrato:{' '}
+                  Contrato:{" "}
                   <span className="font-semibold">
                     {contrato.contractNumber}
                   </span>
                 </p>
                 <p className="border-b w-full">
-                  Unidade:{' '}
+                  Unidade:{" "}
                   <span className="font-semibold">{contrato.unit}</span>
                 </p>
                 <p className="border-b w-full">
-                  Quantidade total de parcelas:{' '}
+                  Quantidade total de parcelas:{" "}
                   <span className="font-semibold">
                     {calculaQuantidadeTotalTitulos()}
                   </span>
@@ -471,21 +472,21 @@ export function VisualizaoCalculo({
               {currentDebit.data[0].dueInstallments ? (
                 <div className="flex flex-col gap-2">
                   <p className="border-b w-full">
-                    Quantidade de parcelas:{' '}
+                    Quantidade de parcelas:{" "}
                     <span className="font-semibold">
                       {calculaQuantidadeTitulosVencidos()}
                     </span>
                   </p>
                   <p className="border-b w-full">
-                    Valor Total Anterior:{' '}
+                    Valor Total Anterior:{" "}
                     <span className="font-semibold">{`R$ ${formatarValor(calcularTotalParcelasVencidas())}`}</span>
                   </p>
                   <p className="border-b w-full">
-                    Valor Total Presente:{' '}
+                    Valor Total Presente:{" "}
                     <span className="font-semibold">{`R$ ${formatarValor(calculaValorTotalPresenteVencidas())}`}</span>
                   </p>
                   <p className="border-b w-full">
-                    Valor Acrescido:{' '}
+                    Valor Acrescido:{" "}
                     <span className="font-semibold">{`R$ ${formatarValor(calculaValorTotalPresenteVencidas() - calcularTotalParcelasVencidas())}`}</span>
                   </p>
                 </div>
@@ -498,21 +499,21 @@ export function VisualizaoCalculo({
               {calculoPorParcela.length > 0 ? (
                 <div className="flex flex-col gap-2">
                   <p className="border-b w-full">
-                    Quantidade de parcelas:{' '}
+                    Quantidade de parcelas:{" "}
                     <span className="font-semibold">
                       {calculoPorParcela.length}
                     </span>
                   </p>
                   <p className="border-b w-full">
-                    Valor Total Anterior:{' '}
+                    Valor Total Anterior:{" "}
                     <span className="font-semibold">{`R$ ${formatarValor(calcularTotalParcelasFuturas())}`}</span>
                   </p>
                   <p className="border-b w-full">
-                    Valor Total Presente:{' '}
+                    Valor Total Presente:{" "}
                     <span className="font-semibold">{`R$ ${formatarValor(calculaValorTotalPresenteFuturas())}`}</span>
                   </p>
                   <p className="border-b w-full">
-                    Valor Descontado:{' '}
+                    Valor Descontado:{" "}
                     <span className="font-semibold">{`R$ ${formatarValor(Math.abs(calculaValorTotalPresenteFuturas() - calcularTotalParcelasFuturas()))}`}</span>
                   </p>
                 </div>
@@ -529,13 +530,13 @@ export function VisualizaoCalculo({
               <CardContent className="w-full items-center justify-center">
                 <div className="flex flex-col gap-2">
                   <p className="border-b w-full">
-                    Data a Pagar:{' '}
+                    Data a Pagar:{" "}
                     <span className="font-semibold">
                       {formatarData(dataAPagar)}
                     </span>
                   </p>
                   <p className="border-b w-full text-lg">
-                    Valor:{' '}
+                    Valor:{" "}
                     <span className="font-semibold">
                       {`R$ ${formatarValor(Number(valorTotalGeral().toFixed(2)))}`}
                     </span>
@@ -576,7 +577,7 @@ export function VisualizaoCalculo({
                     {updatedCurrentDebitDue.map((item, index) => (
                       <TableRow
                         className={classNames(
-                          index % 2 === 0 && 'bg-neutral-100'
+                          index % 2 === 0 && "bg-neutral-100",
                         )}
                         key={index}
                       >
@@ -584,9 +585,9 @@ export function VisualizaoCalculo({
                           R$ {formatarValor(item.adjustedValue)}
                         </TableCell>
                         <TableCell>
-                          R${' '}
+                          R${" "}
                           {formatarValor(
-                            item.additionalValue + item.adjustedValue
+                            item.additionalValue + item.adjustedValue,
                           )}
                         </TableCell>
                         <TableCell>
@@ -596,8 +597,8 @@ export function VisualizaoCalculo({
                         <TableCell>{item.indexerName}</TableCell>
                         <TableCell>
                           {calcularDiferencaDias(
-                            new Date(dataAPagar).toISOString().split('T')[0],
-                            item.dueDate
+                            new Date(dataAPagar).toISOString().split("T")[0],
+                            item.dueDate,
                           )}
                         </TableCell>
                         <TableCell>Sem taxa</TableCell>
@@ -635,7 +636,7 @@ export function VisualizaoCalculo({
                     {calculoPorParcela.map((item, index) => (
                       <TableRow
                         className={classNames(
-                          index % 2 === 0 && 'bg-neutral-100'
+                          index % 2 === 0 && "bg-neutral-100",
                         )}
                         key={index}
                       >
@@ -646,9 +647,9 @@ export function VisualizaoCalculo({
                           R$ {formatarValor(item.valorPresente)}
                         </TableCell>
                         <TableCell>
-                          R${' '}
+                          R${" "}
                           {formatarValor(
-                            item.valorAnterior - item.valorPresente
+                            item.valorAnterior - item.valorPresente,
                           )}
                         </TableCell>
                         <TableCell>
@@ -657,8 +658,8 @@ export function VisualizaoCalculo({
                         <TableCell>{item.indexador}</TableCell>
                         <TableCell>
                           {calcularDiferencaDias(
-                            new Date(dataAPagar).toISOString().split('T')[0],
-                            item.dataVencimento
+                            new Date(dataAPagar).toISOString().split("T")[0],
+                            item.dataVencimento,
                           )}
                         </TableCell>
                         <TableCell>{item.taxa}</TableCell>
@@ -698,5 +699,5 @@ export function VisualizaoCalculo({
         </button>
       </div>
     </div>
-  )
+  );
 }

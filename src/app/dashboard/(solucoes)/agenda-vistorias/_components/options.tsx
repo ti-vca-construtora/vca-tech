@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import {
   PiBuildingApartmentLight,
@@ -6,53 +6,53 @@ import {
   PiCalendarCheckDuotone,
   PiCalendarXDuotone,
   PiHouseLineLight,
-} from 'react-icons/pi'
+} from "react-icons/pi";
 
-import { Solucoes, SolucoesCard } from '@/components/solucoes-card'
+import { Solucoes, SolucoesCard } from "@/components/solucoes-card";
 
 const solucoesData: Solucoes[] = [
   {
-    titulo: 'Empreendimentos',
-    descricao: 'Gerencia empreendimentos.',
+    titulo: "Empreendimentos",
+    descricao: "Gerencia empreendimentos.",
     Icon: PiBuildingApartmentLight,
-    href: 'agenda-vistorias/empreendimentos?title=Gerenciar empreendimentos',
-    area: 'entregas',
-    permission: 'gerenciar-empreendimentos',
+    href: "agenda-vistorias/empreendimentos?title=Gerenciar empreendimentos",
+    area: "entregas",
+    permission: "gerenciar-empreendimentos",
   },
   {
-    titulo: 'Disponibilizar horários',
+    titulo: "Disponibilizar horários",
     descricao:
-      'Disponibiliza horários para que o cliente realize agendamentos.',
+      "Disponibiliza horários para que o cliente realize agendamentos.",
     Icon: PiCalendar,
-    href: 'agenda-vistorias/horarios?title=Configurar horários',
-    area: 'entregas',
-    permission: 'disponibilizar-horarios',
+    href: "agenda-vistorias/horarios?title=Configurar horários",
+    area: "entregas",
+    permission: "disponibilizar-horarios",
   },
   {
-    titulo: 'Disponibilizar unidades',
-    descricao: 'Disponibiliza a unidade para a vistoria.',
+    titulo: "Disponibilizar unidades",
+    descricao: "Disponibiliza a unidade para a vistoria.",
     Icon: PiHouseLineLight,
-    href: 'agenda-vistorias/unidades?title=Disponibilizar unidades',
-    area: 'entregas',
-    permission: 'disponibilizar-unidades',
+    href: "agenda-vistorias/unidades?title=Disponibilizar unidades",
+    area: "entregas",
+    permission: "disponibilizar-unidades",
   },
   {
-    titulo: 'Agendamentos',
-    descricao: 'Visualizar agendamentos realizados.',
+    titulo: "Agendamentos",
+    descricao: "Visualizar agendamentos realizados.",
     Icon: PiCalendarCheckDuotone,
-    href: 'agenda-vistorias/agendamentos?title=Agendamentos',
-    area: 'entregas',
-    permission: 'agendamentos',
+    href: "agenda-vistorias/agendamentos?title=Agendamentos",
+    area: "entregas",
+    permission: "agendamentos",
   },
   {
-    titulo: 'Recusas',
-    descricao: 'Gerencia recusas.',
+    titulo: "Recusas",
+    descricao: "Gerencia recusas.",
     Icon: PiCalendarXDuotone,
-    href: 'agenda-vistorias/recusas?title=Gerenciar recusas',
-    area: 'entregas',
-    permission: 'gerenciar-recusas',
+    href: "agenda-vistorias/recusas?title=Gerenciar recusas",
+    area: "entregas",
+    permission: "gerenciar-recusas",
   },
-]
+];
 
 const AgendamentoTools = () => {
   return (
@@ -69,7 +69,7 @@ const AgendamentoTools = () => {
         />
       ))}
     </div>
-  )
-}
+  );
+};
 
-export default AgendamentoTools
+export default AgendamentoTools;

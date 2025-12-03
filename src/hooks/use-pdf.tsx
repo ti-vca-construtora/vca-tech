@@ -1,5 +1,5 @@
-import React, { useCallback } from 'react'
-import ReactDOMServer from 'react-dom/server'
+import React, { useCallback } from "react";
+import ReactDOMServer from "react-dom/server";
 
 async function generatePdfFromComponent<T>(
   Component: React.ElementType,
@@ -8,11 +8,11 @@ async function generatePdfFromComponent<T>(
 ) {
   const htmlContent = ReactDOMServer.renderToString(
     React.createElement(Component, props as React.Attributes & T),
-  )
+  );
 
   const response = await fetch(`/api/pdf`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       htmlContent: `
       <!DOCTYPE html>
@@ -27,24 +27,24 @@ async function generatePdfFromComponent<T>(
     `,
       fileName,
     }),
-  })
+  });
 
   if (!response.ok) {
-    console.error('Erro ao gerar PDF')
-    return
+    console.error("Erro ao gerar PDF");
+    return;
   }
 
-  const pdfBlob = await response.blob()
-  const url = URL.createObjectURL(pdfBlob)
+  const pdfBlob = await response.blob();
+  const url = URL.createObjectURL(pdfBlob);
 
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `${fileName}.pdf`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${fileName}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 
-  return url
+  return url;
 }
 
 export function usePdf<T>({
@@ -52,16 +52,16 @@ export function usePdf<T>({
   props,
   fileName,
 }: {
-  Component: React.ElementType
-  props: T
-  fileName: string
+  Component: React.ElementType;
+  props: T;
+  fileName: string;
 }) {
   const generatePdf = useCallback(
     () => generatePdfFromComponent(Component, props, fileName),
     [Component, props],
-  )
+  );
 
   return {
     generatePdf,
-  }
+  };
 }

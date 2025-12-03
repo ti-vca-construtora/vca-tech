@@ -1,25 +1,25 @@
-import { ChevronRight, Menu, Settings2, SquareTerminal } from 'lucide-react'
-import Link from 'next/link'
+import { ChevronRight, Menu, Settings2, SquareTerminal } from "lucide-react";
+import Link from "next/link";
 
-import { Button } from '@/components/ui/button'
+import { Button } from "@/components/ui/button";
 
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { Navigation } from './navigation'
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Navigation } from "./navigation";
 
-import LogoVcaTech from '../../../../public/assets/logo-vca-tech.png'
-import LogoVca from '../../../../public/assets/logo-vca.png'
+import LogoVcaTech from "../../../../public/assets/logo-vca-tech.png";
+import LogoVca from "../../../../public/assets/logo-vca.png";
 
-import { PageTitle } from '@/components/page-title'
-import { SidebarProvider } from '@/components/ui/sidebar'
-import Image from 'next/image'
-import { Suspense } from 'react'
-import { DashboardSidebar } from './sidebar'
+import { PageTitle } from "@/components/page-title";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import Image from "next/image";
+import { Suspense } from "react";
+import { DashboardSidebar } from "./sidebar";
 
-import { MdOutlinePublic } from 'react-icons/md'
+import { MdOutlinePublic } from "react-icons/md";
 
 type DashboardProps = {
-  children: React.ReactNode
-}
+  children: React.ReactNode;
+};
 
 export function Dashboard({ children }: DashboardProps) {
   return (
@@ -143,5 +143,5 @@ export function Dashboard({ children }: DashboardProps) {
         </div>
       </div>
     </SidebarProvider>
-  )
+  );
 }

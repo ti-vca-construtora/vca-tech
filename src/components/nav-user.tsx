@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import { LogOut, User2 } from 'lucide-react'
+import { LogOut, User2 } from "lucide-react";
 
-import { Avatar } from '@/components/ui/avatar'
+import { Avatar } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,26 +10,26 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from "@/components/ui/dropdown-menu";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from '@/components/ui/sidebar'
-import { CaretSortIcon } from '@radix-ui/react-icons'
-import { useUser } from '@/hooks/use-user'
-import { memo, useMemo } from 'react'
+} from "@/components/ui/sidebar";
+import { CaretSortIcon } from "@radix-ui/react-icons";
+import { useUser } from "@/hooks/use-user";
+import { memo, useMemo } from "react";
 
 const NavUserContent = memo(() => {
-  const { user, logout, isLoading } = useUser()
+  const { user, logout, isLoading } = useUser();
 
   const userDetails = useMemo(
     () => ({
-      name: user?.name || 'Usuário',
-      email: user?.email || 'Carregando...',
+      name: user?.name || "Usuário",
+      email: user?.email || "Carregando...",
     }),
     [user?.name, user?.email],
-  )
+  );
 
   return (
     <SidebarMenu>
@@ -45,10 +45,10 @@ const NavUserContent = memo(() => {
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">
-                  {!isLoading ? userDetails.name : 'Carregando...'}
+                  {!isLoading ? userDetails.name : "Carregando..."}
                 </span>
                 <span className="truncate text-xs">
-                  {!isLoading ? userDetails.email : ' '}
+                  {!isLoading ? userDetails.email : " "}
                 </span>
               </div>
               <CaretSortIcon className="ml-auto size-4" />
@@ -57,7 +57,7 @@ const NavUserContent = memo(() => {
 
           <DropdownMenuContent
             className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-            side={'right'}
+            side={"right"}
             align="end"
             sideOffset={4}
           >
@@ -83,11 +83,11 @@ const NavUserContent = memo(() => {
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
-})
+  );
+});
 
-NavUserContent.displayName = 'NavUser'
+NavUserContent.displayName = "NavUser";
 
 export function NavUser() {
-  return <NavUserContent />
+  return <NavUserContent />;
 }

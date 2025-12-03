@@ -1,6 +1,6 @@
-import { RouteGuard } from '@/components/route-guard'
-import { ImportFile } from './_components/import-file'
-import { IndividualForm } from './_components/individual-form'
+import { RouteGuard } from "@/components/route-guard";
+import { ImportFile } from "./_components/import-file";
+import { IndividualForm } from "./_components/individual-form";
 
 export default function Page() {
   return (
@@ -10,5 +10,5 @@ export default function Page() {
         <ImportFile />
       </div>
     </RouteGuard>
-  )
+  );
 }

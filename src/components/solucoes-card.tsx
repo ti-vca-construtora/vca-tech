@@ -1,17 +1,17 @@
-'use client'
+"use client";
 
-import { usePermissions } from '@/hooks/use-permissions'
-import Link from 'next/link'
-import { IconType } from 'react-icons'
+import { usePermissions } from "@/hooks/use-permissions";
+import Link from "next/link";
+import { IconType } from "react-icons";
 
 export type Solucoes = {
-  titulo: string
-  descricao: string
-  href: string
-  Icon: IconType
-  area: string
-  permission: string
-}
+  titulo: string;
+  descricao: string;
+  href: string;
+  Icon: IconType;
+  area: string;
+  permission: string;
+};
 
 export function SolucoesCard({
   titulo,
@@ -21,9 +21,9 @@ export function SolucoesCard({
   area,
   permission,
 }: Solucoes) {
-  const { hasPermission } = usePermissions()
+  const { hasPermission } = usePermissions();
 
-  const userHasAccess = hasPermission(area, permission)
+  const userHasAccess = hasPermission(area, permission);
 
   const cardContent = (
     <div className="w-[480px] h-28 shadow-md bg-neutral-50 transition-colors rounded flex items-center gap-3 p-2">
@@ -38,12 +38,12 @@ export function SolucoesCard({
         )}
       </div>
     </div>
-  )
+  );
 
   return userHasAccess ? (
     <Link
       href={`/dashboard/${href}`}
-      className={`hover:text-verde-vca ${userHasAccess ? 'text-azul-vca' : 'text-gray-400'}`}
+      className={`hover:text-verde-vca ${userHasAccess ? "text-azul-vca" : "text-gray-400"}`}
     >
       {cardContent}
     </Link>
@@ -54,5 +54,5 @@ export function SolucoesCard({
     >
       {cardContent}
     </div>
-  )
+  );
 }

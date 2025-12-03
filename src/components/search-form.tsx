@@ -1,24 +1,24 @@
-'use client'
+"use client";
 
-import * as z from 'zod'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Contrato } from '@/app/dashboard/(solucoes)/calculadora-juros/_components/contratos-tabela'
+import * as z from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Contrato } from "@/app/dashboard/(solucoes)/calculadora-juros/_components/contratos-tabela";
 
 const formSchema = z.object({
   buscaCliente: z
     .string()
-    .min(11, 'Informe um CPF/CNPJ válido.')
-    .max(18, 'Informe um CPF/CNPJ válido.'),
-})
+    .min(11, "Informe um CPF/CNPJ válido.")
+    .max(18, "Informe um CPF/CNPJ válido."),
+});
 
-type FormType = z.infer<typeof formSchema>
+type FormType = z.infer<typeof formSchema>;
 
 export type Cliente = {
-  name: string
-  documentType: 'cpf' | 'cnpj'
-  documentNumber: string
-}
+  name: string;
+  documentType: "cpf" | "cnpj";
+  documentNumber: string;
+};
 
 // type CustomerCpfApiResponse = {
 //   vca: {
@@ -42,19 +42,19 @@ export type Cliente = {
 // }
 
 type ContractItem = {
-  number: string
-  enterpriseName: string
+  number: string;
+  enterpriseName: string;
   salesContractUnits: {
-    name: string
-  }[]
-  origem: string
-  customerId: string
-}
+    name: string;
+  }[];
+  origem: string;
+  customerId: string;
+};
 
 type SearchFormProps = {
-  onSearchComplete: (data: { cliente: Cliente; contratos: Contrato[] }) => void
-  children?: React.ReactNode
-}
+  onSearchComplete: (data: { cliente: Cliente; contratos: Contrato[] }) => void;
+  children?: React.ReactNode;
+};
 
 export function SearchForm({ onSearchComplete, children }: SearchFormProps) {
   const {
@@ -63,44 +63,44 @@ export function SearchForm({ onSearchComplete, children }: SearchFormProps) {
     formState: { errors },
   } = useForm<FormType>({
     resolver: zodResolver(formSchema),
-  })
+  });
 
   const handleFetchContracts = async (formData: FormType) => {
     try {
       const documentType =
-        formData.buscaCliente.replace(/\D/g, '').length === 11 ? 'cpf' : 'cnpj'
+        formData.buscaCliente.replace(/\D/g, "").length === 11 ? "cpf" : "cnpj";
 
       const data = await fetch(
-        `/api/avp/customer-cpf?documento=${formData.buscaCliente.replace(/\D/g, '')}`,
-      )
+        `/api/avp/customer-cpf?documento=${formData.buscaCliente.replace(/\D/g, "")}`,
+      );
 
       if (data) {
-        const parsed = await data.json()
+        const parsed = await data.json();
 
         const cliente =
           parsed.vca.results.length > 0
             ? parsed.vca.results[0]
-            : parsed.vcalotear.results[0]
+            : parsed.vcalotear.results[0];
 
         const idVca =
-          parsed.vca.results.length > 0 ? parsed.vca.results[0].id : 0
+          parsed.vca.results.length > 0 ? parsed.vca.results[0].id : 0;
 
         const idLotear =
           parsed.vcalotear.results.length > 0
             ? parsed.vcalotear.results[0].id
-            : 0
+            : 0;
 
         const contratos = await fetch(
           `/api/avp/sales-contracts?idVca=${idVca}&idLotear=${idLotear}`,
-        )
+        );
 
-        const contratosParsed = await contratos.json()
+        const contratosParsed = await contratos.json();
 
         const clienteInfo: Cliente = {
           name: cliente.name,
           documentNumber: cliente[documentType],
           documentType,
-        }
+        };
 
         const filteredContratos = contratosParsed.contratos.map(
           (item: ContractItem) => ({
@@ -110,17 +110,17 @@ export function SearchForm({ onSearchComplete, children }: SearchFormProps) {
             customerId: parsed[item.origem].results[0].id,
             origem: item.origem,
           }),
-        )
+        );
 
         onSearchComplete({
           cliente: clienteInfo,
           contratos: filteredContratos,
-        })
+        });
       }
     } catch (error: unknown) {
-      console.log(error)
+      console.log(error);
     }
-  }
+  };
 
   return (
     <form
@@ -132,7 +132,7 @@ export function SearchForm({ onSearchComplete, children }: SearchFormProps) {
           Informe o CPF/CNPJ:
         </label>
         <input
-          {...register('buscaCliente')}
+          {...register("buscaCliente")}
           placeholder="CPF/CNPJ"
           className="border h-12 p-2 w-80 rounded shadow-md"
           type="text"
@@ -153,5 +153,5 @@ export function SearchForm({ onSearchComplete, children }: SearchFormProps) {
         {children}
       </div>
     </form>
-  )
+  );
 }

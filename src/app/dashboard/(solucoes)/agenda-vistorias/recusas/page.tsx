@@ -1,215 +1,215 @@
 /* eslint-disable prettier/prettier */
-'use client'
+"use client";
 
-import { Button } from '@/components/ui/button'
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { useEffect, useState } from 'react'
-import { ToastContainer, toast } from 'react-toastify'
+} from "@/components/ui/select";
+import { useEffect, useState } from "react";
+import { ToastContainer, toast } from "react-toastify";
 
-type ValidationType = 'QUALITY' | 'RELATIONSHIP' | 'FINANCIAL'
+type ValidationType = "QUALITY" | "RELATIONSHIP" | "FINANCIAL";
 
 type Unidade = {
-  id: string
-  unit: string
-  isEnabled: boolean
-  validations: ValidationType[]
-  developmentId: string
-  enterpriseName: string
-}
+  id: string;
+  unit: string;
+  isEnabled: boolean;
+  validations: ValidationType[];
+  developmentId: string;
+  enterpriseName: string;
+};
 
 type Empreendimento = {
-  id: string
-  name: string
-  isActive: boolean
-  units: Unidade[]
-}
+  id: string;
+  name: string;
+  isActive: boolean;
+  units: Unidade[];
+};
 
 type Inspection = {
-  id: string
-  status: string
-  unitId: string
-}
+  id: string;
+  status: string;
+  unitId: string;
+};
 
 const UnidadesComReagendamento = () => {
-  const [enterprises, setEnterprises] = useState<Empreendimento[]>([])
-  const [selectedEnterprise, setSelectedEnterprise] = useState<string>('TODOS')
-  const [units, setUnits] = useState<Unidade[]>([])
-  const [inspections, setInspections] = useState<Inspection[]>([])
-  const [loading, setLoading] = useState(true)
+  const [enterprises, setEnterprises] = useState<Empreendimento[]>([]);
+  const [selectedEnterprise, setSelectedEnterprise] = useState<string>("TODOS");
+  const [units, setUnits] = useState<Unidade[]>([]);
+  const [inspections, setInspections] = useState<Inspection[]>([]);
+  const [loading, setLoading] = useState(true);
   const filters = {
     financial: false,
     quality: false,
     relationship: false,
-  }
+  };
   const [modifiedUnits, setModifiedUnits] = useState<
     Record<string, ValidationType[]>
-  >({})
-  const [isSaving, setIsSaving] = useState(false)
+  >({});
+  const [isSaving, setIsSaving] = useState(false);
 
   const toastConfig = {
-    position: 'top-right' as const,
+    position: "top-right" as const,
     autoClose: 3000,
     hideProgressBar: false,
     closeOnClick: false,
     pauseOnHover: true,
     draggable: true,
     progress: undefined,
-    theme: 'light',
-  }
+    theme: "light",
+  };
 
   const errorNotifPatch = () =>
-    toast.error('Falha na atualização.', toastConfig)
+    toast.error("Falha na atualização.", toastConfig);
   const sucessNotifPatch = () =>
-    toast.success('Atualização realizada.', toastConfig)
+    toast.success("Atualização realizada.", toastConfig);
 
   const getEmpreendimentos = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       const response = await fetch(
-        '/api/vistorias/empreendimentos?page=1&pageSize=200&isActive=1',
+        "/api/vistorias/empreendimentos?page=1&pageSize=200&isActive=1",
         {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
-        }
-      )
+        },
+      );
 
       if (!response.ok) {
-        throw new Error('Erro ao carregar empreendimentos ativos')
+        throw new Error("Erro ao carregar empreendimentos ativos");
       }
 
-      const data = await response.json()
-      setEnterprises(data.data)
+      const data = await response.json();
+      setEnterprises(data.data);
     } catch (error) {
-      console.error(error)
+      console.error(error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const getInspections = async () => {
     try {
       const response = await fetch(
-        '/api/vistorias/inspections?page=1&pageSize=999999',
+        "/api/vistorias/inspections?page=1&pageSize=999999",
         {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
-        }
-      )
+        },
+      );
 
       if (!response.ok) {
-        throw new Error('Erro ao carregar inspeções')
+        throw new Error("Erro ao carregar inspeções");
       }
 
-      const data = await response.json()
-      setInspections(data.data)
+      const data = await response.json();
+      setInspections(data.data);
     } catch (error) {
-      console.error(error)
+      console.error(error);
     }
-  }
+  };
 
   const getUnitsByEnterprise = (enterpriseId: string) => {
-    if (enterpriseId === 'TODOS') {
-      const allUnits: Unidade[] = []
+    if (enterpriseId === "TODOS") {
+      const allUnits: Unidade[] = [];
       enterprises.forEach((emp) => {
         if (emp.units) {
           allUnits.push(
             ...emp.units.map((u) => ({
               ...u,
               enterpriseName: emp.name,
-            }))
-          )
+            })),
+          );
         }
-      })
-      return allUnits
+      });
+      return allUnits;
     } else {
-      const enterprise = enterprises.find((emp) => emp.id === enterpriseId)
+      const enterprise = enterprises.find((emp) => emp.id === enterpriseId);
       return (
         enterprise?.units?.map((u) => ({
           ...u,
           enterpriseName: enterprise.name,
         })) || []
-      )
+      );
     }
-  }
+  };
 
   useEffect(() => {
-    getEmpreendimentos()
-    getInspections()
-  }, [])
+    getEmpreendimentos();
+    getInspections();
+  }, []);
 
   useEffect(() => {
     if (enterprises.length > 0) {
-      const units = getUnitsByEnterprise(selectedEnterprise)
-      setUnits(units)
-      setModifiedUnits({})
+      const units = getUnitsByEnterprise(selectedEnterprise);
+      setUnits(units);
+      setModifiedUnits({});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedEnterprise, enterprises])
+  }, [selectedEnterprise, enterprises]);
 
   const handleEnterpriseChange = (value: string) => {
-    setSelectedEnterprise(value)
-  }
+    setSelectedEnterprise(value);
+  };
 
   const hasValidation = (unit: Unidade, validation: ValidationType) => {
     if (modifiedUnits[unit.id]) {
-      return modifiedUnits[unit.id].includes(validation)
+      return modifiedUnits[unit.id].includes(validation);
     }
-    return unit.validations.includes(validation)
-  }
+    return unit.validations.includes(validation);
+  };
 
   const handleCheckboxChange = (
     unit: Unidade,
     validation: ValidationType,
 
-    checked: boolean
+    checked: boolean,
   ) => {
     setModifiedUnits((prev) => {
-      const currentValidations = prev[unit.id] || unit.validations
+      const currentValidations = prev[unit.id] || unit.validations;
       const updatedValidations = checked
         ? [...currentValidations, validation]
-        : currentValidations.filter((v) => v !== validation)
+        : currentValidations.filter((v) => v !== validation);
 
       return {
         ...prev,
         [unit.id]: updatedValidations,
-      }
-    })
-  }
+      };
+    });
+  };
 
   const handleSaveChanges = async () => {
-    if (Object.keys(modifiedUnits).length === 0) return
+    if (Object.keys(modifiedUnits).length === 0) return;
 
-    setIsSaving(true)
+    setIsSaving(true);
     try {
       for (const [unitId, validations] of Object.entries(modifiedUnits)) {
         const response = await fetch(`/api/vistorias/unidades?id=${unitId}`, {
-          method: 'PATCH',
+          method: "PATCH",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({ validations }),
-        })
+        });
 
         if (!response.ok) {
-          errorNotifPatch()
-          throw new Error(`Erro ao atualizar unidade ${unitId}`)
+          errorNotifPatch();
+          throw new Error(`Erro ao atualizar unidade ${unitId}`);
         }
       }
 
@@ -217,59 +217,59 @@ const UnidadesComReagendamento = () => {
         prevUnits.map((unit) =>
           modifiedUnits[unit.id]
             ? { ...unit, validations: modifiedUnits[unit.id] }
-            : unit
-        )
-      )
+            : unit,
+        ),
+      );
 
-      setModifiedUnits({})
-      sucessNotifPatch()
+      setModifiedUnits({});
+      sucessNotifPatch();
     } catch (error) {
-      console.error('Erro ao salvar alterações:', error)
+      console.error("Erro ao salvar alterações:", error);
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   const baseFilteredUnits = units.filter((unit) => {
-    const hasFinancial = unit.validations.includes('FINANCIAL')
-    const hasQuality = unit.validations.includes('QUALITY')
-    const hasRelationship = unit.validations.includes('RELATIONSHIP')
+    const hasFinancial = unit.validations.includes("FINANCIAL");
+    const hasQuality = unit.validations.includes("QUALITY");
+    const hasRelationship = unit.validations.includes("RELATIONSHIP");
 
     if (!hasFinancial || !hasQuality || hasRelationship) {
-      return false
+      return false;
     }
 
     const hasRescheduled = inspections.some(
       (inspection) =>
-        inspection.unitId === unit.id && inspection.status === 'RESCHEDULED'
-    )
+        inspection.unitId === unit.id && inspection.status === "RESCHEDULED",
+    );
 
-    return hasRescheduled
-  })
+    return hasRescheduled;
+  });
 
   const filteredUnits = baseFilteredUnits.filter((unit) => {
-    const unitValidations = modifiedUnits[unit.id] || unit.validations
+    const unitValidations = modifiedUnits[unit.id] || unit.validations;
 
     if (!filters.financial && !filters.quality && !filters.relationship) {
-      return true
+      return true;
     }
 
-    const matches = []
-    if (filters.financial) matches.push(unitValidations.includes('FINANCIAL'))
-    if (filters.quality) matches.push(unitValidations.includes('QUALITY'))
+    const matches = [];
+    if (filters.financial) matches.push(unitValidations.includes("FINANCIAL"));
+    if (filters.quality) matches.push(unitValidations.includes("QUALITY"));
     if (filters.relationship)
-      matches.push(unitValidations.includes('RELATIONSHIP'))
+      matches.push(unitValidations.includes("RELATIONSHIP"));
 
-    return matches.length > 0 && matches.every((m) => m)
-  })
+    return matches.length > 0 && matches.every((m) => m);
+  });
 
   const renderUnitCards = () => {
     if (loading) {
-      return <div className="text-center py-4">Carregando unidades...</div>
+      return <div className="text-center py-4">Carregando unidades...</div>;
     }
 
     if (filteredUnits.length === 0) {
-      return <div className="text-center py-4">Nenhuma unidade encontrada</div>
+      return <div className="text-center py-4">Nenhuma unidade encontrada</div>;
     }
 
     return filteredUnits.map((unit) => (
@@ -283,10 +283,10 @@ const UnidadesComReagendamento = () => {
             <div className="flex items-center space-x-2 my-2">
               <Checkbox
                 disabled
-                checked={hasValidation(unit, 'FINANCIAL')}
+                checked={hasValidation(unit, "FINANCIAL")}
                 id={`financial-${unit.id}`}
                 onCheckedChange={(checked) =>
-                  handleCheckboxChange(unit, 'FINANCIAL', checked as boolean)
+                  handleCheckboxChange(unit, "FINANCIAL", checked as boolean)
                 }
               />
               <label
@@ -299,10 +299,10 @@ const UnidadesComReagendamento = () => {
             <div className="flex items-center space-x-2 my-2">
               <Checkbox
                 disabled
-                checked={hasValidation(unit, 'QUALITY')}
+                checked={hasValidation(unit, "QUALITY")}
                 id={`quality-${unit.id}`}
                 onCheckedChange={(checked) =>
-                  handleCheckboxChange(unit, 'QUALITY', checked as boolean)
+                  handleCheckboxChange(unit, "QUALITY", checked as boolean)
                 }
               />
               <label
@@ -314,10 +314,10 @@ const UnidadesComReagendamento = () => {
             </div>
             <div className="flex items-center space-x-2 my-2">
               <Checkbox
-                checked={hasValidation(unit, 'RELATIONSHIP')}
+                checked={hasValidation(unit, "RELATIONSHIP")}
                 id={`relationship-${unit.id}`}
                 onCheckedChange={(checked) =>
-                  handleCheckboxChange(unit, 'RELATIONSHIP', checked as boolean)
+                  handleCheckboxChange(unit, "RELATIONSHIP", checked as boolean)
                 }
               />
               <label
@@ -330,8 +330,8 @@ const UnidadesComReagendamento = () => {
           </div>
         </Card>
       </div>
-    ))
-  }
+    ));
+  };
 
   return (
     <div className="w-full p-10">
@@ -381,7 +381,7 @@ const UnidadesComReagendamento = () => {
         <div className="mt-4 flex justify-end">
           <Button onClick={handleSaveChanges} disabled={isSaving}>
             {isSaving
-              ? 'Salvando...'
+              ? "Salvando..."
               : `Salvar alterações (${Object.keys(modifiedUnits).length})`}
           </Button>
         </div>
@@ -389,7 +389,7 @@ const UnidadesComReagendamento = () => {
 
       {renderUnitCards()}
     </div>
-  )
-}
+  );
+};
 
-export default UnidadesComReagendamento
+export default UnidadesComReagendamento;

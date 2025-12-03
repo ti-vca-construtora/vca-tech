@@ -1,13 +1,16 @@
-import { Dashboard } from './_components/dashboard'
+import { Dashboard } from "./_components/dashboard";
+import { BreadcrumbProvider } from "@/providers/breadcrumb-provider";
 
 export default function DashboardLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
   return (
-    <div>
-      <Dashboard>{children}</Dashboard>
-    </div>
-  )
+    <BreadcrumbProvider>
+      <div>
+        <Dashboard>{children}</Dashboard>
+      </div>
+    </BreadcrumbProvider>
+  );
 }

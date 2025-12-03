@@ -1,5 +1,5 @@
-import { RouteGuard } from '@/components/route-guard'
-import { FormContainer } from './_components/form-container'
+import { RouteGuard } from "@/components/route-guard";
+import { FormContainer } from "./_components/form-container";
 
 export default function CalculadoraJuros() {
   return (
@@ -8,5 +8,5 @@ export default function CalculadoraJuros() {
         <FormContainer />
       </div>
     </RouteGuard>
-  )
+  );
 }

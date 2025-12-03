@@ -1,4 +1,4 @@
-import Image from 'next/image'
+import Image from "next/image";
 
 export default function App() {
   return (
@@ -16,5 +16,5 @@ export default function App() {
         className="rounded-xl block md:hidden"
       />
     </section>
-  )
+  );
 }

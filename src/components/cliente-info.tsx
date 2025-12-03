@@ -1,11 +1,11 @@
-import { formatarCpfCnpj } from '@/util'
-import { Cliente } from './search-form'
-import { Contrato } from '@/app/dashboard/(solucoes)/calculadora-juros/_components/contratos-tabela'
+import { formatarCpfCnpj } from "@/util";
+import { Cliente } from "./search-form";
+import { Contrato } from "@/app/dashboard/(solucoes)/calculadora-juros/_components/contratos-tabela";
 
 type ClienteInfoProps = {
-  cliente: Cliente
-  contrato: Contrato
-}
+  cliente: Cliente;
+  contrato: Contrato;
+};
 
 export function ClienteInfo({ cliente, contrato }: ClienteInfoProps) {
   return (
@@ -15,13 +15,13 @@ export function ClienteInfo({ cliente, contrato }: ClienteInfoProps) {
           Nome do Cliente: <span className="font-bold">{cliente.name}</span>
         </span>
         <span className="text-azul-vca">
-          CPF/CNPJ:{' '}
+          CPF/CNPJ:{" "}
           <span className="font-bold">
             {formatarCpfCnpj(cliente.documentNumber)}
           </span>
         </span>
         <span className="text-azul-vca">
-          Empreendimento:{' '}
+          Empreendimento:{" "}
           <span className="font-bold">{contrato.enterpriseName}</span>
         </span>
       </div>
@@ -34,5 +34,5 @@ export function ClienteInfo({ cliente, contrato }: ClienteInfoProps) {
         </span>
       </div>
     </div>
-  )
+  );
 }

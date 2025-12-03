@@ -1,55 +1,55 @@
 /* eslint-disable camelcase */
-import { create } from 'zustand'
-import { createJSONStorage, persist } from 'zustand/middleware'
-import Cookies from 'js-cookie'
-import { jwtDecode } from 'jwt-decode'
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import Cookies from "js-cookie";
+import { jwtDecode } from "jwt-decode";
 
 type AuthPayload = {
-  token: string
-}
+  token: string;
+};
 
 type ApiResponseWithPagination = {
-  total: number
-  totalPages: number
-  currentPage: number
-}
+  total: number;
+  totalPages: number;
+  currentPage: number;
+};
 
 export type User = {
-  id: string
-  name?: string
-  email: string
-  department?: string
-  role: 'MASTER' | 'ADMIN' | 'USER'
-  permissions: Array<{ area: string; permissions: string[] }>
-}
+  id: string;
+  name?: string;
+  email: string;
+  department?: string;
+  role: "MASTER" | "ADMIN" | "USER";
+  permissions: Array<{ area: string; permissions: string[] }>;
+};
 
 export type AuthState = {
-  user: User | null
-  isLoading: boolean
-  loadUser: () => Promise<void>
-  login: (email: string, password: string) => Promise<boolean>
-  logout: () => void
-  hasPermission: (area: string, permission: string) => boolean
-  hasRequiredRole: (requiredRole: string) => boolean
-  getToken: () => string | null
+  user: User | null;
+  isLoading: boolean;
+  loadUser: () => Promise<void>;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => void;
+  hasPermission: (area: string, permission: string) => boolean;
+  hasRequiredRole: (requiredRole: string) => boolean;
+  getToken: () => string | null;
   getAllUsers: (
     token: string,
     page?: number,
     pageSize?: number,
   ) => Promise<
     ApiResponseWithPagination & {
-      data: User[]
+      data: User[];
     }
-  >
-}
+  >;
+};
 
 function saveAccessToken({ token }: AuthPayload): void {
-  Cookies.set('vca-tech-auth', JSON.stringify({ token }), {
+  Cookies.set("vca-tech-auth", JSON.stringify({ token }), {
     expires: 7,
-  })
+  });
 }
 
-const TECH_API_URL = process.env.NEXT_PUBLIC_TECH_API_URL
+const TECH_API_URL = process.env.NEXT_PUBLIC_TECH_API_URL;
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -66,120 +66,120 @@ export const useAuthStore = create<AuthState>()(
                 Authorization: `Bearer ${token}`,
               },
             },
-          )
-          return await response.json()
+          );
+          return await response.json();
         } catch (error) {
-          console.error('Failed to fetch users:', error)
-          throw error
+          console.error("Failed to fetch users:", error);
+          throw error;
         }
       },
 
       loadUser: async () => {
         try {
-          const cookie = Cookies.get('vca-tech-auth')
+          const cookie = Cookies.get("vca-tech-auth");
 
           if (!cookie) {
-            set({ isLoading: false })
-            return
+            set({ isLoading: false });
+            return;
           }
 
-          const { token } = JSON.parse(cookie)
-          const decoded = jwtDecode<{ sub: string }>(token)
+          const { token } = JSON.parse(cookie);
+          const decoded = jwtDecode<{ sub: string }>(token);
 
           const response = await fetch(`${TECH_API_URL}/users/${decoded.sub}`, {
             headers: { Authorization: `Bearer ${token}` },
-          })
+          });
 
-          const userData = await response.json()
-          set({ user: userData.data, isLoading: false })
+          const userData = await response.json();
+          set({ user: userData.data, isLoading: false });
         } catch (error) {
-          console.log(error)
-          set({ user: null, isLoading: false })
+          console.log(error);
+          set({ user: null, isLoading: false });
         }
       },
 
       login: async (email, password) => {
         try {
           const response = await fetch(`${TECH_API_URL}/auth/login`, {
-            method: 'POST',
+            method: "POST",
             body: JSON.stringify({ email, password }),
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
-          })
+          });
 
           if (!response.ok) {
-            const errorData = await response.json()
-            throw new Error(errorData.message || 'Erro de login')
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Erro de login");
           }
 
-          const authResponse = await response.json()
+          const authResponse = await response.json();
 
-          saveAccessToken({ token: authResponse.access_token })
+          saveAccessToken({ token: authResponse.access_token });
 
-          await get().loadUser()
+          await get().loadUser();
 
-          return true
+          return true;
         } catch (error) {
-          console.error('Login failed:', error)
-          return false
+          console.error("Login failed:", error);
+          return false;
         }
       },
 
       logout: () => {
-        Cookies.remove('vca-tech-auth')
-        set({ user: null })
+        Cookies.remove("vca-tech-auth");
+        set({ user: null });
       },
 
       hasPermission: (area, permission) => {
-        const { user } = get()
-        if (!user) return false
-        if (user.role === 'MASTER') return true
+        const { user } = get();
+        if (!user) return false;
+        if (user.role === "MASTER") return true;
 
         return user.permissions.some(
           (p) => p.area === area && p.permissions.includes(permission),
-        )
+        );
       },
 
       hasRequiredRole: (requiredRole) => {
-        const { user } = get()
+        const { user } = get();
 
-        if (!user) return false
+        if (!user) return false;
 
-        if (user.role === 'MASTER') return true
+        if (user.role === "MASTER") return true;
 
-        return user.role === requiredRole
+        return user.role === requiredRole;
       },
 
       getToken(): string | null {
-        const cookieValue = Cookies.get('vca-tech-auth')
+        const cookieValue = Cookies.get("vca-tech-auth");
 
         if (!cookieValue) {
-          console.log('Cookie não encontrado')
-          return null
+          console.log("Cookie não encontrado");
+          return null;
         }
 
-        let token: string
+        let token: string;
         try {
-          const tokenData = JSON.parse(cookieValue)
-          token = tokenData.token
+          const tokenData = JSON.parse(cookieValue);
+          token = tokenData.token;
         } catch (error) {
-          console.log('Definindo cookie como JSON puro: ', error)
-          token = cookieValue
+          console.log("Definindo cookie como JSON puro: ", error);
+          token = cookieValue;
         }
 
         if (!token) {
-          console.log('Token não encontrado')
-          return null
+          console.log("Token não encontrado");
+          return null;
         }
 
-        return token
+        return token;
       },
     }),
     {
-      name: 'auth-storage',
+      name: "auth-storage",
       partialize: (state) => ({ user: state.user }),
       storage: createJSONStorage(() => localStorage),
     },
   ),
-)
+);

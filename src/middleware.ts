@@ -1,57 +1,57 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from "next/server";
 
 export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl
+  const { pathname } = req.nextUrl;
 
-  console.log('Middleware executado para:', pathname)
+  console.log("Middleware executado para:", pathname);
 
-  if (pathname === '/login') {
-    const payload = req.cookies.get('vca-tech-auth')?.value
+  if (pathname === "/login") {
+    const payload = req.cookies.get("vca-tech-auth")?.value;
 
     if (payload) {
       try {
-        const { token } = JSON.parse(payload)
+        const { token } = JSON.parse(payload);
         if (token) {
           console.log(
-            'Token encontrado na rota /login. Redirecionando para /dashboard/setores.',
-          )
-          return NextResponse.redirect(new URL('/dashboard/setores', req.url))
+            "Token encontrado na rota /login. Redirecionando para /dashboard/setores.",
+          );
+          return NextResponse.redirect(new URL("/dashboard/setores", req.url));
         }
       } catch (error) {
-        console.error('Erro ao analisar o payload: ', error)
+        console.error("Erro ao analisar o payload: ", error);
       }
     }
 
-    console.log('Acesso permitido à rota /login.')
-    return NextResponse.next()
+    console.log("Acesso permitido à rota /login.");
+    return NextResponse.next();
   }
 
-  if (pathname.startsWith('/public')) {
-    console.log('Rota pública detectada:', pathname)
-    return NextResponse.next()
+  if (pathname.startsWith("/public")) {
+    console.log("Rota pública detectada:", pathname);
+    return NextResponse.next();
   }
 
-  const payload = req.cookies.get('vca-tech-auth')?.value
-  console.log('Payload encontrado:', payload)
+  const payload = req.cookies.get("vca-tech-auth")?.value;
+  console.log("Payload encontrado:", payload);
 
   if (!payload) {
-    console.log('Payload ausente ou inválido. Redirecionando para /login.')
-    return NextResponse.redirect(new URL('/login', req.url))
+    console.log("Payload ausente ou inválido. Redirecionando para /login.");
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 
   try {
-    const { token } = JSON.parse(payload)
+    const { token } = JSON.parse(payload);
 
     if (!token) {
-      console.log('Payload incompleto. Redirecionando para /login.')
-      return NextResponse.redirect(new URL('/login', req.url))
+      console.log("Payload incompleto. Redirecionando para /login.");
+      return NextResponse.redirect(new URL("/login", req.url));
     }
 
-    console.log(`Acesso concedido ao usuário à rota ${pathname}`)
-    return NextResponse.next()
+    console.log(`Acesso concedido ao usuário à rota ${pathname}`);
+    return NextResponse.next();
   } catch (error) {
-    console.error('Erro ao analisar o payload:', error)
-    return NextResponse.redirect(new URL('/login', req.url))
+    console.error("Erro ao analisar o payload:", error);
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 }
 
@@ -59,6 +59,6 @@ export const config = {
   matcher: [
     // Aplica o middleware a todas as rotas, exceto as estáticas
     // Soluciona bug de CSS e JS do lado do cliente
-    '/((?!_next/static|favicon.ico).*)',
+    "/((?!_next/static|favicon.ico).*)",
   ],
-}
+};

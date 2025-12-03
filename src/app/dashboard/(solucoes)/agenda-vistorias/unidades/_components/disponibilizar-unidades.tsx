@@ -1,14 +1,14 @@
 /* eslint-disable prettier/prettier */
-'use client'
+"use client";
 
-import { Button } from '@/components/ui/button'
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Command,
   CommandEmpty,
@@ -16,7 +16,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@/components/ui/command'
+} from "@/components/ui/command";
 import {
   Dialog,
   DialogContent,
@@ -24,403 +24,404 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { useUser } from '@/hooks/use-user'
-import { Check, ChevronsUpDown, Lock, Unlock } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { ToastContainer, toast } from 'react-toastify'
+} from "@/components/ui/select";
+import { useUser } from "@/hooks/use-user";
+import { Check, ChevronsUpDown, Lock, Unlock } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ToastContainer, toast } from "react-toastify";
 
-type ValidationType = 'QUALITY' | 'RELATIONSHIP' | 'FINANCIAL'
+type ValidationType = "QUALITY" | "RELATIONSHIP" | "FINANCIAL";
 
 type Unidade = {
-  id: string
-  unit: string
-  block: string
-  customerName: string
-  externalId: string
-  isEnabled: boolean
-  validations: ValidationType[]
-  developmentId: string
-  enterpriseName: string
-}
+  id: string;
+  unit: string;
+  block: string;
+  customerName: string;
+  externalId: string;
+  isEnabled: boolean;
+  validations: ValidationType[];
+  developmentId: string;
+  enterpriseName: string;
+};
 
 type Empreendimento = {
-  id: string
-  name: string
-  isActive: boolean
-  units: Unidade[]
-}
+  id: string;
+  name: string;
+  isActive: boolean;
+  units: Unidade[];
+};
 
 const DisponibilizarUnidades = () => {
-  const { user } = useUser()
-  const [enterprises, setEnterprises] = useState<Empreendimento[]>([])
-  const [selectedEnterprise, setSelectedEnterprise] = useState<string>('')
-  const [selectedBlock, setSelectedBlock] = useState<string>('ALL')
-  const [selectedCustomer, setSelectedCustomer] = useState<string>('ALL')
-  const [openCustomerPopover, setOpenCustomerPopover] = useState(false)
-  const [units, setUnits] = useState<Unidade[]>([])
-  const [loading, setLoading] = useState(true)
+  const { user } = useUser();
+  const [enterprises, setEnterprises] = useState<Empreendimento[]>([]);
+  const [selectedEnterprise, setSelectedEnterprise] = useState<string>("");
+  const [selectedBlock, setSelectedBlock] = useState<string>("ALL");
+  const [selectedCustomer, setSelectedCustomer] = useState<string>("ALL");
+  const [openCustomerPopover, setOpenCustomerPopover] = useState(false);
+  const [units, setUnits] = useState<Unidade[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     financial: false,
     quality: false,
     relationship: false,
-  })
-  const [selectedUnit, setSelectedUnit] = useState<string>('ALL')
+  });
+  const [selectedUnit, setSelectedUnit] = useState<string>("ALL");
   const [modifiedUnits, setModifiedUnits] = useState<
     Record<string, ValidationType[]>
-  >({})
-  const [isSaving, setIsSaving] = useState(false)
-  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false)
-  const [showAdminDialog, setShowAdminDialog] = useState(false)
-  const [adminPassword, setAdminPassword] = useState('')
+  >({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
+  const [showAdminDialog, setShowAdminDialog] = useState(false);
+  const [adminPassword, setAdminPassword] = useState("");
 
   // Mapear department do usuário para os tipos de validação permitidos
   const getAllowedValidations = (): ValidationType[] => {
     // Se admin está desbloqueado, liberar tudo
     if (isAdminUnlocked) {
-      return ['FINANCIAL', 'QUALITY', 'RELATIONSHIP']
+      return ["FINANCIAL", "QUALITY", "RELATIONSHIP"];
     }
 
-    if (!user?.department) return []
+    if (!user?.department) return [];
 
     const departmentMap: Record<string, ValidationType[]> = {
-      Financeiro: ['FINANCIAL'],
-      Qualidade: ['QUALITY'],
-      Entregas: ['RELATIONSHIP'],
-    }
+      Financeiro: ["FINANCIAL"],
+      Qualidade: ["QUALITY"],
+      Entregas: ["RELATIONSHIP"],
+    };
 
-    return departmentMap[user.department] || []
-  }
+    return departmentMap[user.department] || [];
+  };
 
-  const allowedValidations = getAllowedValidations()
+  const allowedValidations = getAllowedValidations();
 
   // Verificar se o checkbox deve estar habilitado
   const isCheckboxEnabled = (validation: ValidationType): boolean => {
-    if (isAdminUnlocked) return true
-    if (!user?.department) return false
-    return allowedValidations.includes(validation)
-  }
+    if (isAdminUnlocked) return true;
+    if (!user?.department) return false;
+    return allowedValidations.includes(validation);
+  };
 
   const handleAdminUnlock = () => {
-    const correctPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD
+    const correctPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
 
     if (adminPassword === correctPassword) {
-      setIsAdminUnlocked(true)
-      setShowAdminDialog(false)
-      setAdminPassword('')
-      toast.success('Modo admin ativado! Todos os checkboxes liberados.', {
-        position: 'top-right',
+      setIsAdminUnlocked(true);
+      setShowAdminDialog(false);
+      setAdminPassword("");
+      toast.success("Modo admin ativado! Todos os checkboxes liberados.", {
+        position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,
         closeOnClick: false,
         pauseOnHover: true,
         draggable: true,
         progress: undefined,
-        theme: 'light',
-      })
+        theme: "light",
+      });
     } else {
-      toast.error('Senha incorreta!', {
-        position: 'top-right',
+      toast.error("Senha incorreta!", {
+        position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,
         closeOnClick: false,
         pauseOnHover: true,
         draggable: true,
         progress: undefined,
-        theme: 'light',
-      })
-      setAdminPassword('')
+        theme: "light",
+      });
+      setAdminPassword("");
     }
-  }
+  };
 
   const handleAdminLock = () => {
-    setIsAdminUnlocked(false)
-    toast.info('Modo admin desativado.', {
-      position: 'top-right',
+    setIsAdminUnlocked(false);
+    toast.info("Modo admin desativado.", {
+      position: "top-right",
       autoClose: 2000,
       hideProgressBar: false,
       closeOnClick: false,
       pauseOnHover: true,
       draggable: true,
       progress: undefined,
-      theme: 'light',
-    })
-  }
+      theme: "light",
+    });
+  };
 
   const toastConfig = {
-    position: 'top-right' as const,
+    position: "top-right" as const,
     autoClose: 3000,
     hideProgressBar: false,
     closeOnClick: false,
     pauseOnHover: true,
     draggable: true,
     progress: undefined,
-    theme: 'light',
-  }
+    theme: "light",
+  };
 
   const errorNotifPatch = () =>
-    toast.error('Falha na atualização.', toastConfig)
+    toast.error("Falha na atualização.", toastConfig);
 
   const sucessNotifPatch = () =>
-    toast.success('Atualização realizada.', toastConfig)
+    toast.success("Atualização realizada.", toastConfig);
 
   const getEmpreendimentos = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       const response = await fetch(
-        '/api/vistorias/empreendimentos?page=1&pageSize=500&isActive=1',
+        "/api/vistorias/empreendimentos?page=1&pageSize=500&isActive=1",
         {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
-        }
-      )
+        },
+      );
 
       if (!response.ok) {
-        throw new Error('Erro ao carregar empreendimentos ativos')
+        throw new Error("Erro ao carregar empreendimentos ativos");
       }
 
-      const data = await response.json()
-      setEnterprises(data.data)
+      const data = await response.json();
+      setEnterprises(data.data);
     } catch (error) {
-      console.error(error)
+      console.error(error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const getUnitsByEnterprise = (enterpriseId: string) => {
-    if (!enterpriseId) return []
+    if (!enterpriseId) return [];
 
-    const enterprise = enterprises.find((emp) => emp.id === enterpriseId)
+    const enterprise = enterprises.find((emp) => emp.id === enterpriseId);
     return (
       enterprise?.units?.map((u) => ({
         ...u,
         enterpriseName: enterprise.name,
       })) || []
-    )
-  }
+    );
+  };
 
   // Obter blocos únicos das unidades do empreendimento selecionado
   const getAvailableBlocks = () => {
-    if (!selectedEnterprise) return []
-    const blocks = Array.from(new Set(units.map((u) => u.block)))
-    return blocks.filter(Boolean).sort((a, b) => a.localeCompare(b))
-  }
+    if (!selectedEnterprise) return [];
+    const blocks = Array.from(new Set(units.map((u) => u.block)));
+    return blocks.filter(Boolean).sort((a, b) => a.localeCompare(b));
+  };
 
   // Obter unidades únicas do empreendimento selecionado
   const getAvailableUnits = () => {
-    if (!selectedEnterprise) return []
-    return Array.from(units).sort((a, b) => a.unit.localeCompare(b.unit))
-  }
+    if (!selectedEnterprise) return [];
+    return Array.from(units).sort((a, b) => a.unit.localeCompare(b.unit));
+  };
 
   // Obter clientes únicos do empreendimento selecionado
   const getAvailableCustomers = () => {
-    if (!selectedEnterprise) return []
-    const customers = Array.from(new Set(units.map((u) => u.customerName)))
-    return customers.filter(Boolean).sort((a, b) => a.localeCompare(b))
-  }
+    if (!selectedEnterprise) return [];
+    const customers = Array.from(new Set(units.map((u) => u.customerName)));
+    return customers.filter(Boolean).sort((a, b) => a.localeCompare(b));
+  };
 
   useEffect(() => {
-    getEmpreendimentos()
-  }, [])
+    getEmpreendimentos();
+  }, []);
 
   useEffect(() => {
     if (enterprises.length > 0 && selectedEnterprise) {
-      const units = getUnitsByEnterprise(selectedEnterprise)
-      setUnits(units)
-      setModifiedUnits({})
+      const units = getUnitsByEnterprise(selectedEnterprise);
+      setUnits(units);
+      setModifiedUnits({});
     } else {
-      setUnits([])
+      setUnits([]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedEnterprise, enterprises])
+  }, [selectedEnterprise, enterprises]);
 
   const handleEnterpriseChange = (value: string) => {
-    setSelectedEnterprise(value)
+    setSelectedEnterprise(value);
     // Reset outros filtros quando mudar empreendimento
-    setSelectedBlock('ALL')
-    setSelectedUnit('ALL')
-    setSelectedCustomer('ALL')
-  }
+    setSelectedBlock("ALL");
+    setSelectedUnit("ALL");
+    setSelectedCustomer("ALL");
+  };
 
   const hasValidation = (unit: Unidade, validation: ValidationType) => {
     if (modifiedUnits[unit.id]) {
-      return modifiedUnits[unit.id].includes(validation)
+      return modifiedUnits[unit.id].includes(validation);
     }
-    return unit.validations.includes(validation)
-  }
+    return unit.validations.includes(validation);
+  };
 
   const handleCheckboxChange = (
     unit: Unidade,
     validation: ValidationType,
-    checked: boolean
+    checked: boolean,
   ) => {
     setModifiedUnits((prev) => {
-      const currentValidations = prev[unit.id] || unit.validations
+      const currentValidations = prev[unit.id] || unit.validations;
       const updatedValidations = checked
         ? [...currentValidations, validation]
-        : currentValidations.filter((v) => v !== validation)
+        : currentValidations.filter((v) => v !== validation);
 
       // Se as validações voltarem ao estado original, remover do modifiedUnits
-      const originalValidations = unit.validations
+      const originalValidations = unit.validations;
       const isSameAsOriginal =
         updatedValidations.length === originalValidations.length &&
-        updatedValidations.every((v) => originalValidations.includes(v))
+        updatedValidations.every((v) => originalValidations.includes(v));
 
       if (isSameAsOriginal) {
-        const newModified = { ...prev }
-        delete newModified[unit.id]
-        return newModified
+        const newModified = { ...prev };
+        delete newModified[unit.id];
+        return newModified;
       }
 
       return {
         ...prev,
         [unit.id]: updatedValidations,
-      }
-    })
-  }
+      };
+    });
+  };
 
   const handleFilterChange = (type: keyof typeof filters, checked: boolean) => {
     setFilters((prev) => ({
       ...prev,
       [type]: checked,
-    }))
-  }
+    }));
+  };
 
   const handleSaveChanges = async () => {
-    if (Object.keys(modifiedUnits).length === 0) return
+    if (Object.keys(modifiedUnits).length === 0) return;
 
-    console.log('🔵 [SAVE] Iniciando salvamento...')
-    console.log('🔵 [SAVE] Unidades modificadas:', modifiedUnits)
+    console.log("🔵 [SAVE] Iniciando salvamento...");
+    console.log("🔵 [SAVE] Unidades modificadas:", modifiedUnits);
     console.log(
-      '🔵 [SAVE] Total de unidades a salvar:',
-      Object.keys(modifiedUnits).length
-    )
+      "🔵 [SAVE] Total de unidades a salvar:",
+      Object.keys(modifiedUnits).length,
+    );
 
-    setIsSaving(true)
+    setIsSaving(true);
     try {
       for (const [unitId, validations] of Object.entries(modifiedUnits)) {
-        console.log(`🟡 [SAVE] Salvando unidade ${unitId}`)
+        console.log(`🟡 [SAVE] Salvando unidade ${unitId}`);
         console.log(
           `🟡 [SAVE] Validations para unidade ${unitId}:`,
-          validations
-        )
+          validations,
+        );
 
         const response = await fetch(`/api/vistorias/unidades?id=${unitId}`, {
-          method: 'PATCH',
+          method: "PATCH",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({ validations }),
-        })
+        });
 
         console.log(
           `🟢 [SAVE] Response status para ${unitId}:`,
-          response.status
-        )
+          response.status,
+        );
 
         if (!response.ok) {
           console.error(
             `🔴 [SAVE] Erro ao atualizar unidade ${unitId}:`,
-            response.statusText
-          )
-          errorNotifPatch()
-          throw new Error(`Erro ao atualizar unidade ${unitId}`)
+            response.statusText,
+          );
+          errorNotifPatch();
+          throw new Error(`Erro ao atualizar unidade ${unitId}`);
         }
 
-        const responseData = await response.json()
-        console.log(`🟢 [SAVE] Response data para ${unitId}:`, responseData)
+        const responseData = await response.json();
+        console.log(`🟢 [SAVE] Response data para ${unitId}:`, responseData);
       }
 
-      console.log('🟢 [SAVE] Todas as unidades salvas com sucesso!')
-      console.log('🟢 [SAVE] Atualizando estado local...')
+      console.log("🟢 [SAVE] Todas as unidades salvas com sucesso!");
+      console.log("🟢 [SAVE] Atualizando estado local...");
 
       setUnits((prevUnits) =>
         prevUnits.map((unit) =>
           modifiedUnits[unit.id]
             ? { ...unit, validations: modifiedUnits[unit.id] }
-            : unit
-        )
-      )
+            : unit,
+        ),
+      );
 
-      setModifiedUnits({})
-      console.log('🟢 [SAVE] Estado local atualizado!')
+      setModifiedUnits({});
+      console.log("🟢 [SAVE] Estado local atualizado!");
     } catch (error) {
-      console.error('🔴 [SAVE] Erro ao salvar alterações:', error)
+      console.error("🔴 [SAVE] Erro ao salvar alterações:", error);
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-    sucessNotifPatch()
-    console.log('🔵 [SAVE] Recarregando página em 3 segundos...')
+    sucessNotifPatch();
+    console.log("🔵 [SAVE] Recarregando página em 3 segundos...");
     setTimeout(() => {
-      window.location.reload()
-    }, 3000)
-  }
+      window.location.reload();
+    }, 3000);
+  };
 
   const filteredUnits = units
     .filter((unit) => {
       // Filtro de bloco
       if (
         selectedBlock &&
-        selectedBlock !== 'ALL' &&
+        selectedBlock !== "ALL" &&
         unit.block !== selectedBlock
       ) {
-        return false
+        return false;
       }
 
       // Filtro de unidade
-      if (selectedUnit && selectedUnit !== 'ALL' && unit.id !== selectedUnit) {
-        return false
+      if (selectedUnit && selectedUnit !== "ALL" && unit.id !== selectedUnit) {
+        return false;
       }
 
       // Filtro de cliente
       if (
         selectedCustomer &&
-        selectedCustomer !== 'ALL' &&
+        selectedCustomer !== "ALL" &&
         unit.customerName !== selectedCustomer
       ) {
-        return false
+        return false;
       }
 
-      const unitValidations = modifiedUnits[unit.id] || unit.validations
+      const unitValidations = modifiedUnits[unit.id] || unit.validations;
 
       // Filtros de validação (checkboxes)
       if (!filters.financial && !filters.quality && !filters.relationship) {
-        return true
+        return true;
       }
 
-      const matches = []
-      if (filters.financial) matches.push(unitValidations.includes('FINANCIAL'))
-      if (filters.quality) matches.push(unitValidations.includes('QUALITY'))
+      const matches = [];
+      if (filters.financial)
+        matches.push(unitValidations.includes("FINANCIAL"));
+      if (filters.quality) matches.push(unitValidations.includes("QUALITY"));
       if (filters.relationship)
-        matches.push(unitValidations.includes('RELATIONSHIP'))
+        matches.push(unitValidations.includes("RELATIONSHIP"));
 
-      return matches.length > 0 && matches.every((m) => m)
+      return matches.length > 0 && matches.every((m) => m);
     })
-    .sort((a, b) => a.unit.localeCompare(b.unit)) // Ordenar por unidade alfabeticamente
+    .sort((a, b) => a.unit.localeCompare(b.unit)); // Ordenar por unidade alfabeticamente
 
   const renderUnitCards = () => {
     if (loading) {
-      return <div className="text-center py-4">Carregando unidades...</div>
+      return <div className="text-center py-4">Carregando unidades...</div>;
     }
 
     if (filteredUnits.length === 0) {
-      return <div className="text-center py-4">Nenhuma unidade encontrada</div>
+      return <div className="text-center py-4">Nenhuma unidade encontrada</div>;
     }
 
     return filteredUnits.map((unit) => (
@@ -435,19 +436,19 @@ const DisponibilizarUnidades = () => {
           <div className="mr-6">
             <div className="flex items-center space-x-2 my-2">
               <Checkbox
-                checked={hasValidation(unit, 'FINANCIAL')}
+                checked={hasValidation(unit, "FINANCIAL")}
                 id={`financial-${unit.id}`}
                 onCheckedChange={(checked) =>
-                  handleCheckboxChange(unit, 'FINANCIAL', checked as boolean)
+                  handleCheckboxChange(unit, "FINANCIAL", checked as boolean)
                 }
-                disabled={!isCheckboxEnabled('FINANCIAL')}
+                disabled={!isCheckboxEnabled("FINANCIAL")}
               />
               <label
                 htmlFor={`financial-${unit.id}`}
                 className={`text-sm font-medium leading-none ${
-                  !isCheckboxEnabled('FINANCIAL')
-                    ? 'cursor-not-allowed opacity-50'
-                    : 'cursor-pointer'
+                  !isCheckboxEnabled("FINANCIAL")
+                    ? "cursor-not-allowed opacity-50"
+                    : "cursor-pointer"
                 }`}
               >
                 Financeiro
@@ -455,19 +456,19 @@ const DisponibilizarUnidades = () => {
             </div>
             <div className="flex items-center space-x-2 my-2">
               <Checkbox
-                checked={hasValidation(unit, 'QUALITY')}
+                checked={hasValidation(unit, "QUALITY")}
                 id={`quality-${unit.id}`}
                 onCheckedChange={(checked) =>
-                  handleCheckboxChange(unit, 'QUALITY', checked as boolean)
+                  handleCheckboxChange(unit, "QUALITY", checked as boolean)
                 }
-                disabled={!isCheckboxEnabled('QUALITY')}
+                disabled={!isCheckboxEnabled("QUALITY")}
               />
               <label
                 htmlFor={`quality-${unit.id}`}
                 className={`text-sm font-medium leading-none ${
-                  !isCheckboxEnabled('QUALITY')
-                    ? 'cursor-not-allowed opacity-50'
-                    : 'cursor-pointer'
+                  !isCheckboxEnabled("QUALITY")
+                    ? "cursor-not-allowed opacity-50"
+                    : "cursor-pointer"
                 }`}
               >
                 Qualidade
@@ -475,19 +476,19 @@ const DisponibilizarUnidades = () => {
             </div>
             <div className="flex items-center space-x-2 my-2">
               <Checkbox
-                checked={hasValidation(unit, 'RELATIONSHIP')}
+                checked={hasValidation(unit, "RELATIONSHIP")}
                 id={`relationship-${unit.id}`}
                 onCheckedChange={(checked) =>
-                  handleCheckboxChange(unit, 'RELATIONSHIP', checked as boolean)
+                  handleCheckboxChange(unit, "RELATIONSHIP", checked as boolean)
                 }
-                disabled={!isCheckboxEnabled('RELATIONSHIP')}
+                disabled={!isCheckboxEnabled("RELATIONSHIP")}
               />
               <label
                 htmlFor={`relationship-${unit.id}`}
                 className={`text-sm font-medium leading-none ${
-                  !isCheckboxEnabled('RELATIONSHIP')
-                    ? 'cursor-not-allowed opacity-50'
-                    : 'cursor-pointer'
+                  !isCheckboxEnabled("RELATIONSHIP")
+                    ? "cursor-not-allowed opacity-50"
+                    : "cursor-pointer"
                 }`}
               >
                 Entregas
@@ -496,8 +497,8 @@ const DisponibilizarUnidades = () => {
           </div>
         </Card>
       </div>
-    ))
-  }
+    ));
+  };
 
   return (
     <div className="w-full">
@@ -611,11 +612,11 @@ const DisponibilizarUnidades = () => {
                 disabled={!selectedEnterprise}
               >
                 <span className="truncate">
-                  {selectedCustomer === 'ALL'
-                    ? 'TODOS'
+                  {selectedCustomer === "ALL"
+                    ? "TODOS"
                     : getAvailableCustomers().find(
-                        (c) => c === selectedCustomer
-                      ) || 'TODOS'}
+                        (c) => c === selectedCustomer,
+                      ) || "TODOS"}
                 </span>
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
@@ -632,16 +633,16 @@ const DisponibilizarUnidades = () => {
                     <CommandItem
                       value="ALL"
                       onSelect={() => {
-                        setSelectedCustomer('ALL')
-                        setOpenCustomerPopover(false)
+                        setSelectedCustomer("ALL");
+                        setOpenCustomerPopover(false);
                       }}
                       className="text-xs"
                     >
                       <Check
                         className={`mr-2 h-4 w-4 ${
-                          selectedCustomer === 'ALL'
-                            ? 'opacity-100'
-                            : 'opacity-0'
+                          selectedCustomer === "ALL"
+                            ? "opacity-100"
+                            : "opacity-0"
                         }`}
                       />
                       TODOS OS CLIENTES
@@ -651,16 +652,16 @@ const DisponibilizarUnidades = () => {
                         key={customer}
                         value={customer}
                         onSelect={() => {
-                          setSelectedCustomer(customer)
-                          setOpenCustomerPopover(false)
+                          setSelectedCustomer(customer);
+                          setOpenCustomerPopover(false);
                         }}
                         className="text-xs"
                       >
                         <Check
                           className={`mr-2 h-4 w-4 ${
                             selectedCustomer === customer
-                              ? 'opacity-100'
-                              : 'opacity-0'
+                              ? "opacity-100"
+                              : "opacity-0"
                           }`}
                         />
                         {customer}
@@ -680,16 +681,16 @@ const DisponibilizarUnidades = () => {
             <button
               onClick={() => {
                 if (isAdminUnlocked) {
-                  handleAdminLock()
+                  handleAdminLock();
                 } else {
-                  setShowAdminDialog(true)
+                  setShowAdminDialog(true);
                 }
               }}
               className="mb-1 text-xs hover:scale-110 transition-transform"
               title={
                 isAdminUnlocked
-                  ? 'Modo Admin Ativado - Clique para desativar'
-                  : 'Desbloquear modo Admin'
+                  ? "Modo Admin Ativado - Clique para desativar"
+                  : "Desbloquear modo Admin"
               }
             >
               {isAdminUnlocked ? (
@@ -704,7 +705,7 @@ const DisponibilizarUnidades = () => {
               id="filter-financial"
               checked={filters.financial}
               onCheckedChange={(checked) =>
-                handleFilterChange('financial', checked as boolean)
+                handleFilterChange("financial", checked as boolean)
               }
             />
             <label
@@ -719,7 +720,7 @@ const DisponibilizarUnidades = () => {
               id="filter-quality"
               checked={filters.quality}
               onCheckedChange={(checked) =>
-                handleFilterChange('quality', checked as boolean)
+                handleFilterChange("quality", checked as boolean)
               }
             />
             <label
@@ -734,7 +735,7 @@ const DisponibilizarUnidades = () => {
               id="filter-relationship"
               checked={filters.relationship}
               onCheckedChange={(checked) =>
-                handleFilterChange('relationship', checked as boolean)
+                handleFilterChange("relationship", checked as boolean)
               }
             />
             <label
@@ -752,7 +753,7 @@ const DisponibilizarUnidades = () => {
         <div className="mt-4 flex justify-end">
           <Button onClick={handleSaveChanges} disabled={isSaving}>
             {isSaving
-              ? 'Salvando...'
+              ? "Salvando..."
               : `Salvar alterações (${Object.keys(modifiedUnits).length})`}
           </Button>
         </div>
@@ -781,8 +782,8 @@ const DisponibilizarUnidades = () => {
                 value={adminPassword}
                 onChange={(e) => setAdminPassword(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleAdminUnlock()
+                  if (e.key === "Enter") {
+                    handleAdminUnlock();
                   }
                 }}
                 className="col-span-3"
@@ -794,8 +795,8 @@ const DisponibilizarUnidades = () => {
             <Button
               variant="outline"
               onClick={() => {
-                setShowAdminDialog(false)
-                setAdminPassword('')
+                setShowAdminDialog(false);
+                setAdminPassword("");
               }}
             >
               Cancelar
@@ -805,7 +806,7 @@ const DisponibilizarUnidades = () => {
         </DialogContent>
       </Dialog>
     </div>
-  )
-}
+  );
+};
 
-export default DisponibilizarUnidades
+export default DisponibilizarUnidades;

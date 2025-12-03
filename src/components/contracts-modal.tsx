@@ -6,38 +6,38 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
+} from "@/components/ui/alert-dialog";
 import {
   Contrato,
   ContratosTabela,
   FetchHandler,
-} from '../app/dashboard/(solucoes)/calculadora-juros/_components/contratos-tabela'
-import { Dispatch, SetStateAction } from 'react'
-import { GoX } from 'react-icons/go'
-import { formatarCpfCnpj } from '@/util'
+} from "../app/dashboard/(solucoes)/calculadora-juros/_components/contratos-tabela";
+import { Dispatch, SetStateAction } from "react";
+import { GoX } from "react-icons/go";
+import { formatarCpfCnpj } from "@/util";
 
 export type CombinedData<T, U> = {
-  incomeByBills: T
-  currentDebit: U
-}
+  incomeByBills: T;
+  currentDebit: U;
+};
 
 type ContractsModalProps<T, U = never> = {
-  action: Dispatch<SetStateAction<boolean>>
-  contratos: Contrato[]
+  action: Dispatch<SetStateAction<boolean>>;
+  contratos: Contrato[];
   document: {
-    documentType: 'cpf' | 'cnpj'
-    documentNumber: string
-    customerId: string
-  }
-  setContratosInfo: Dispatch<SetStateAction<Contrato>>
-  fetchHandler?: FetchHandler<T>
-  setData?: Dispatch<SetStateAction<T>>
+    documentType: "cpf" | "cnpj";
+    documentNumber: string;
+    customerId: string;
+  };
+  setContratosInfo: Dispatch<SetStateAction<Contrato>>;
+  fetchHandler?: FetchHandler<T>;
+  setData?: Dispatch<SetStateAction<T>>;
   combinedHandlers?: {
-    incomeByBills: FetchHandler<T>
-    currentDebit: FetchHandler<U>
-  }
-  setCombinedData?: Dispatch<SetStateAction<CombinedData<T, U>>>
-}
+    incomeByBills: FetchHandler<T>;
+    currentDebit: FetchHandler<U>;
+  };
+  setCombinedData?: Dispatch<SetStateAction<CombinedData<T, U>>>;
+};
 
 export function ContractsModal<T, U>({
   action,
@@ -66,7 +66,7 @@ export function ContractsModal<T, U>({
             />
           </div>
           <AlertDialogTitle>
-            Contratos atrelados ao{' '}
+            Contratos atrelados ao{" "}
             <span className="uppercase">{document.documentType}: </span>
             {formatarCpfCnpj(document.documentNumber)}
           </AlertDialogTitle>
@@ -81,7 +81,7 @@ export function ContractsModal<T, U>({
               setCombinedData={setCombinedData}
               document={document.documentNumber}
               documentType={document.documentType}
-              correctionDate={new Date().toISOString().split('T')[0]}
+              correctionDate={new Date().toISOString().split("T")[0]}
             />
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -91,5 +91,5 @@ export function ContractsModal<T, U>({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }

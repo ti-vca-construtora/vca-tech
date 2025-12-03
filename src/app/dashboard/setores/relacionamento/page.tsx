@@ -1,20 +1,20 @@
-'use client'
+"use client";
 
-import React from 'react'
-import { CiCalculator1 } from 'react-icons/ci'
+import React from "react";
+import { CiCalculator1 } from "react-icons/ci";
 
-import { Solucoes, SolucoesCard } from '@/components/solucoes-card'
+import { Solucoes, SolucoesCard } from "@/components/solucoes-card";
 
 const solucoesData: Solucoes[] = [
   {
-    titulo: 'Calculadora de Antecipação de Parcelas',
-    descricao: 'Efetua o cálculo de juros para antecipação de parcelas.',
+    titulo: "Calculadora de Antecipação de Parcelas",
+    descricao: "Efetua o cálculo de juros para antecipação de parcelas.",
     Icon: CiCalculator1,
-    href: 'calculadora-juros?title=AVP - Calculadora de Juros de Parcelas',
-    area: 'financeiro',
-    permission: 'avp',
+    href: "calculadora-juros?title=AVP - Calculadora de Juros de Parcelas",
+    area: "financeiro",
+    permission: "avp",
   },
-]
+];
 
 const Relacionamento = () => {
   return (
@@ -31,7 +31,7 @@ const Relacionamento = () => {
         />
       ))}
     </div>
-  )
-}
+  );
+};
 
-export default Relacionamento
+export default Relacionamento;

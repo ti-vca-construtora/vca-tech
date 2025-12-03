@@ -1,57 +1,57 @@
 /* eslint-disable prettier/prettier */
-import chromium from '@sparticuz/chromium-min'
-import { addHours, format, parseISO } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { NextResponse } from 'next/server'
-import puppeteer, { Browser } from 'puppeteer'
-import puppeteerCore, { type Browser as BrowserCore } from 'puppeteer-core'
+import chromium from "@sparticuz/chromium-min";
+import { addHours, format, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { NextResponse } from "next/server";
+import puppeteer, { Browser } from "puppeteer";
+import puppeteerCore, { type Browser as BrowserCore } from "puppeteer-core";
 
 interface Inspection {
-  id: string
-  status: string
+  id: string;
+  status: string;
   inspectionSlot: {
-    startAt: string | Date
-    endAt: string | Date
-  }
-  unitId: string
+    startAt: string | Date;
+    endAt: string | Date;
+  };
+  unitId: string;
   unit: {
-    unit: string
+    unit: string;
     development: {
-      name: string
-    }
-  }
+      name: string;
+    };
+  };
 }
 
 function generateAgendamentosHTML(data: {
-  inspections: Inspection[]
+  inspections: Inspection[];
   filters: {
-    startDate: string
-    endDate: string
-    development: string
-  }
+    startDate: string;
+    endDate: string;
+    development: string;
+  };
 }) {
-  const { inspections, filters } = data
+  const { inspections, filters } = data;
 
   const formatDate = (dateStr: string) => {
-    return format(parseISO(dateStr), 'dd/MM/yyyy', { locale: ptBR })
-  }
+    return format(parseISO(dateStr), "dd/MM/yyyy", { locale: ptBR });
+  };
 
   const formatDateTime = (date: string | Date) => {
     const dateObj =
-      typeof date === 'string' ? addHours(parseISO(date), 3) : date
-    return format(dateObj, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
-  }
+      typeof date === "string" ? addHours(parseISO(date), 3) : date;
+    return format(dateObj, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'COMPLETED':
-        return '<span style="background: #dcfce7; color: #16a34a; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 500;">Entregue</span>'
-      case 'RESCHEDULED':
-        return '<span style="background: #fef9c3; color: #ca8a04; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 500;">Recusado</span>'
+      case "COMPLETED":
+        return '<span style="background: #dcfce7; color: #16a34a; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 500;">Entregue</span>';
+      case "RESCHEDULED":
+        return '<span style="background: #fef9c3; color: #ca8a04; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 500;">Recusado</span>';
       default:
-        return '<span style="background: #f3f4f6; color: #374151; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 500;">Agendado</span>'
+        return '<span style="background: #f3f4f6; color: #374151; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 500;">Agendado</span>';
     }
-  }
+  };
 
   return `
     <!DOCTYPE html>
@@ -173,12 +173,12 @@ function generateAgendamentosHTML(data: {
               </div>
               <div class="inspection-details">
                 <div class="inspection-detail"><strong>Unidade:</strong> ${inspection.unit.unit}</div>
-                <div class="inspection-detail"><strong>Data/Hora:</strong> ${formatDateTime(inspection.inspectionSlot.startAt)} - ${format(typeof inspection.inspectionSlot.endAt === 'string' ? addHours(parseISO(inspection.inspectionSlot.endAt), 3) : inspection.inspectionSlot.endAt, 'HH:mm')}</div>
+                <div class="inspection-detail"><strong>Data/Hora:</strong> ${formatDateTime(inspection.inspectionSlot.startAt)} - ${format(typeof inspection.inspectionSlot.endAt === "string" ? addHours(parseISO(inspection.inspectionSlot.endAt), 3) : inspection.inspectionSlot.endAt, "HH:mm")}</div>
               </div>
             </div>
-          `
+          `,
                 )
-                .join('')
+                .join("")
         }
 
         <div class="footer">
@@ -187,25 +187,28 @@ function generateAgendamentosHTML(data: {
         </div>
       </body>
     </html>
-  `
+  `;
 }
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
-    const { htmlContent, fileName, type, data } = body
+    const body = await req.json();
+    const { htmlContent, fileName, type, data } = body;
 
-    let finalHtml = htmlContent
-    let pdfFileName = fileName ? `${fileName}.pdf` : 'documento.pdf'
+    let finalHtml = htmlContent;
+    let pdfFileName = fileName ? `${fileName}.pdf` : "documento.pdf";
 
     // Se for do tipo 'agendamentos', gerar HTML específico
-    if (type === 'agendamentos' && data) {
-      pdfFileName = `agendamentos-${format(new Date(), 'dd-MM-yyyy-HHmmss')}.pdf`
-      finalHtml = generateAgendamentosHTML(data)
+    if (type === "agendamentos" && data) {
+      pdfFileName = `agendamentos-${format(new Date(), "dd-MM-yyyy-HHmmss")}.pdf`;
+      finalHtml = generateAgendamentosHTML(data);
     }
 
     if (!finalHtml) {
-      return NextResponse.json({ error: 'HTML não fornecido' }, { status: 400 })
+      return NextResponse.json(
+        { error: "HTML não fornecido" },
+        { status: 400 },
+      );
     }
 
     const fullHtml = `
@@ -218,64 +221,64 @@ export async function POST(req: Request) {
           ${finalHtml}
         </body>
       </html>
-    `
-    console.log('Iniciando Puppeteer...')
-    console.time('Geração do PDF')
+    `;
+    console.log("Iniciando Puppeteer...");
+    console.time("Geração do PDF");
 
-    let browser: Browser | BrowserCore
+    let browser: Browser | BrowserCore;
 
-    console.log('Environment: ', process.env.NODE_ENV)
+    console.log("Environment: ", process.env.NODE_ENV);
 
     if (
-      process.env.NODE_ENV === 'production' ||
-      process.env.VERCEL_ENV === 'production'
+      process.env.NODE_ENV === "production" ||
+      process.env.VERCEL_ENV === "production"
     ) {
       const executablePath = await chromium.executablePath(
-        'https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar'
-      )
+        "https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar",
+      );
       browser = await puppeteerCore.launch({
         executablePath,
         args: chromium.args,
         headless: true,
         defaultViewport: chromium.defaultViewport,
-      })
+      });
     } else {
       browser = await puppeteer.launch({
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      })
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      });
     }
 
-    console.log('Puppeteer iniciado, criando página...')
+    console.log("Puppeteer iniciado, criando página...");
 
-    const page = await browser.newPage()
+    const page = await browser.newPage();
 
     await page.setContent(fullHtml, {
-      waitUntil: 'load',
+      waitUntil: "load",
       timeout: 15000,
-    })
+    });
 
-    console.log('Gerando PDF...')
+    console.log("Gerando PDF...");
 
     const pdfBuffer = await page.pdf({
-      format: 'A4',
+      format: "A4",
       printBackground: true,
       margin: { top: 10, bottom: 10, left: 10, right: 10 },
       scale: 0.8,
-    })
+    });
 
-    console.log('PDF gerado com sucesso!')
-    console.timeEnd('Geração do PDF')
+    console.log("PDF gerado com sucesso!");
+    console.timeEnd("Geração do PDF");
 
-    await browser.close()
+    await browser.close();
 
     return new NextResponse(Buffer.from(pdfBuffer), {
       headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${pdfFileName}"`,
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="${pdfFileName}"`,
       },
-    })
+    });
   } catch (error) {
-    return NextResponse.json({ error }, { status: 500 })
+    return NextResponse.json({ error }, { status: 500 });
   }
 }

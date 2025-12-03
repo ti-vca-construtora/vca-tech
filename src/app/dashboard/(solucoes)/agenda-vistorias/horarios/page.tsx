@@ -1,90 +1,90 @@
 /* eslint-disable prettier/prettier */
-'use client'
+"use client";
 
-import { Card } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
+import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { LoaderCircle } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
-import { Calendar } from './_components/calendar'
-import { DisponibilizarHorarios } from './_components/disponibilizar-horarios'
-import CriarSlotsBulk from './_components/fnc-criaSlotsBulk'
-import vrfCriaSlot from './_components/fnc-verificaUltSlot'
+} from "@/components/ui/select";
+import { LoaderCircle } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Calendar } from "./_components/calendar";
+import { DisponibilizarHorarios } from "./_components/disponibilizar-horarios";
+import CriarSlotsBulk from "./_components/fnc-criaSlotsBulk";
+import vrfCriaSlot from "./_components/fnc-verificaUltSlot";
 
 type Empreendimento = {
-  id: string
-  name: string
-  isActive: boolean
-}
+  id: string;
+  name: string;
+  isActive: boolean;
+};
 
 const Horarios = () => {
-  const [empreendimentos, setEmpreendimentos] = useState<Empreendimento[]>([])
-  const [selectedDevelopment, setSelectedDevelopment] = useState<string>('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [empreendimentos, setEmpreendimentos] = useState<Empreendimento[]>([]);
+  const [selectedDevelopment, setSelectedDevelopment] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const getEmpreendimentos = async () => {
     const response = await fetch(
-      '/api/vistorias/empreendimentos?page=1&pageSize=999&isActive=1',
+      "/api/vistorias/empreendimentos?page=1&pageSize=999&isActive=1",
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         // eslint-disable-next-line prettier/prettier
-      }
-    )
+      },
+    );
 
     if (!response.ok) {
-      console.error('Erro ao carregar empreendimentos')
-      return
+      console.error("Erro ao carregar empreendimentos");
+      return;
     }
 
-    const data = await response.json()
-    setEmpreendimentos(data.data)
-  }
+    const data = await response.json();
+    setEmpreendimentos(data.data);
+  };
 
-  const initRef = useRef(false)
+  const initRef = useRef(false);
 
   const checkSlots = async () => {
-    console.log('[HORARIOS] Iniciando verificação de slots...')
-    setIsLoading(true)
+    console.log("[HORARIOS] Iniciando verificação de slots...");
+    setIsLoading(true);
     try {
       // retorna lista de empreendimentos sem agenda completa
-      console.log('[HORARIOS] Chamando vrfCriaSlot...')
-      const missingIds = await vrfCriaSlot()
-      console.log('[HORARIOS] Empreendimentos faltantes:', missingIds)
+      console.log("[HORARIOS] Chamando vrfCriaSlot...");
+      const missingIds = await vrfCriaSlot();
+      console.log("[HORARIOS] Empreendimentos faltantes:", missingIds);
 
       if (missingIds && missingIds.length > 0) {
         console.log(
-          '[HORARIOS] Criando slots para',
+          "[HORARIOS] Criando slots para",
           missingIds.length,
-          'empreendimentos'
-        )
-        await CriarSlotsBulk(missingIds)
-        console.log('[HORARIOS] Slots criados com sucesso')
+          "empreendimentos",
+        );
+        await CriarSlotsBulk(missingIds);
+        console.log("[HORARIOS] Slots criados com sucesso");
       } else {
-        console.log('[HORARIOS] Nenhum empreendimento precisa de slots')
+        console.log("[HORARIOS] Nenhum empreendimento precisa de slots");
       }
     } catch (error) {
-      console.error('[HORARIOS] Erro ao verificar/criar slots:', error)
+      console.error("[HORARIOS] Erro ao verificar/criar slots:", error);
     } finally {
-      setIsLoading(false)
-      console.log('[HORARIOS] Verificação finalizada')
+      setIsLoading(false);
+      console.log("[HORARIOS] Verificação finalizada");
     }
-  }
+  };
 
   useEffect(() => {
-    if (initRef.current) return
-    initRef.current = true
-    getEmpreendimentos()
-    checkSlots()
-  }, [])
+    if (initRef.current) return;
+    initRef.current = true;
+    getEmpreendimentos();
+    checkSlots();
+  }, []);
 
   return (
     <section className="flex p-6 flex-col">
@@ -128,7 +128,7 @@ const Horarios = () => {
         </>
       )}
     </section>
-  )
-}
+  );
+};
 
-export default Horarios
+export default Horarios;

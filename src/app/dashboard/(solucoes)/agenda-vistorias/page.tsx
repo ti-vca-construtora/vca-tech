@@ -1,5 +1,5 @@
-import { RouteGuard } from '@/components/route-guard'
-import AgendamentoTools from './_components/options'
+import { RouteGuard } from "@/components/route-guard";
+import AgendamentoTools from "./_components/options";
 
 export default function AgendaVistorias() {
   return (
@@ -11,5 +11,5 @@ export default function AgendaVistorias() {
         <AgendamentoTools />
       </div>
     </RouteGuard>
-  )
+  );
 }

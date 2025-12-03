@@ -1,75 +1,75 @@
 /* eslint-disable prettier/prettier */
-'use client'
+"use client";
 
-import { rtdb } from '@/lib/firebase'
-import { cn } from '@/lib/utils'
-import useEmblaCarousel from 'embla-carousel-react'
-import { onValue, ref } from 'firebase/database'
-import Image from 'next/image'
-import { useCallback, useEffect, useState } from 'react'
+import { rtdb } from "@/lib/firebase";
+import { cn } from "@/lib/utils";
+import useEmblaCarousel from "embla-carousel-react";
+import { onValue, ref } from "firebase/database";
+import Image from "next/image";
+import { useCallback, useEffect, useState } from "react";
 
 const slides = [
-  '/assets/vca001.png',
-  '/assets/vca002.png',
-  '/assets/vca003.png',
-  '/assets/vca004.png',
-  '/assets/vca005.png',
-]
+  "/assets/vca001.png",
+  "/assets/vca002.png",
+  "/assets/vca003.png",
+  "/assets/vca004.png",
+  "/assets/vca005.png",
+];
 
-const equipmentKeys = ['vca001', 'vca002', 'vca003', 'vca004', 'vca005']
+const equipmentKeys = ["vca001", "vca002", "vca003", "vca004", "vca005"];
 
 export function Carousel({
   onSlideChange,
   onAvailableCountChange,
   onOpenModal,
 }: {
-  onSlideChange?: (index: number) => void
-  onAvailableCountChange?: (count: number) => void
-  onOpenModal?: () => void
+  onSlideChange?: (index: number) => void;
+  onAvailableCountChange?: (count: number) => void;
+  onOpenModal?: () => void;
 }) {
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false })
-  const [selectedIndex, setSelectedIndex] = useState(0)
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false });
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const [availability, setAvailability] = useState<{ [key: string]: boolean }>(
-    {}
-  )
+    {},
+  );
 
-  const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi])
-  const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi])
+  const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
+  const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
 
   const onSelect = useCallback(() => {
-    if (!emblaApi) return
-    const index = emblaApi.selectedScrollSnap()
-    setSelectedIndex(index)
-    onSlideChange?.(index)
-  }, [emblaApi, onSlideChange])
+    if (!emblaApi) return;
+    const index = emblaApi.selectedScrollSnap();
+    setSelectedIndex(index);
+    onSlideChange?.(index);
+  }, [emblaApi, onSlideChange]);
 
   useEffect(() => {
-    if (!emblaApi) return
+    if (!emblaApi) return;
 
-    emblaApi.on('select', onSelect)
-    emblaApi.scrollTo(2)
-    setSelectedIndex(2)
-  }, [emblaApi, onSelect])
+    emblaApi.on("select", onSelect);
+    emblaApi.scrollTo(2);
+    setSelectedIndex(2);
+  }, [emblaApi, onSelect]);
   useEffect(() => {
-    const equipmentsRef = ref(rtdb, 'equipments')
+    const equipmentsRef = ref(rtdb, "equipments");
     const unsubscribe = onValue(equipmentsRef, (snapshot) => {
-      const data = snapshot.val()
-      const newAvailability: { [key: string]: boolean } = {}
-      let availableCount = 0
+      const data = snapshot.val();
+      const newAvailability: { [key: string]: boolean } = {};
+      let availableCount = 0;
 
       for (const key of equipmentKeys) {
-        const isAvailable = data?.[key]?.available ?? false
-        newAvailability[key] = isAvailable
-        if (isAvailable) availableCount++
+        const isAvailable = data?.[key]?.available ?? false;
+        newAvailability[key] = isAvailable;
+        if (isAvailable) availableCount++;
       }
 
-      setAvailability(newAvailability)
+      setAvailability(newAvailability);
 
-      onAvailableCountChange?.(availableCount)
-    })
+      onAvailableCountChange?.(availableCount);
+    });
 
-    return () => unsubscribe()
-  }, [onAvailableCountChange])
+    return () => unsubscribe();
+  }, [onAvailableCountChange]);
 
   return (
     <div className="relative w-5/6 flex flex-col items-center justify-center select-none">
@@ -97,10 +97,10 @@ export function Carousel({
                   width={500}
                   height={300}
                   className={cn(
-                    'object-contain w-full h-auto transition-transform duration-500 cursor-pointer rounded-xl',
+                    "object-contain w-full h-auto transition-transform duration-500 cursor-pointer rounded-xl",
                     selectedIndex === index
-                      ? 'scale-100'
-                      : 'scale-75 opacity-50'
+                      ? "scale-100"
+                      : "scale-75 opacity-50",
                   )}
                 />
                 {selectedIndex === index && (
@@ -132,5 +132,5 @@ export function Carousel({
         </button>
       </div>
     </div>
-  )
+  );
 }

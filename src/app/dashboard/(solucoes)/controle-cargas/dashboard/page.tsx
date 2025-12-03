@@ -1,94 +1,94 @@
 /* eslint-disable @next/next/no-img-element */
 /* eslint-disable prettier/prettier */
-'use client'
+"use client";
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 // using native <img> for base64 previews to avoid required width/height from next/image
-import { useEffect, useState } from 'react'
-import { FaQrcode } from 'react-icons/fa6'
-import { IoMdCamera } from 'react-icons/io'
+import { useEffect, useState } from "react";
+import { FaQrcode } from "react-icons/fa6";
+import { IoMdCamera } from "react-icons/io";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL as string
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 const SUPABASE_PUBLISHABLE_KEY = process.env
-  .NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as string
+  .NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as string;
 
-const supabase: SupabaseClient = (typeof window !== 'undefined' &&
-  createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)) as SupabaseClient
+const supabase: SupabaseClient = (typeof window !== "undefined" &&
+  createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)) as SupabaseClient;
 
 type Submission = {
-  id: number
-  uid: string | null
-  nome: string | null
-  cpf: string | null
-  obra: string | null
-  auth: string | null
-  data: string | null // timestamp string
-  base64: string | null
-}
+  id: number;
+  uid: string | null;
+  nome: string | null;
+  cpf: string | null;
+  obra: string | null;
+  auth: string | null;
+  data: string | null; // timestamp string
+  base64: string | null;
+};
 
 const Dashboard = () => {
-  const [rows, setRows] = useState<Submission[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [rows, setRows] = useState<Submission[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // filters
-  const [nome, setNome] = useState('')
-  const [cpf, setCpf] = useState('')
-  const [obra, setObra] = useState('')
-  const [dateFrom, setDateFrom] = useState('') // yyyy-mm-dd
-  const [dateTo, setDateTo] = useState('') // yyyy-mm-dd
+  const [nome, setNome] = useState("");
+  const [cpf, setCpf] = useState("");
+  const [obra, setObra] = useState("");
+  const [dateFrom, setDateFrom] = useState(""); // yyyy-mm-dd
+  const [dateTo, setDateTo] = useState(""); // yyyy-mm-dd
 
   // image modal
-  const [selectedImage, setSelectedImage] = useState<string | null>(null)
-  const [selectedAuth, setSelectedAuth] = useState<string | null>(null)
-  const [obrasOptions, setObrasOptions] = useState<string[]>([])
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedAuth, setSelectedAuth] = useState<string | null>(null);
+  const [obrasOptions, setObrasOptions] = useState<string[]>([]);
 
   const formatDate = (dateString?: string | null) => {
-    if (!dateString) return ''
-    const d = new Date(dateString)
+    if (!dateString) return "";
+    const d = new Date(dateString);
     // adjust stored timestamp by -3 hours to compensate timezone difference
-    d.setHours(d.getHours() - 3)
-    const pad = (n: number) => String(n).padStart(2, '0')
+    d.setHours(d.getHours() - 3);
+    const pad = (n: number) => String(n).padStart(2, "0");
     return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} - ${pad(
       // eslint-disable-next-line prettier/prettier
-      d.getHours()
-    )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
-  }
+      d.getHours(),
+    )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  };
 
   const downloadReport = () => {
-    const now = new Date()
-    const generated = `${String(now.getDate()).padStart(2, '0')}/${String(
+    const now = new Date();
+    const generated = `${String(now.getDate()).padStart(2, "0")}/${String(
       // eslint-disable-next-line prettier/prettier
-      now.getMonth() + 1
+      now.getMonth() + 1,
     ).padStart(
       2,
       // eslint-disable-next-line prettier/prettier
-      '0'
-    )}/${now.getFullYear()} - ${String(now.getHours()).padStart(2, '0')}:${String(
+      "0",
+    )}/${now.getFullYear()} - ${String(now.getHours()).padStart(2, "0")}:${String(
       // eslint-disable-next-line prettier/prettier
-      now.getMinutes()
-    ).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`
+      now.getMinutes(),
+    ).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
 
     const filters = [
-      `Nome: ${nome || 'Todos'}`,
-      `CPF: ${cpf || 'Todos'}`,
-      `Obra: ${obra || 'Todas as obras'}`,
-      `Data de: ${dateFrom || '---'}`,
-      `Data até: ${dateTo || '---'}`,
-    ]
+      `Nome: ${nome || "Todos"}`,
+      `CPF: ${cpf || "Todos"}`,
+      `Obra: ${obra || "Todas as obras"}`,
+      `Data de: ${dateFrom || "---"}`,
+      `Data até: ${dateTo || "---"}`,
+    ];
 
     const rowsHtml = rows
       .map(
         (r) => `
         <tr>
-          <td style="padding:6px;border:1px solid #ddd">${r.nome ?? ''}</td>
-          <td style="padding:6px;border:1px solid #ddd">${r.cpf ?? ''}</td>
-          <td style="padding:6px;border:1px solid #ddd">${r.obra ?? ''}</td>
+          <td style="padding:6px;border:1px solid #ddd">${r.nome ?? ""}</td>
+          <td style="padding:6px;border:1px solid #ddd">${r.cpf ?? ""}</td>
+          <td style="padding:6px;border:1px solid #ddd">${r.obra ?? ""}</td>
           <td style="padding:6px;border:1px solid #ddd">${formatDate(r.data)}</td>
-          <td style="padding:6px;border:1px solid #ddd">${r.auth ?? ''}</td>
-        </tr>`
+          <td style="padding:6px;border:1px solid #ddd">${r.auth ?? ""}</td>
+        </tr>`,
       )
-      .join('')
+      .join("");
 
     const html = `<!doctype html>
       <html>
@@ -99,7 +99,7 @@ const Dashboard = () => {
       <body>
         <h2>Relatório - Controle de Cargas</h2>
         <p>Gerada em: <strong>${generated}</strong></p>
-        <p>Filtros: ${filters.join(' | ')}</p>
+        <p>Filtros: ${filters.join(" | ")}</p>
         <p>Registros: <strong>${rows.length}</strong></p>
         <table style="border-collapse:collapse;width:100%;margin-top:12px">
           <thead>
@@ -116,14 +116,16 @@ const Dashboard = () => {
           </tbody>
         </table>
       </body>
-      </html>`
+      </html>`;
 
-    const win = window.open('', '_blank')
+    const win = window.open("", "_blank");
     if (!win) {
-      alert('Não foi possível abrir a janela — verifique bloqueador de popups.')
-      return
+      alert(
+        "Não foi possível abrir a janela — verifique bloqueador de popups.",
+      );
+      return;
     }
-    win.document.open()
+    win.document.open();
     win.document.write(`
       <html>
         <head>
@@ -135,119 +137,119 @@ const Dashboard = () => {
           ${html}
         </body>
       </html>
-    `)
-    win.document.close()
-    win.focus()
+    `);
+    win.document.close();
+    win.focus();
     // delay print slightly to allow browser to layout
     setTimeout(() => {
       try {
-        win.print()
+        win.print();
       } catch (e) {
         // ignore
       }
-    }, 300)
+    }, 300);
     // optional: close after print
     setTimeout(() => {
       try {
-        win.close()
+        win.close();
       } catch (e) {
         // ignore
       }
-    }, 500)
-  }
+    }, 500);
+  };
 
   const buildQuery = () => {
     let query = supabase
-      .from('submits')
-      .select('*', { count: 'exact' })
-      .order('id', { ascending: false })
+      .from("submits")
+      .select("*", { count: "exact" })
+      .order("id", { ascending: false });
 
     if (nome.trim()) {
-      query = query.ilike('nome', `%${nome.trim()}%`)
+      query = query.ilike("nome", `%${nome.trim()}%`);
     }
     if (cpf.trim()) {
-      query = query.ilike('cpf', `%${cpf.trim()}%`)
+      query = query.ilike("cpf", `%${cpf.trim()}%`);
     }
     if (obra.trim()) {
       // exact match for selected obra
-      query = query.eq('obra', obra.trim())
+      query = query.eq("obra", obra.trim());
     }
     if (dateFrom) {
-      const startISO = new Date(dateFrom).toISOString()
-      query = query.gte('data', startISO)
+      const startISO = new Date(dateFrom).toISOString();
+      query = query.gte("data", startISO);
     }
     if (dateTo) {
       // include whole day for dateTo
-      const end = new Date(dateTo)
-      end.setHours(23, 59, 59, 999)
-      query = query.lte('data', end.toISOString())
+      const end = new Date(dateTo);
+      end.setHours(23, 59, 59, 999);
+      query = query.lte("data", end.toISOString());
     }
 
-    return query
-  }
+    return query;
+  };
 
   const fetchRows = async () => {
     if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
       setError(
         // eslint-disable-next-line prettier/prettier
-        'Supabase env vars não configuradas: NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'
-      )
-      console.error('Supabase env vars missing', {
+        "Supabase env vars não configuradas: NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+      );
+      console.error("Supabase env vars missing", {
         SUPABASE_URL,
         SUPABASE_PUBLISHABLE_KEY,
-      })
-      return
+      });
+      return;
     }
 
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     try {
-      const query = buildQuery()
-      const { data, count: returnedCount, error: supError } = await query
-      console.log('Supabase query', { data, returnedCount, supError })
+      const query = buildQuery();
+      const { data, count: returnedCount, error: supError } = await query;
+      console.log("Supabase query", { data, returnedCount, supError });
 
       if (supError) {
-        setError(supError.message)
-        setRows([])
+        setError(supError.message);
+        setRows([]);
       } else {
-        setRows((data as Submission[]) || [])
+        setRows((data as Submission[]) || []);
       }
     } catch (err) {
-      setError(String(err))
-      setRows([])
+      setError(String(err));
+      setRows([]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
     // initial load
-    fetchRows()
+    fetchRows();
 
     // fetch unique obras
     const fetchObras = async () => {
       try {
-        const { data } = await supabase.from('submits').select('obra')
-        const set = new Set<string>()
+        const { data } = await supabase.from("submits").select("obra");
+        const set = new Set<string>();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(data || []).forEach((row: any) => {
-          if (row.obra) set.add(row.obra)
-        })
-        setObrasOptions(Array.from(set))
+        (data || []).forEach((row: any) => {
+          if (row.obra) set.add(row.obra);
+        });
+        setObrasOptions(Array.from(set));
       } catch (err) {
         // ignore
       }
-    }
-    fetchObras()
+    };
+    fetchObras();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, []);
 
   // call fetch when pressing "Filtrar"
   const handleFilter = async (e?: React.FormEvent) => {
-    e?.preventDefault()
-    fetchRows()
-  }
+    e?.preventDefault();
+    fetchRows();
+  };
 
   return (
     <div className="size-full flex flex-col p-6">
@@ -310,12 +312,12 @@ const Dashboard = () => {
               type="button"
               className="bg-gray-200 px-3 py-1 rounded"
               onClick={() => {
-                setNome('')
-                setCpf('')
-                setObra('')
-                setDateFrom('')
-                setDateTo('')
-                fetchRows()
+                setNome("");
+                setCpf("");
+                setObra("");
+                setDateFrom("");
+                setDateTo("");
+                fetchRows();
               }}
             >
               Limpar
@@ -346,7 +348,7 @@ const Dashboard = () => {
       </div>
 
       <div className="border rounded">
-        <div className="overflow-auto" style={{ maxHeight: '65vh' }}>
+        <div className="overflow-auto" style={{ maxHeight: "65vh" }}>
           <table className="min-w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
@@ -426,7 +428,7 @@ const Dashboard = () => {
             {/* assume png/jpeg; if stored with mime prefix you can use it directly */}
             <img
               src={
-                selectedImage.startsWith('data:')
+                selectedImage.startsWith("data:")
                   ? selectedImage
                   : `data:image/png;base64,${selectedImage}`
               }
@@ -463,7 +465,7 @@ const Dashboard = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default Dashboard
+export default Dashboard;

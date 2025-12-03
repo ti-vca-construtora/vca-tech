@@ -1,109 +1,109 @@
 /* eslint-disable prettier/prettier */
-'use client'
+"use client";
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import { useEffect, useState } from 'react'
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { useEffect, useState } from "react";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL as string
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 const SUPABASE_PUBLISHABLE_KEY = process.env
-  .NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as string
+  .NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as string;
 
-const supabase: SupabaseClient = (typeof window !== 'undefined' &&
-  createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)) as SupabaseClient
+const supabase: SupabaseClient = (typeof window !== "undefined" &&
+  createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)) as SupabaseClient;
 
 type Equipment = {
-  id: number
-  empreendimento: string
-}
+  id: number;
+  empreendimento: string;
+};
 
 const Equipments = () => {
-  const [items, setItems] = useState<Equipment[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [items, setItems] = useState<Equipment[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [editing, setEditing] = useState<Equipment | null>(null)
-  const [editingName, setEditingName] = useState('')
-  const [adding, setAdding] = useState(false)
-  const [newName, setNewName] = useState('')
+  const [editing, setEditing] = useState<Equipment | null>(null);
+  const [editingName, setEditingName] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState("");
 
   const fetchItems = async () => {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
     try {
       // note: table uses column name `equipment` (not `id`) for the PK
       const { data, error: supError } = await supabase
-        .from('equipments')
-        .select('equipment, empreendimento')
+        .from("equipments")
+        .select("equipment, empreendimento");
 
       if (supError) {
-        setError(supError.message)
-        setItems([])
+        setError(supError.message);
+        setItems([]);
       } else {
         // normalize rows to Equipment[] where id comes from `equipment` column
-        const rows = (data ?? []) as unknown[]
+        const rows = (data ?? []) as unknown[];
         const parsed: Equipment[] = rows.map((r) => {
-          const row = r as Record<string, unknown>
+          const row = r as Record<string, unknown>;
           return {
             id: Number(row.equipment),
-            empreendimento: String(row.empreendimento ?? ''),
-          }
-        })
-        setItems(parsed)
+            empreendimento: String(row.empreendimento ?? ""),
+          };
+        });
+        setItems(parsed);
       }
     } catch (err) {
-      setError(String(err))
-      setItems([])
+      setError(String(err));
+      setItems([]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchItems()
+    fetchItems();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, []);
 
   const openEdit = (it: Equipment) => {
-    setEditing(it)
-    setEditingName(it.empreendimento)
-  }
+    setEditing(it);
+    setEditingName(it.empreendimento);
+  };
 
   const saveEdit = async () => {
-    if (!editing) return
+    if (!editing) return;
     try {
-      const name = (editingName || '').toString().toUpperCase()
+      const name = (editingName || "").toString().toUpperCase();
       const { error: upErr } = await supabase
-        .from('equipments')
+        .from("equipments")
         .update({ empreendimento: name })
         // the primary key column is `equipment` (not `id`) in this table
-        .eq('equipment', editing.id)
+        .eq("equipment", editing.id);
 
       if (upErr) {
-        setError(upErr.message)
-        return
+        setError(upErr.message);
+        return;
       }
 
       // success
-      setEditing(null)
-      setEditingName('')
-      await fetchItems()
+      setEditing(null);
+      setEditingName("");
+      await fetchItems();
     } catch (err) {
-      setError(String(err))
+      setError(String(err));
     }
-  }
+  };
 
   const saveNew = async () => {
-    if (!newName) return
+    if (!newName) return;
     try {
-      const name = newName.toString().toUpperCase()
-      await supabase.from('equipments').insert({ empreendimento: name })
-      setAdding(false)
-      setNewName('')
-      await fetchItems()
+      const name = newName.toString().toUpperCase();
+      await supabase.from("equipments").insert({ empreendimento: name });
+      setAdding(false);
+      setNewName("");
+      await fetchItems();
     } catch (err) {
-      setError(String(err))
+      setError(String(err));
     }
-  }
+  };
 
   return (
     <div className="p-6 w-4/5">
@@ -126,7 +126,7 @@ const Equipments = () => {
         <div className="text-red-600">Erro: {error}</div>
       ) : (
         <div className="border rounded">
-          <div className="overflow-auto" style={{ maxHeight: '60vh' }}>
+          <div className="overflow-auto" style={{ maxHeight: "60vh" }}>
             <table className="min-w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>
@@ -225,7 +225,7 @@ const Equipments = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default Equipments
+export default Equipments;
