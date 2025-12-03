@@ -74,7 +74,7 @@ export function ParcelasTabela({
 }: ParcelasTabelaProps) {
   const router = useRouter();
   const [parcelasSelecionadas, setParcelasSelecionadas] = useState<number[]>(
-    [],
+    []
   );
   const [dataReferencia, setDataReferencia] = useState<string>("");
   const [mostrarCalculo, setMostrarCalculo] = useState(false);
@@ -86,10 +86,44 @@ export function ParcelasTabela({
     (currentDebitBalance.data[0]?.paidInstallments as ParcelaCurrentDebit[]) ||
     [];
 
+  // Obter lista de parcelas a desconsiderar do localStorage
+  const getParcelasDesconsiderar = (): string[] => {
+    try {
+      const stored = localStorage.getItem("parcelas-desconsiderar");
+      if (!stored) return [];
+      const parcelas = JSON.parse(stored);
+      return parcelas.map((p: { descricao: string }) =>
+        p.descricao.toUpperCase()
+      );
+    } catch {
+      return [];
+    }
+  };
+
+  const parcelasDesconsiderar = getParcelasDesconsiderar();
+
+  // Debug: mostrar parcelas a desconsiderar
+  console.log(
+    "📋 Parcelas configuradas para desconsiderar:",
+    parcelasDesconsiderar
+  );
+
   // Filtrar parcelas com receipts e até a data de referência
   const parcelasFiltradas = dataReferencia
     ? parcelasPagas.filter((parcela) => {
         if (!parcela.receipts || parcela.receipts.length === 0) return false;
+
+        // Verificar se o tipo de parcela está na lista de desconsiderar
+        if (
+          parcela.conditionType &&
+          parcelasDesconsiderar.includes(parcela.conditionType.toUpperCase())
+        ) {
+          console.log(
+            `🚫 Parcela filtrada (tipo: ${parcela.conditionType}):`,
+            parcela
+          );
+          return false;
+        }
 
         const primeiroRecebimento = parcela.receipts[0];
         if (!primeiroRecebimento.receiptDate) return false;
@@ -102,6 +136,23 @@ export function ParcelasTabela({
         return anoBaixa < anoRef || (anoBaixa === anoRef && mesBaixa <= mesRef);
       })
     : [];
+
+  // Alertar quando não houver parcelas na data de referência
+  useEffect(() => {
+    if (dataReferencia && parcelasFiltradas.length === 0) {
+      const [ano, mes] = dataReferencia.split("-");
+      const dataFormatada = new Date(`${ano}-${mes}-01`).toLocaleDateString(
+        "pt-BR",
+        {
+          month: "long",
+          year: "numeric",
+        }
+      );
+      alert(
+        `Não há parcelas pagas até ${dataFormatada}. Por favor, selecione outra data de referência.`
+      );
+    }
+  }, [dataReferencia, parcelasFiltradas.length]);
 
   // Funções de seleção
   const handleSelectTodasParcelas = () => {
@@ -138,8 +189,8 @@ export function ParcelasTabela({
     new Set(
       parcelasFiltradas
         .map((parcela) => parcela.conditionType)
-        .filter((tipo): tipo is string => !!tipo),
-    ),
+        .filter((tipo): tipo is string => !!tipo)
+    )
   );
 
   // Calcular total das parcelas selecionadas (valor bruto dos receipts)
@@ -262,7 +313,7 @@ export function ParcelasTabela({
   // Se estiver mostrando cálculo, renderizar componente de visualização
   if (mostrarCalculo) {
     const parcelasParaCalculo = parcelasSelecionadas.map(
-      (index) => parcelasFiltradas[index],
+      (index) => parcelasFiltradas[index]
     );
     return (
       <VisualizacaoCalculo
@@ -406,7 +457,7 @@ export function ParcelasTabela({
                             key={index}
                             className={classNames(
                               index % 2 === 0 && "bg-neutral-100",
-                              isParcelaSelecionada(index) && "bg-green-100",
+                              isParcelaSelecionada(index) && "bg-green-100"
                             )}
                           >
                             <TableCell className="text-center">

@@ -23,7 +23,6 @@ import { Plus, Trash2, Loader2 } from "lucide-react";
 
 type ParcelaDesconsiderar = {
   id: string;
-  codigoParcela: string;
   descricao: string;
   criadoEm: string;
 };
@@ -33,7 +32,6 @@ export function ParcelasDesconsiderarManager() {
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
-    codigoParcela: "",
     descricao: "",
   });
 
@@ -44,20 +42,19 @@ export function ParcelasDesconsiderarManager() {
   const getInitialData = (): ParcelaDesconsiderar[] => {
     const baseDate = new Date().toISOString();
     const parcelas = [
-      { codigo: "E", descricao: "Entrada" },
-      { codigo: "F", descricao: "Financiamento CEF" },
-      { codigo: "FB", descricao: "Financiamento Outros Bancos" },
-      { codigo: "FG", descricao: "FGTS Financiável" },
-      { codigo: "SU", descricao: "Subsídio Financiável" },
-      { codigo: "PU", descricao: "Parcela Única" },
-      { codigo: "PE", descricao: "Permuta" },
-      { codigo: "MB", descricao: "Morar Bem - PE" },
+      "Entrada",
+      "Financiamento CEF",
+      "Financiamento Outros Bancos",
+      "FGTS Financiável",
+      "Subsídio Financiável",
+      "Parcela Única",
+      "Permuta",
+      "Morar Bem - PE",
     ];
 
-    return parcelas.map((parcela, index) => ({
+    return parcelas.map((descricao, index) => ({
       id: `initial-${index}`,
-      codigoParcela: parcela.codigo,
-      descricao: parcela.descricao,
+      descricao: descricao,
       criadoEm: baseDate,
     }));
   };
@@ -74,7 +71,7 @@ export function ParcelasDesconsiderarManager() {
       setEntries(initialData);
       localStorage.setItem(
         "parcelas-desconsiderar",
-        JSON.stringify(initialData),
+        JSON.stringify(initialData)
       );
     }
 
@@ -84,40 +81,38 @@ export function ParcelasDesconsiderarManager() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Verificar se o código já existe
+    // Verificar se a descrição já existe
     const exists = entries.some(
       (entry) =>
-        entry.codigoParcela.toUpperCase() ===
-        formData.codigoParcela.toUpperCase(),
+        entry.descricao.toUpperCase() === formData.descricao.toUpperCase()
     );
 
     if (exists) {
-      alert("Este código de parcela já está cadastrado!");
+      alert("Já existe uma parcela configurada com esta descrição!");
       return;
     }
 
     const newEntry: ParcelaDesconsiderar = {
       id: Date.now().toString(),
-      codigoParcela: formData.codigoParcela.toUpperCase(),
       descricao: formData.descricao,
       criadoEm: new Date().toISOString(),
     };
 
     const updatedEntries = [...entries, newEntry].sort((a, b) =>
-      a.codigoParcela.localeCompare(b.codigoParcela),
+      a.descricao.localeCompare(b.descricao)
     );
 
     setEntries(updatedEntries);
     localStorage.setItem(
       "parcelas-desconsiderar",
-      JSON.stringify(updatedEntries),
+      JSON.stringify(updatedEntries)
     );
 
     alert(
-      `Parcela "${formData.codigoParcela}" adicionada com sucesso à lista de parcelas a desconsiderar!`,
+      `Parcela "${formData.descricao}" adicionada com sucesso à lista de parcelas a desconsiderar!`
     );
 
-    setFormData({ codigoParcela: "", descricao: "" });
+    setFormData({ descricao: "" });
     setShowForm(false);
   };
 
@@ -128,7 +123,7 @@ export function ParcelasDesconsiderarManager() {
     setEntries(updatedEntries);
     localStorage.setItem(
       "parcelas-desconsiderar",
-      JSON.stringify(updatedEntries),
+      JSON.stringify(updatedEntries)
     );
   };
 
@@ -168,31 +163,16 @@ export function ParcelasDesconsiderarManager() {
               className="bg-neutral-50 p-4 rounded-lg mb-6 flex gap-4 items-end"
             >
               <div className="flex-1">
-                <Label htmlFor="codigoParcela">Código da Parcela</Label>
-                <Input
-                  id="codigoParcela"
-                  type="text"
-                  required
-                  value={formData.codigoParcela}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      codigoParcela: e.target.value.toUpperCase(),
-                    })
-                  }
-                  placeholder="Ex: FP, PP, M1, etc."
-                />
-              </div>
-              <div className="flex-[2]">
-                <Label htmlFor="descricao">Descrição (opcional)</Label>
+                <Label htmlFor="descricao">Descrição da Parcela</Label>
                 <Input
                   id="descricao"
                   type="text"
+                  required
                   value={formData.descricao}
                   onChange={(e) =>
                     setFormData({ ...formData, descricao: e.target.value })
                   }
-                  placeholder="Ex: Financiamento, Parcela Única..."
+                  placeholder="Ex: Entrada, Financiamento, Parcela Única..."
                 />
               </div>
               <div className="flex gap-2">
@@ -229,13 +209,12 @@ export function ParcelasDesconsiderarManager() {
               <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
                 <p className="text-sm text-blue-800">
                   <strong>Parcelas atualmente desconsideradas:</strong>{" "}
-                  {entries.map((e) => e.codigoParcela).join(", ")}
+                  {entries.map((e) => e.descricao).join(", ")}
                 </p>
               </div>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Código</TableHead>
                     <TableHead>Descrição</TableHead>
                     <TableHead>Criado em</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
@@ -245,14 +224,7 @@ export function ParcelasDesconsiderarManager() {
                   {entries.map((entry) => (
                     <TableRow key={entry.id}>
                       <TableCell className="font-bold text-azul-vca">
-                        {entry.codigoParcela}
-                      </TableCell>
-                      <TableCell>
-                        {entry.descricao || (
-                          <span className="text-neutral-400 italic">
-                            Sem descrição
-                          </span>
-                        )}
+                        {entry.descricao}
                       </TableCell>
                       <TableCell className="text-sm text-neutral-500">
                         {formatDate(entry.criadoEm)}

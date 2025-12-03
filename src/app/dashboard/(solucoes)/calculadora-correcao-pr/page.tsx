@@ -60,9 +60,6 @@ export default function CalculadoraCorrecaoPR() {
       <div className="w-full h-full flex flex-col p-6 gap-6">
         {currentView === "menu" ? (
           <>
-            <h1 className="text-2xl font-bold text-azul-vca">
-              Atualização de Valores Recebidos
-            </h1>
             <div className="flex gap-6 w-full h-full">
               <MenuCard
                 title="Calcular"

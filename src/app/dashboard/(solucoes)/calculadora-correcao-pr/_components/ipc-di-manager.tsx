@@ -182,6 +182,18 @@ export function IpcDiManager() {
 
     const [ano, mes] = formData.mesAno.split("-").map(Number);
 
+    // Verificar se já existe uma entrada para este mês/ano
+    const exists = entries.some(
+      (entry) => entry.mes === mes && entry.ano === ano
+    );
+
+    if (exists) {
+      alert(
+        `Já existe uma taxa IPC-DI cadastrada para ${getMesNome(mes)}/${ano}!`
+      );
+      return;
+    }
+
     const newEntry: IpcDiEntry = {
       id: Date.now().toString(),
       mes,
@@ -199,7 +211,7 @@ export function IpcDiManager() {
     localStorage.setItem("ipc-di-entries", JSON.stringify(updatedEntries));
 
     alert(
-      `Taxa IPC-DI de ${getMesNome(mes)}/${ano} (${formData.ipc}%) salva com sucesso!`,
+      `Taxa IPC-DI de ${getMesNome(mes)}/${ano} (${formData.ipc}%) salva com sucesso!`
     );
 
     setFormData({ mesAno: "", ipc: "" });

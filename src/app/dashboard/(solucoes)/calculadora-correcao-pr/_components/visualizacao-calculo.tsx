@@ -159,11 +159,11 @@ export function VisualizacaoCalculo({
 
         const ipcAcumulado = calcularIpcAcumuladoReverso(
           dataBaixa,
-          dataReferencia,
+          dataReferencia
         );
         const valorBaixaAtualizado = calcularValorAtualizado(
           valorBaixa,
-          ipcAcumulado,
+          ipcAcumulado
         );
 
         return {
@@ -185,14 +185,14 @@ export function VisualizacaoCalculo({
   const calcularTotalValorBaixa = () => {
     return parcelasCalculadas.reduce(
       (total, item) => total + item.valorBaixa,
-      0,
+      0
     );
   };
 
   const calcularTotalValorAtualizado = () => {
     return parcelasCalculadas.reduce(
       (total, item) => total + item.valorBaixaAtualizado,
-      0,
+      0
     );
   };
 
@@ -221,7 +221,7 @@ export function VisualizacaoCalculo({
       "Data baixa": formatarData(item.dataBaixa),
       "Valor baixa": formatarMoeda(item.valorBaixa),
       "Recto líquido com Mora": formatarMoeda(
-        item.parcela.receipts[0]?.receiptNetValue || 0,
+        item.parcela.receipts[0]?.receiptNetValue || 0
       ),
       "IPC Acum (%)": formatarPorcentagem(item.ipcAcumulado),
       "Valor Princ Atualizado": formatarMoeda(item.valorBaixaAtualizado),
@@ -231,7 +231,7 @@ export function VisualizacaoCalculo({
     const totalValorBaixa = calcularTotalValorBaixa();
     const totalRectoLiquido = parcelasCalculadas.reduce(
       (total, item) => total + (item.parcela.receipts[0]?.receiptNetValue || 0),
-      0,
+      0
     );
     const totalValorAtualizado = calcularTotalValorAtualizado();
 
@@ -272,18 +272,18 @@ export function VisualizacaoCalculo({
     // Download
     const dataRef = new Date(dataReferencia + "-01").toLocaleDateString(
       "pt-BR",
-      { month: "long", year: "numeric" },
+      { month: "long", year: "numeric" }
     );
     XLSX.writeFile(
       wb,
-      `atualizacao-valores-recebidos-${cliente.name}-${dataRef}.xlsx`,
+      `atualizacao-valores-recebidos-${cliente.name}-${dataRef}.xlsx`
     );
   };
 
   const calcularTotalRectoLiquido = () => {
     return parcelasCalculadas.reduce(
       (total, item) => total + (item.parcela.receipts[0]?.receiptNetValue || 0),
-      0,
+      0
     );
   };
 
@@ -313,7 +313,7 @@ export function VisualizacaoCalculo({
                     <TableRow
                       key={index}
                       className={classNames(
-                        index % 2 === 0 && "bg-neutral-100",
+                        index % 2 === 0 && "bg-neutral-100"
                       )}
                     >
                       <TableCell className="font-medium">
@@ -367,7 +367,7 @@ export function VisualizacaoCalculo({
                     <TableRow
                       key={index}
                       className={classNames(
-                        index % 2 === 0 && "bg-neutral-100",
+                        index % 2 === 0 && "bg-neutral-100"
                       )}
                     >
                       <TableCell className="font-medium">
@@ -413,7 +413,7 @@ export function VisualizacaoCalculo({
               </span>
             </p>
             <p className="border-b w-full text-lg">
-              Total Valor Princ Atualizado:{" "}
+              Total Valor Atualizado:{" "}
               <span className="font-semibold">
                 R$ {formatarValor(calcularTotalValorAtualizado())}
               </span>
@@ -442,7 +442,7 @@ export function VisualizacaoCalculo({
             totalValorAtualizado: calcularTotalValorAtualizado(),
           }}
           fileName={`atualizacao-valores-recebidos-${cliente.name}-${new Date(
-            dataReferencia + "-01",
+            dataReferencia + "-01"
           ).toLocaleDateString("pt-BR", {
             month: "long",
             year: "numeric",
