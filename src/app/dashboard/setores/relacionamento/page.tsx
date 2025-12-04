@@ -2,6 +2,7 @@
 
 import React from "react";
 import { CiCalculator1 } from "react-icons/ci";
+import { RiWhatsappLine } from "react-icons/ri";
 
 import { Solucoes, SolucoesCard } from "@/components/solucoes-card";
 
@@ -13,6 +14,14 @@ const solucoesData: Solucoes[] = [
     href: "calculadora-juros?title=AVP - Calculadora de Juros de Parcelas",
     area: "financeiro",
     permission: "avp",
+  },
+  {
+    titulo: "Huggy - Envio em Massa",
+    descricao: "Envio de flows do Huggy em massa via planilha ou cadastro manual.",
+    Icon: RiWhatsappLine,
+    href: "huggy-envio-em-massa?title=Huggy - Envio em Massa",
+    area: "relacionamento",
+    permission: "relacionamento",
   },
 ];
 
