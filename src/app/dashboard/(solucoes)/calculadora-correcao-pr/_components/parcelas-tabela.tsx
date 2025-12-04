@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import classNames from "classnames";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Cliente } from "@/components/search-form";
 import { Loader2Icon } from "lucide-react";
 import { formatarData, formatarValor, getIpcDiRate } from "@/util";
@@ -116,7 +116,9 @@ export function ParcelasTabela({
         // Verificar se o tipo de parcela está na lista de desconsiderar
         if (
           parcela.conditionType &&
-          parcelasDesconsiderar.includes(parcela.conditionType.toUpperCase())
+          parcelasDesconsiderar.includes(
+            parcela.conditionType.trim().toUpperCase()
+          )
         ) {
           console.log(
             `🚫 Parcela filtrada (tipo: ${parcela.conditionType}):`,
