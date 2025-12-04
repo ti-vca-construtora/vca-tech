@@ -25,7 +25,6 @@ import {
   formatarData,
   formatarValor,
   getIpcDiRate,
-  formatarCpfCnpj,
 } from "@/util";
 import classNames from "classnames";
 import { GeradorPdf } from "./gerador-pdf";
@@ -61,7 +60,6 @@ export function VisualizacaoCalculo({
   contrato,
   dataReferencia,
   parcelas,
-  onVoltar,
 }: VisualizacaoCalculoProps) {
   const [historicoIpc, setHistoricoIpc] = useState<HistoricoIpc[]>([]);
   const [parcelasCalculadas, setParcelasCalculadas] = useState<

@@ -1,7 +1,6 @@
 "use client";
 
 import { usePdf } from "@/hooks/use-pdf";
-import { PiDownload } from "react-icons/pi";
 import React, { useState } from "react";
 
 export function GeradorPdf<T extends object>({

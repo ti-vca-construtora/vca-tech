@@ -68,7 +68,6 @@ export type ParcelaCurrentDebit = {
 
 export function ParcelasTabela({
   cliente,
-  incomeByBills,
   currentDebitBalance,
   contrato,
 }: ParcelasTabelaProps) {
