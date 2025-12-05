@@ -182,9 +182,10 @@ export const calcularIpcAcumulado = (
 
   // Iterar mês a mês desde a data inicial até a final
   let dataAtual = new Date(inicio);
+  const dataFim = new Date(fim);
   dataAtual.setDate(1); // Primeiro dia do mês
 
-  while (dataAtual < fim) {
+  while (dataAtual < dataFim) {
     const mes = dataAtual.getMonth() + 1; // getMonth() retorna 0-11
     const ano = dataAtual.getFullYear();
 
@@ -196,7 +197,7 @@ export const calcularIpcAcumulado = (
     }
 
     // Avançar para o próximo mês
-    dataAtual.setMonth(dataAtual.getMonth() + 1);
+    dataAtual = new Date(dataAtual.setMonth(dataAtual.getMonth() + 1));
   }
 
   // Retornar o percentual acumulado

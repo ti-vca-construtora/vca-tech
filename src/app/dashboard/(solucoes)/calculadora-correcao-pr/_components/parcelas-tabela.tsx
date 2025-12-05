@@ -82,7 +82,7 @@ export function ParcelasTabela({
 
   // Extrair parcelas pagas do currentDebitBalance
   const parcelasPagas: ParcelaCurrentDebit[] =
-    (currentDebitBalance.data[0]?.paidInstallments as ParcelaCurrentDebit[]) ||
+    (currentDebitBalance.data[0]?.paidInstallments as unknown as ParcelaCurrentDebit[]) ||
     [];
 
   // Obter lista de parcelas a desconsiderar do localStorage

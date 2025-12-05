@@ -10,6 +10,7 @@ import {
   postContact,
   putContact,
   putContactFlow,
+  GetContactType,
 } from "@/services/huggy";
 import EstatisticasTabela, { StatisticsType } from "./estatisticas-tabela";
 import { BiLoader } from "react-icons/bi";
@@ -56,7 +57,11 @@ const Quadro = () => {
   const [statisticsStatus, setStatisticsStatus] = useState<string>("");
   const [file, setFile] = useState<File>();
   const [status, setStatus] = useState<string>("");
-  const [variables, setVariables] = useState({
+  const [variables, setVariables] = useState<{
+    uuid: string;
+    flowId: string;
+    variables: { chave: string; valor: string }[];
+  }>({
     uuid: "dedae4f0-8275-4d9d-abb6-66af99730b73", // Cliente 1200 (fixo)
     flowId: "374659",
     variables: [],
@@ -105,10 +110,11 @@ const Quadro = () => {
           const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
           const formattedUsers: User[] = jsonData
-            .map((row: any) => {
-              const nome = row.nome || row.Nome || row.NOME || "";
+            .map((row: unknown) => {
+              const data = row as Record<string, unknown>;
+              const nome = data.nome || data.Nome || data.NOME || "";
               const telefone =
-                row.telefone || row.Telefone || row.TELEFONE || "";
+                data.telefone || data.Telefone || data.TELEFONE || "";
 
               if (!nome || !telefone) return null;
 
@@ -220,8 +226,8 @@ const Quadro = () => {
   };
 
   const handleSend = async () => {
-    const existingUsers: any[] = [];
-    const unexistingUsers: any[] = [];
+    const existingUsers: (GetContactType & { id: string })[] = [];
+    const unexistingUsers: User[] = [];
     const statisticsArray: StatisticsType[] = [];
 
     try {
@@ -234,7 +240,7 @@ const Quadro = () => {
 
       await Promise.all(
         users.map(async (user, index) => {
-          const [userData] = await getContact(user.telefone, "");
+          const [userData] = await getContact(user.telefone);
 
           if (userData) {
             existingUsers.push(userData);
@@ -272,7 +278,10 @@ const Quadro = () => {
         for (let i = 0; i < unexistingUsers.length; i++) {
           const user = unexistingUsers[i];
           
-          const createdUser = await postContact(user);
+          const createdUser = await postContact({
+            ...user,
+            email: "",
+          });
           
           existingUsers.push(createdUser);
           const userToModify = statisticsArray.find(
@@ -299,7 +308,11 @@ const Quadro = () => {
       for (let i = 0; i < existingUsers.length; i++) {
         const user = existingUsers[i];
         
-        await putContact(user, user.id);
+        await putContact({
+          name: user.name,
+          phone: user.phone,
+          email: user.email || "",
+        }, user.id);
         
         // Atualizar progresso
         completedOperations++;
@@ -317,7 +330,7 @@ const Quadro = () => {
       for (let i = 0; i < existingUsers.length; i++) {
         const user = existingUsers[i];
         
-        const responseText = await putContactFlow(user.id, {
+        const responseText = await putContactFlow(Number(user.id), {
           flowId: variables.flowId,
           uuid: variables.uuid,
           variables: variables.variables,

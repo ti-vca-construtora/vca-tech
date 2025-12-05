@@ -22,7 +22,11 @@ const VariablesSchema = z.object({
 type VariablesFormType = z.infer<typeof VariablesSchema>;
 
 type VariaveisProps = {
-  setVariables: Dispatch<SetStateAction<any>>;
+  setVariables: Dispatch<SetStateAction<{
+    uuid: string;
+    flowId: string;
+    variables: { chave: string; valor: string }[];
+  }>>;
 };
 
 const Variaveis = ({ setVariables }: VariaveisProps) => {

@@ -19,8 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatarData, formatarValor } from "@/util";
-import { formatarCpfCnpj } from "@/util";
+import { formatarData, formatarValor, formatarCpfCnpj } from "@/util";
 import { LOGO_BASE64 } from "@/util/logo-base64";
 import classNames from "classnames";
 

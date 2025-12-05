@@ -18,7 +18,7 @@ export const execFlowVariablesV3 = {
   whenInAuto: true,
 };
 
-export const getContact = async (phone: string, email: string) => {
+export const getContact = async (phone: string) => {
   const HUGGY_URL = process.env.HUGGY_V3_URL || "https://api.huggy.app/v3";
   try {
     const response = await fetch(
@@ -123,7 +123,7 @@ export const putContactFlow = async (
   }
 ) => {
   try {
-    let contextVariables: ContextVariables = {};
+    const contextVariables: ContextVariables = {};
 
     variables.variables.forEach((variable) => {
       contextVariables[variable.chave] = variable.valor;
