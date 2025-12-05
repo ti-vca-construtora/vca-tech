@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import * as XLSX from "xlsx";
 import {
   normalizePhone,
@@ -65,6 +66,8 @@ const Quadro = () => {
     []
   );
   const [showInvalidModal, setShowInvalidModal] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleCreateUser = (data: UserFormType) => {
     const normalizedPhone = normalizePhone(data.telefone);
@@ -222,6 +225,8 @@ const Quadro = () => {
     const statisticsArray: StatisticsType[] = [];
 
     try {
+      setIsProcessing(true);
+      setProgress(0);
       setStatistics([]);
       setStatisticsStatus("Gerando estatísticas...");
 
@@ -256,71 +261,96 @@ const Quadro = () => {
         })
       );
 
+      // Calcular total de operações para o progresso
+      const totalOperations = unexistingUsers.length + (existingUsers.length * 2); // POST + PUT + PUT Flow
+      let completedOperations = 0;
+
       if (unexistingUsers.length > 0) {
         setStatus("Criando usuários inexistentes...");
 
-        console.log(unexistingUsers);
-
-        await Promise.all(
-          unexistingUsers.map(async (user): Promise<void> => {
-            const createdUser = await postContact(user);
-
-            console.log(createdUser);
-
-            existingUsers.push(createdUser);
-
-            const userToModify = statisticsArray.find(
-              (user) => user.nome === createdUser.name
-            );
-
-            console.log(
-              "Modificação de Usuário: " + createdUser.name + user.nome
-            );
-
-            if (userToModify) {
-              userToModify.userId = createdUser.id;
-            }
-          })
-        );
+        // Criar usuários com delay de 500ms entre cada requisição
+        for (let i = 0; i < unexistingUsers.length; i++) {
+          const user = unexistingUsers[i];
+          
+          const createdUser = await postContact(user);
+          
+          existingUsers.push(createdUser);
+          const userToModify = statisticsArray.find(
+            (user) => user.nome === createdUser.name
+          );
+          if (userToModify) {
+            userToModify.userId = createdUser.id;
+          }
+          
+          // Atualizar progresso
+          completedOperations++;
+          setProgress((completedOperations / totalOperations) * 100);
+          
+          // Aguardar 500ms antes do próximo POST (exceto no último)
+          if (i < unexistingUsers.length - 1) {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+          }
+        }
       }
 
       setStatus("Alterando campos necessários para envio de flow...");
 
-      await Promise.all(
-        existingUsers.map(async (user) => {
-          await putContact(user, user.id);
-        })
-      );
+      // Atualizar usuários existentes SEQUENCIALMENTE com delay de 500ms
+      for (let i = 0; i < existingUsers.length; i++) {
+        const user = existingUsers[i];
+        
+        await putContact(user, user.id);
+        
+        // Atualizar progresso
+        completedOperations++;
+        setProgress((completedOperations / totalOperations) * 100);
+        
+        // Aguardar 500ms antes do próximo PUT (exceto no último)
+        if (i < existingUsers.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+        }
+      }
 
       setStatus("Enviando flow...");
 
-      await Promise.all(
-        existingUsers.map(async (user) => {
-          const responseText = await putContactFlow(user.id, {
-            flowId: variables.flowId,
-            uuid: variables.uuid,
-            variables: variables.variables,
-          });
+      // Enviar flow SEQUENCIALMENTE com delay de 500ms
+      for (let i = 0; i < existingUsers.length; i++) {
+        const user = existingUsers[i];
+        
+        const responseText = await putContactFlow(user.id, {
+          flowId: variables.flowId,
+          uuid: variables.uuid,
+          variables: variables.variables,
+        });
 
-          const userToModify = statisticsArray.find(
-            (statisticsUser) => statisticsUser.userId === user.id
-          );
+        const userToModify = statisticsArray.find(
+          (statisticsUser) => statisticsUser.userId === user.id
+        );
 
-          if (userToModify && responseText) {
-            const parsed = JSON.parse(responseText);
-
-            userToModify.flowStatus = parsed!.reason;
-            userToModify.chatId = parsed!.chatID;
-          }
-        })
-      );
+        if (userToModify && responseText) {
+          const parsed = JSON.parse(responseText);
+          userToModify.flowStatus = parsed!.reason;
+          userToModify.chatId = parsed!.chatID;
+        }
+        
+        // Atualizar progresso
+        completedOperations++;
+        setProgress((completedOperations / totalOperations) * 100);
+        
+        // Aguardar 500ms antes do próximo flow (exceto no último)
+        if (i < existingUsers.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+      }
 
       setStatisticsStatus("");
       setStatistics(statisticsArray);
 
       setStatus("Processo finalizado!");
+      setIsProcessing(false);
     } catch (error) {
       setStatus("Algo deu errado. Segue a mensagem de erro: " + error);
+      setIsProcessing(false);
     }
   };
 
@@ -479,15 +509,23 @@ const Quadro = () => {
             </Button>
           </CardFooter>
         </Card>
-        <div className="self-center">
-          {status.length > 0 && status !== "Processo finalizado!" ? (
-            <div className="flex items-center justify-center gap-2">
-              <p className="text-neutral-600 text-sm">{status}</p>
-              <BiLoader className="animate-spin" />
+        <div className="self-center w-full max-w-md">
+          {isProcessing ? (
+            <div className="flex flex-col gap-3 w-full">
+              <div className="flex items-center justify-center gap-2">
+                <p className="text-neutral-600 text-sm">{status}</p>
+                <BiLoader className="animate-spin" />
+              </div>
+              <div className="w-full">
+                <Progress value={progress} className="w-full" />
+                <p className="text-xs text-neutral-500 text-center mt-1">
+                  {Math.round(progress)}% concluído
+                </p>
+              </div>
             </div>
-          ) : (
-            <p className="text-sm text-neutral-800 font-semibold">{status}</p>
-          )}
+          ) : status.length > 0 ? (
+            <p className="text-sm text-neutral-800 font-semibold text-center">{status}</p>
+          ) : null}
         </div>
         <Card className="flex flex-col">
           <CardHeader>
