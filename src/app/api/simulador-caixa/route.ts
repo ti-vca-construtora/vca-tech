@@ -7,9 +7,23 @@ const redisConnection = {
   maxRetriesPerRequest: null,
 }
 
-const simuladorQueue = new Queue('simulador-caixa', {
-  connection: redisConnection,
+console.log('🔍 [Redis Config]', {
+  host: redisConnection.host,
+  port: redisConnection.port,
+  env_host: process.env.REDIS_HOST,
+  env_port: process.env.REDIS_PORT
 })
+
+// Só criar a fila se não estiver em build time
+let simuladorQueue: Queue | null = null
+
+try {
+  simuladorQueue = new Queue('simulador-caixa', {
+    connection: redisConnection,
+  })
+} catch (error) {
+  console.warn('⚠️ [Redis] Não foi possível conectar (provavelmente build time):', error)
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,6 +32,10 @@ export async function POST(request: NextRequest) {
     // Validação básica
     if (!dados.origemRecurso || !dados.cidade || !dados.valorAvaliacao) {
       return NextResponse.json({ error: 'Dados incompletos' }, { status: 400 })
+    }
+
+    if (!simuladorQueue) {
+      return NextResponse.json({ error: 'Redis não conectado' }, { status: 503 })
     }
 
     // Adicionar job à fila
@@ -57,6 +75,10 @@ export async function GET(request: NextRequest) {
         { error: 'jobId não fornecido' },
         { status: 400 }
       )
+    }
+
+    if (!simuladorQueue) {
+      return NextResponse.json({ error: 'Redis não conectado' }, { status: 503 })
     }
 
     // Buscar job
