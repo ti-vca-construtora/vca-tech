@@ -180,7 +180,7 @@ const Quadro = () => {
       if (statusMessage) {
         console.log(statusMessage);
         setStatus(statusMessage);
-        setTimeout(() => setStatus(""), 7000); // Limpa mensagem após 7 segundos
+        setTimeout(() => setStatus(""), 10000); // Limpa mensagem após 7 segundos
       }
 
       if (newUsers.length === 0) {
@@ -320,7 +320,7 @@ const Quadro = () => {
         
         // Aguardar 500ms antes do próximo PUT (exceto no último)
         if (i < existingUsers.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 5000));
+          await new Promise((resolve) => setTimeout(resolve, 500));
         }
       }
 

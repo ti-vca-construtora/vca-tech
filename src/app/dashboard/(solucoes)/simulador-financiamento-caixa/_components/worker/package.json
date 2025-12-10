@@ -1,0 +1,20 @@
+{
+  "name": "simulador-caixa-worker",
+  "version": "1.0.0",
+  "description": "Worker para automação do simulador de financiamento Caixa",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
+    "setup": "npx playwright install chromium",
+    "redis:start": "docker-compose up -d redis",
+    "redis:stop": "docker-compose down",
+    "redis:clear": "docker exec worker-redis-1 redis-cli FLUSHALL",
+    "queue:clear": "node clear-queue.js"
+  },
+  "dependencies": {
+    "bullmq": "^5.65.1",
+    "ioredis": "^5.4.1",
+    "playwright": "^1.48.0"
+  }
+}

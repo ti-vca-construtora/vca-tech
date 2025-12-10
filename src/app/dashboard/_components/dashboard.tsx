@@ -101,6 +101,12 @@ export function Dashboard({ children }: DashboardProps) {
                         >
                           Controladoria
                         </Link>
+                                                                        <Link
+                          href="/dashboard/setores/comercial?title=Painel de Soluções - Comercial"
+                          className="rounded-md px-2 py-1 text-sm hover:bg-muted"
+                        >
+                          Comercial
+                        </Link>
                       </div>
                     </details>
 

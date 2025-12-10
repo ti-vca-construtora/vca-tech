@@ -45,6 +45,10 @@ const data = {
           title: "Controladoria",
           url: "/dashboard/setores/controladoria?title=Painel de Soluções - Controladoria",
         },
+                {
+          title: "Comercial",
+          url: "/dashboard/setores/comercial?title=Painel de Soluções - Comercial",
+        },
       ],
     },
     {

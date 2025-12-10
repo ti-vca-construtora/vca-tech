@@ -1,0 +1,16 @@
+{
+  "name": "simulador-caixa-worker",
+  "version": "1.0.0",
+  "description": "Worker para automação do simulador de financiamento Caixa",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
+    "setup": "npx playwright install chromium"
+  },
+  "dependencies": {
+    "bullmq": "^5.65.1",
+    "ioredis": "^5.4.1",
+    "playwright": "^1.48.0"
+  }
+}

@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: vca-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - vca-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  playwright-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: vca-playwright-worker
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - NODE_ENV=production
+    volumes:
+      - playwright_cache:/root/.cache/ms-playwright
+    networks:
+      - vca-network
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+    driver: local
+  playwright_cache:
+    driver: local
+
+networks:
+  vca-network:
+    driver: bridge
