@@ -25,27 +25,30 @@ export function useSimuladorAutomacao() {
 
     try {
       // 1. Criar job na fila
-      const response = await fetch('/api/automate', {
+      const response = await fetch('/api/simulador-caixa', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dados }),
+        body: JSON.stringify(dados),
       });
 
       const { jobId } = await response.json();
 
       // 2. Polling para verificar resultado
       const checkResult = async () => {
-        const res = await fetch(`/api/automate?jobId=${jobId}`);
+        const res = await fetch(`/api/simulador-caixa?jobId=${jobId}`);
         const data = await res.json();
 
-        if (data.status === 'processing') {
+        if (data.status === 'processing' || data.status === 'pending') {
           // Ainda processando, tentar novamente em 2 segundos
           setTimeout(checkResult, 2000);
-        } else if (data.status === 'success') {
-          setResultado(data.dados);
+        } else if (data.status === 'completed') {
+          setResultado(data.result);
           setLoading(false);
-        } else if (data.status === 'error') {
-          setError(data.error);
+        } else if (data.status === 'failed') {
+          setError(data.error || 'Erro no processamento');
+          setLoading(false);
+        } else if (data.status === 'not_found') {
+          setError('Job não encontrado');
           setLoading(false);
         }
       };
