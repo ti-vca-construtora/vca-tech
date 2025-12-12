@@ -49,16 +49,34 @@ export function ResultadosSimulacao() {
   const [semParcelamento, setSemParcelamento] = useState(false);
 
   useEffect(() => {
+    console.log('🔍 ResultadosSimulacao: Verificando sessionStorage...')
+    
     const dadosStr = sessionStorage.getItem("dadosSimulacao");
     const resultadosStr = sessionStorage.getItem("resultadosSimulacao");
 
+    console.log('📦 Dados encontrados:', { 
+      temDados: !!dadosStr, 
+      temResultados: !!resultadosStr 
+    })
+
     if (!dadosStr || !resultadosStr) {
+      console.log('❌ Dados não encontrados, redirecionando...')
       router.push("/dashboard/simulador-financiamento-caixa");
       return;
     }
 
-    setDadosSimulacao(JSON.parse(dadosStr));
-    setResultados(JSON.parse(resultadosStr));
+    try {
+      const dados = JSON.parse(dadosStr);
+      const results = JSON.parse(resultadosStr);
+      
+      console.log('✅ Dados carregados com sucesso:', { dados, results })
+      
+      setDadosSimulacao(dados);
+      setResultados(results);
+    } catch (error) {
+      console.error('❌ Erro ao parsear dados:', error)
+      router.push("/dashboard/simulador-financiamento-caixa");
+    }
   }, [router]);
 
   const formatarMoeda = (valor: string) => {

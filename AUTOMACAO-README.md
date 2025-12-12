@@ -3,9 +3,9 @@
 ## 🏗️ Arquitetura
 
 ```
-Webapp (Next.js) → API Route (/api/automate) → Redis Queue → Worker (Playwright)
-                                                                      ↓
-                                                              Resultado no Redis
+Webapp (Next.js) → API Route (/api/simulador-caixa) → BullMQ (Redis) → Worker (Playwright)
+                                                                              ↓
+                                                                      Resultado retornado
 ```
 
 ## 🚀 Como Executar
@@ -46,14 +46,20 @@ docker-compose logs -f playwright-worker
 **Criar um Job:**
 
 ```bash
-curl -X POST http://localhost:3000/api/automate \
+curl -X POST http://localhost:3000/api/simulador-caixa \
   -H "Content-Type: application/json" \
   -d '{
-    "dados": {
-      "valor": 300000,
-      "prazo": 360,
-      "renda": 10000
-    }
+    "origemRecurso": "FGTS",
+    "cidade": "São Paulo",
+    "valorAvaliacao": "300000",
+    "rendaFamiliar": "10000",
+    "quantidadeParticipantes": 1,
+    "participantes": [{"pactuacao": 100, "dataNascimento": "01/01/1990"}],
+    "possuiTresAnosFGTS": true,
+    "jaBeneficiadoSubsidio": false,
+    "sistemaAmortizacao": "SAC",
+    "possuiDependentes": false,
+    "nomeCliente": "Teste"
   }'
 ```
 
@@ -61,32 +67,44 @@ Resposta:
 
 ```json
 {
-  "success": true,
-  "jobId": "abc123xyz",
-  "message": "Automação adicionada à fila de processamento"
+  "jobId": "1",
+  "status": "pending"
 }
 ```
 
 **Verificar Resultado:**
 
 ```bash
-curl http://localhost:3000/api/automate?jobId=abc123xyz
+curl http://localhost:3000/api/simulador-caixa?jobId=1
 ```
 
 ## 📁 Estrutura de Arquivos
 
 ```
 vca-tech/
-├── docker-compose.yml          # Orquestração Redis + Worker
+├── docker-compose.yml          # Orquestração Redis (na raiz)
 ├── Dockerfile.worker           # Container do Worker Playwright
 ├── worker/
-│   ├── package.json           # Dependências do worker
-│   └── index.js               # Worker que processa jobs
+│   ├── docker-compose.yml     # Orquestração local do worker
+│   ├── Dockerfile             # Dockerfile do worker
+│   ├── package.json           # Dependências do worker (BullMQ + Playwright)
+│   └── index.js               # Worker BullMQ que processa jobs
 └── src/
     └── app/
-        └── api/
-            └── automate/
-                └── route.ts   # API que cria jobs na fila
+        ├── api/
+        │   └── simulador-caixa/
+        │       ├── route.ts   # API que cria/consulta jobs na fila BullMQ
+        │       ├── pdf/       # Geração de PDF dos resultados
+        │       └── plano-pdf/ # Geração de PDF do plano
+        └── dashboard/
+            └── (solucoes)/
+                └── simulador-financiamento-caixa/
+                    ├── page.tsx
+                    ├── resultados/
+                    ├── montagem-plano/
+                    └── _components/
+                        ├── simulador-form.tsx
+                        └── resultados-simulacao.tsx
 ```
 
 ## 🔧 Comandos Docker Úteis
@@ -108,44 +126,56 @@ docker-compose logs -f playwright-worker
 docker exec -it vca-redis redis-cli
 ```
 
-## 🎯 Próximos Passos
+## ✅ Status Atual
 
-1. **Implementar a automação Playwright** no arquivo `worker/index.js`
+✅ Automação Playwright implementada e funcional
+✅ Integração com frontend completa via BullMQ
+✅ Sistema de progresso em tempo real
+✅ Geração de PDFs dos resultados e planos
 
-   - Adicionar seletores e interações específicas do site da Caixa
-   - Preencher campos de formulário
-   - Extrair resultados da simulação
+## 🎯 Melhorias Futuras
 
-2. **Integrar com o frontend** do simulador-financiamento-caixa
+1. **Otimizações**
 
-   - Criar componente que chama `/api/automate`
-   - Implementar polling ou websocket para acompanhar progresso
-   - Exibir resultados da simulação
+   - Cache de resultados para simulações similares
+   - Rate limiting mais inteligente
+   - Retry strategy customizada
 
-3. **Migração para VPS**
+2. **Migração para VPS**
    - Ajustar `REDIS_HOST` para IP da VPS
    - Configurar firewall para porta 6379
-   - Implementar autenticação Redis
+   - Implementar autenticação Redis com senha
 
 ## 🐛 Debug
 
 **Verificar se Redis está rodando:**
 
 ```bash
-docker exec -it vca-redis redis-cli ping
+docker exec -it worker-redis-1 redis-cli ping
 # Resposta: PONG
 ```
 
-**Ver jobs na fila:**
+**Ver jobs na fila BullMQ:**
 
 ```bash
-docker exec -it vca-redis redis-cli LLEN simulador-financiamento:jobs
+# Listar todas as chaves da fila
+docker exec -it worker-redis-1 redis-cli KEYS "bull:simulador-caixa:*"
+
+# Ver jobs ativos
+docker exec -it worker-redis-1 redis-cli LLEN bull:simulador-caixa:active
+
+# Ver jobs completos
+docker exec -it worker-redis-1 redis-cli LLEN bull:simulador-caixa:completed
+
+# Ver jobs com falha
+docker exec -it worker-redis-1 redis-cli LLEN bull:simulador-caixa:failed
 ```
 
-**Ver resultado de um job:**
+**Limpar a fila:**
 
 ```bash
-docker exec -it vca-redis redis-cli GET simulador-financiamento:result:abc123xyz
+cd worker
+npm run queue:clear
 ```
 
 ## 📝 Notas

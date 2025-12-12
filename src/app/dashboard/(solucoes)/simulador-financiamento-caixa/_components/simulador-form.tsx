@@ -287,7 +287,7 @@ export function SimuladorForm() {
         const response = await fetch(`/api/simulador-caixa?jobId=${id}`)
         const data = await response.json()
 
-        console.log(`[Polling ${tentativas}] Status:`, data.status, 'Progress:', data.progress)
+        console.log(`[Polling ${tentativas}] Status:`, data.status, 'Progress:', data.progress, 'Data completo:', data)
 
         // Atualizar progresso e mensagem
         if (data.progress !== undefined) {
@@ -295,11 +295,14 @@ export function SimuladorForm() {
           setLoadingMessage(getMessageFromProgress(data.progress))
         }
 
-        if (data.status === "pending") {
+        // Normalizar status para lowercase para evitar problemas de case sensitivity
+        const statusNormalizado = data.status?.toLowerCase()
+
+        if (statusNormalizado === "pending") {
           setStatus("Aguardando worker processar o job...")
-        } else if (data.status === "processing") {
+        } else if (statusNormalizado === "processing") {
           setStatus("Processando simulação na Caixa...")
-        } else if (data.status === "failed") {
+        } else if (statusNormalizado === "failed") {
           clearInterval(interval)
           setLoading(false)
           setErro(data.error || "Erro desconhecido durante a simulação")
@@ -308,7 +311,11 @@ export function SimuladorForm() {
             description: data.error || "Ocorreu um erro durante o processamento",
             variant: "destructive",
           })
-        } else if (data.status === "completed") {
+        } else if (statusNormalizado === "completed") {
+          console.log('✅ Simulação completada! Iniciando redirecionamento...')
+          console.log('📊 Dados recebidos:', data.result)
+          console.log('📦 Resultado completo:', JSON.stringify(data, null, 2))
+          
           setStatus("Simulação concluída!")
           setLoading(false)
           clearInterval(interval)
@@ -332,10 +339,12 @@ export function SimuladorForm() {
           };
           
           sessionStorage.setItem("dadosSimulacao", JSON.stringify(dadosParaSalvar));
+          console.log('💾 Dados salvos no sessionStorage')
           
           // Capturar resultados
           if (data.result?.resultados) {
             sessionStorage.setItem("resultadosSimulacao", JSON.stringify(data.result.resultados));
+            console.log('📋 Resultados salvos:', data.result.resultados)
           }
 
           // Download automático do PDF
@@ -374,11 +383,19 @@ export function SimuladorForm() {
             description: "Simulação concluída! Redirecionando...",
           });
           
-          // Navegar para página de resultados
+          console.log('🚀 Iniciando redirecionamento em 1 segundo...')
+          
+          // Navegar para página de resultados - aumentar timeout para garantir que sessionStorage foi salvo
           setTimeout(() => {
-            router.push("/dashboard/simulador-financiamento-caixa/resultados");
-          }, 500);
-        } else if (data.status === "error") {
+            console.log('🔄 Executando router.push para /dashboard/simulador-financiamento-caixa/resultados')
+            try {
+              router.push("/dashboard/simulador-financiamento-caixa/resultados");
+              console.log('✅ Router.push executado com sucesso')
+            } catch (error) {
+              console.error('❌ Erro ao executar router.push:', error)
+            }
+          }, 1000);
+        } else if (statusNormalizado === "error") {
           setStatus("Erro no processamento");
           setLoading(false);
           clearInterval(interval);
