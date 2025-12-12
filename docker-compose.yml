@@ -1,6 +1,0 @@
-# Para executar o worker do simulador, use:
-# cd worker
-# docker compose up -d --build
-#
-# Este arquivo está mantido apenas para referência.
-# A configuração real está em /worker/docker-compose.yml
