@@ -20,11 +20,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  calcularIpcAcumuladoReverso,
+  calcularIndexAcumuladoReverso,
   calcularValorAtualizado,
   formatarData,
   formatarValor,
-  getIpcDiRate,
+  getIndexRate,
+  IndexType,
 } from "@/util";
 import classNames from "classnames";
 import { GeradorPdf } from "./gerador-pdf";
@@ -35,6 +36,7 @@ type VisualizacaoCalculoProps = {
   cliente: Cliente;
   contrato: Contrato;
   dataReferencia: string;
+  indiceSelecionado: IndexType;
   parcelas: ParcelaCurrentDebit[];
   onVoltar?: () => void;
 };
@@ -43,15 +45,15 @@ export type HistoricoIpc = {
   mes: string;
   ano: number;
   mesNumero: number;
-  ipc: number;
-  ipcAcumulado: number;
+  taxa: number;
+  acumulado: number;
 };
 
 export type ParcelaCalculada = {
   parcela: ParcelaCurrentDebit;
   dataBaixa: string;
   valorBaixa: number;
-  ipcAcumulado: number;
+  indexAcumulado: number;
   valorBaixaAtualizado: number;
 };
 
@@ -59,6 +61,7 @@ export function VisualizacaoCalculo({
   cliente,
   contrato,
   dataReferencia,
+  indiceSelecionado,
   parcelas,
 }: VisualizacaoCalculoProps) {
   const [historicoIpc, setHistoricoIpc] = useState<HistoricoIpc[]>([]);
@@ -117,15 +120,15 @@ export function VisualizacaoCalculo({
         anoAtual > anoInicio ||
         (anoAtual === anoInicio && mesAtual >= mesInicio)
       ) {
-        const taxaIpc = getIpcDiRate(mesAtual, anoAtual) || 0;
+        const taxaIndex = getIndexRate(mesAtual, anoAtual, indiceSelecionado) || 0;
 
-        // No mês de referência, IPC Acumulado = próprio IPC
+        // No mês de referência, Acumulado = própria taxa
         if (anoAtual === anoRef && mesAtual === mesRef) {
-          ipcAcumuladoProximo = taxaIpc;
+          ipcAcumuladoProximo = taxaIndex;
         } else {
-          // Fórmula reversa: (1 + IPC_Acum_próximo) * (1 + IPC_atual) - 1
+          // Fórmula reversa: (1 + Acum_próximo) * (1 + Taxa_atual) - 1
           ipcAcumuladoProximo =
-            (1 + ipcAcumuladoProximo / 100) * (1 + taxaIpc / 100) - 1;
+            (1 + ipcAcumuladoProximo / 100) * (1 + taxaIndex / 100) - 1;
           ipcAcumuladoProximo *= 100;
         }
 
@@ -133,8 +136,8 @@ export function VisualizacaoCalculo({
           mes: mesesNome[mesAtual - 1],
           ano: anoAtual,
           mesNumero: mesAtual,
-          ipc: taxaIpc,
-          ipcAcumulado: ipcAcumuladoProximo,
+          taxa: taxaIndex,
+          acumulado: ipcAcumuladoProximo,
         });
 
         // Voltar um mês
@@ -155,20 +158,21 @@ export function VisualizacaoCalculo({
         const dataBaixa = primeiroRecebimento.receiptDate;
         const valorBaixa = primeiroRecebimento.receiptValue;
 
-        const ipcAcumulado = calcularIpcAcumuladoReverso(
+        const indexAcumulado = calcularIndexAcumuladoReverso(
           dataBaixa,
-          dataReferencia
+          dataReferencia,
+          indiceSelecionado
         );
         const valorBaixaAtualizado = calcularValorAtualizado(
           valorBaixa,
-          ipcAcumulado
+          indexAcumulado
         );
 
         return {
           parcela,
           dataBaixa,
           valorBaixa,
-          ipcAcumulado,
+          indexAcumulado,
           valorBaixaAtualizado,
         };
       });
@@ -178,7 +182,7 @@ export function VisualizacaoCalculo({
 
     gerarHistoricoIpc();
     calcularParcelas();
-  }, [parcelas, dataReferencia]);
+  }, [parcelas, dataReferencia, indiceSelecionado]);
 
   const calcularTotalValorBaixa = () => {
     return parcelasCalculadas.reduce(
@@ -221,7 +225,7 @@ export function VisualizacaoCalculo({
       "Recto líquido com Mora": formatarMoeda(
         item.parcela.receipts[0]?.receiptNetValue || 0
       ),
-      "IPC Acum (%)": formatarPorcentagem(item.ipcAcumulado),
+      [`${indiceSelecionado} Acum (%)`]: formatarPorcentagem(item.indexAcumulado),
       "Valor Princ Atualizado": formatarMoeda(item.valorBaixaAtualizado),
     }));
 
@@ -247,15 +251,15 @@ export function VisualizacaoCalculo({
       "Data baixa": "TOTAIS:",
       "Valor baixa": formatarMoeda(totalValorBaixa),
       "Recto líquido com Mora": formatarMoeda(totalRectoLiquido),
-      "IPC Acum (%)": "",
+      [`${indiceSelecionado} Acum (%)`]: "",
       "Valor Princ Atualizado": formatarMoeda(totalValorAtualizado),
     });
 
-    // Criar dados do histórico IPC
+    // Criar dados do histórico do índice
     const dadosHistorico = historicoIpc.map((item) => ({
       Mês: `${item.mes}/${String(item.ano).slice(2)}`,
-      "IPC (%)": item.ipc.toFixed(2),
-      "IPC Acum (%)": item.ipcAcumulado.toFixed(2),
+      [`${indiceSelecionado} (%)`]: item.taxa.toFixed(2),
+      [`${indiceSelecionado} Acum (%)`]: item.acumulado.toFixed(2),
     }));
 
     // Criar workbook (Resultados primeiro, depois Histórico IPC)
@@ -265,7 +269,7 @@ export function VisualizacaoCalculo({
     const wsHistorico = XLSX.utils.json_to_sheet(dadosHistorico);
 
     XLSX.utils.book_append_sheet(wb, wsParcelas, "Resultados");
-    XLSX.utils.book_append_sheet(wb, wsHistorico, "IPC - Histórico");
+    XLSX.utils.book_append_sheet(wb, wsHistorico, `${indiceSelecionado} - Histórico`);
 
     // Download
     const dataRef = new Date(dataReferencia + "-01").toLocaleDateString(
@@ -289,20 +293,20 @@ export function VisualizacaoCalculo({
     <div className="w-full h-full flex flex-col gap-4 p-4">
       {/* Conteúdo */}
       <div className="w-full h-full flex gap-6 text-xs">
-        {/* Coluna da Esquerda - Histórico IPC */}
+        {/* Coluna da Esquerda - Histórico do Índice */}
         <div className="w-1/3">
           <Card className="h-full">
             <CardHeader>
-              <CardTitle className="text-base">Histórico IPC-DI</CardTitle>
+              <CardTitle className="text-base">Histórico {indiceSelecionado}</CardTitle>
             </CardHeader>
             <CardContent className="max-h-[600px] overflow-y-auto">
               <Table className="shadow-md rounded bg-white">
                 <TableHeader className="sticky top-0 bg-white z-10">
                   <TableRow>
                     <TableHead className="w-[100px]">Mês</TableHead>
-                    <TableHead className="w-[80px] text-right">IPC</TableHead>
+                    <TableHead className="w-[80px] text-right">{indiceSelecionado}</TableHead>
                     <TableHead className="w-[100px] text-right">
-                      IPC Acum
+                      {indiceSelecionado} Acum
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -318,10 +322,10 @@ export function VisualizacaoCalculo({
                         {item.mes}/{String(item.ano).slice(2)}
                       </TableCell>
                       <TableCell className="text-right">
-                        {item.ipc.toFixed(2)}%
+                        {item.taxa.toFixed(2)}%
                       </TableCell>
                       <TableCell className="text-right">
-                        {item.ipcAcumulado.toFixed(2)}%
+                        {item.acumulado.toFixed(2)}%
                       </TableCell>
                     </TableRow>
                   ))}
@@ -336,10 +340,10 @@ export function VisualizacaoCalculo({
           <Card className="h-full">
             <CardHeader>
               <CardTitle className="text-base">
-                Resultado do Cálculo IPC-DI
+                Resultado do Cálculo {indiceSelecionado}
               </CardTitle>
               <CardDescription className="text-xs">
-                Parcelas selecionadas com valores atualizados pelo IPC-DI
+                Parcelas selecionadas com valores atualizados pelo {indiceSelecionado}
               </CardDescription>
             </CardHeader>
             <CardContent className="max-h-[600px] overflow-y-auto">
@@ -353,7 +357,7 @@ export function VisualizacaoCalculo({
                       VALOR BAIXA
                     </TableHead>
                     <TableHead className="w-[80px] text-right">
-                      IPC ACUM
+                      {indiceSelecionado.toUpperCase()} ACUM
                     </TableHead>
                     <TableHead className="w-[130px] text-right">
                       VALOR ATUALIZADO
@@ -377,7 +381,7 @@ export function VisualizacaoCalculo({
                         R$ {formatarValor(item.valorBaixa)}
                       </TableCell>
                       <TableCell className="text-right">
-                        {item.ipcAcumulado.toFixed(2)}%
+                        {item.indexAcumulado.toFixed(2)}%
                       </TableCell>
                       <TableCell className="text-right font-bold">
                         R$ {formatarValor(item.valorBaixaAtualizado)}
@@ -433,6 +437,7 @@ export function VisualizacaoCalculo({
           props={{
             cliente,
             contrato,
+            indiceSelecionado,
             historicoIpc,
             parcelasCalculadas,
             totalValorBaixa: calcularTotalValorBaixa(),

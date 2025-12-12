@@ -43,8 +43,8 @@ export function Configuracoes() {
       <h1 className="text-2xl font-bold text-azul-vca">Configurações</h1>
       <div className="flex gap-6 w-full">
         <ConfigCard
-          title="IPC-DI (FGV)"
-          description="Gerenciar taxas mensais de IPC-DI"
+          title="Índices"
+          description="Gerenciar taxas mensais de índices"
           Icon={TrendingUp}
           onClick={() => setCurrentView("ipc-di")}
         />

@@ -19,13 +19,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatarData, formatarValor, formatarCpfCnpj } from "@/util";
+import { formatarData, formatarValor, formatarCpfCnpj, IndexType } from "@/util";
 import { LOGO_BASE64 } from "@/util/logo-base64";
 import classNames from "classnames";
 
 export type PdfProps = {
   cliente: Cliente;
   contrato: Contrato;
+  indiceSelecionado: IndexType;
   historicoIpc: HistoricoIpc[];
   parcelasCalculadas: ParcelaCalculada[];
   totalValorBaixa: number;
@@ -36,6 +37,7 @@ export type PdfProps = {
 export function Pdf({
   cliente,
   contrato,
+  indiceSelecionado,
   historicoIpc,
   parcelasCalculadas,
   totalValorBaixa,
@@ -116,12 +118,12 @@ export function Pdf({
         </CardContent>
       </Card>
 
-      {/* Histórico IPC */}
+      {/* Histórico do Índice */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle className="text-base">Histórico IPC-DI</CardTitle>
+          <CardTitle className="text-base">Histórico {indiceSelecionado}</CardTitle>
           <CardDescription className="text-xs">
-            Taxas de IPC utilizadas no cálculo
+            Taxas de {indiceSelecionado} utilizadas no cálculo
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -132,10 +134,10 @@ export function Pdf({
                   Mês
                 </TableHead>
                 <TableHead className="w-[120px] text-right border border-neutral-300 text-xs">
-                  IPC
+                  {indiceSelecionado}
                 </TableHead>
                 <TableHead className="w-[120px] text-right border border-neutral-300 text-xs">
-                  IPC Acum
+                  {indiceSelecionado} Acum
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -149,10 +151,10 @@ export function Pdf({
                     {item.mes}/{String(item.ano).slice(2)}
                   </TableCell>
                   <TableCell className="text-right border border-neutral-300 text-[10px]">
-                    {item.ipc.toFixed(2)}%
+                    {item.taxa.toFixed(2)}%
                   </TableCell>
                   <TableCell className="text-right border border-neutral-300 text-[10px]">
-                    {item.ipcAcumulado.toFixed(2)}%
+                    {item.acumulado.toFixed(2)}%
                   </TableCell>
                 </TableRow>
               ))}
@@ -165,10 +167,10 @@ export function Pdf({
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
-            Resultado do Cálculo IPC-DI
+            Resultado do Cálculo {indiceSelecionado}
           </CardTitle>
           <CardDescription className="text-xs">
-            Parcelas com valores atualizados pelo IPC-DI
+            Parcelas com valores atualizados pelo {indiceSelecionado}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -203,7 +205,7 @@ export function Pdf({
                   Recto líq. c/ Mora
                 </TableHead>
                 <TableHead className="w-[70px] text-right border border-neutral-300 text-xs">
-                  IPC Acum
+                  {indiceSelecionado} Acum
                 </TableHead>
                 <TableHead className="w-[100px] text-right border border-neutral-300 text-xs">
                   Valor Princ Atualizado
@@ -247,7 +249,7 @@ export function Pdf({
                     )}
                   </TableCell>
                   <TableCell className="text-right border border-neutral-300 text-[10px]">
-                    {item.ipcAcumulado.toFixed(2)}%
+                    {item.indexAcumulado.toFixed(2)}%
                   </TableCell>
                   <TableCell className="text-right font-bold border border-neutral-300 text-[10px]">
                     R$ {formatarValor(item.valorBaixaAtualizado)}

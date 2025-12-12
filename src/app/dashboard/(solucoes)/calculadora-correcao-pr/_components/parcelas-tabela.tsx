@@ -12,7 +12,7 @@ import classNames from "classnames";
 import { useState, useEffect } from "react";
 import { Cliente } from "@/components/search-form";
 import { Loader2Icon } from "lucide-react";
-import { formatarData, formatarValor, getIpcDiRate } from "@/util";
+import { formatarData, formatarValor, getIndexRate, IndexType } from "@/util";
 import { IncomeByBillsApiResponse } from "@/app/api/avp/income-by-bills/route";
 import { ClienteInfo } from "@/components/cliente-info";
 import { Contrato } from "./contratos-tabela";
@@ -76,6 +76,7 @@ export function ParcelasTabela({
     []
   );
   const [dataReferencia, setDataReferencia] = useState<string>("");
+  const [indiceSelecionado, setIndiceSelecionado] = useState<IndexType>("IPC-DI");
   const [mostrarCalculo, setMostrarCalculo] = useState(false);
   const [mostrarAlertaIpc, setMostrarAlertaIpc] = useState(false);
   const [mesesSemTaxa, setMesesSemTaxa] = useState<string[]>([]);
@@ -205,7 +206,7 @@ export function ParcelasTabela({
     }, 0);
   };
 
-  // Verificar se há meses sem taxa IPC cadastrada
+  // Verificar se há meses sem taxa do índice cadastrada
   const verificarTaxasIpcFaltantes = () => {
     if (!dataReferencia || parcelasSelecionadas.length === 0) return [];
 
@@ -256,8 +257,8 @@ export function ParcelasTabela({
       anoAtual > anoInicio ||
       (anoAtual === anoInicio && mesAtual >= mesInicio)
     ) {
-      const taxaIpc = getIpcDiRate(mesAtual, anoAtual);
-      if (taxaIpc === null) {
+      const taxaIndex = getIndexRate(mesAtual, anoAtual, indiceSelecionado);
+      if (taxaIndex === null) {
         mesesFaltantes.push(`${mesesNome[mesAtual - 1]}/${anoAtual}`);
       }
 
@@ -321,6 +322,7 @@ export function ParcelasTabela({
         cliente={cliente}
         contrato={contrato}
         dataReferencia={dataReferencia}
+        indiceSelecionado={indiceSelecionado}
         parcelas={parcelasParaCalculo}
         onVoltar={() => setMostrarCalculo(false)}
       />
@@ -335,28 +337,48 @@ export function ParcelasTabela({
         <Card className="w-full">
           <CardHeader>
             <CardTitle className="text-base">
-              Selecione a Data de Referência
+              Selecione a Data de Referência e Índice
             </CardTitle>
             <CardDescription className="text-xs">
-              Escolha o mês e ano de referência para calcular o IPC acumulado. O
+              Escolha o mês, ano e índice de referência para calcular o valor acumulado. O
               cálculo será feito retroativamente a partir desta data.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col gap-2">
-              <label
-                htmlFor="dataReferencia"
-                className="text-sm font-medium text-azul-vca"
-              >
-                Data de Referência:
-              </label>
-              <input
-                id="dataReferencia"
-                type="month"
-                value={dataReferencia}
-                onChange={(e) => setDataReferencia(e.target.value)}
-                className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-azul-claro-vca w-fit"
-              />
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="indiceSelecionado"
+                  className="text-sm font-medium text-azul-vca"
+                >
+                  Índice de Correção:
+                </label>
+                <select
+                  id="indiceSelecionado"
+                  value={indiceSelecionado}
+                  onChange={(e) => setIndiceSelecionado(e.target.value as IndexType)}
+                  className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-azul-claro-vca w-fit"
+                >
+                  <option value="IPC-DI">IPC-DI (FGV)</option>
+                  <option value="IGP-M">IGP-M (FGV)</option>
+                  <option value="IPCA">IPCA (IBGE)</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="dataReferencia"
+                  className="text-sm font-medium text-azul-vca"
+                >
+                  Data de Referência:
+                </label>
+                <input
+                  id="dataReferencia"
+                  type="month"
+                  value={dataReferencia}
+                  onChange={(e) => setDataReferencia(e.target.value)}
+                  className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-azul-claro-vca w-fit"
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -374,40 +396,60 @@ export function ParcelasTabela({
           <Card className="w-full">
             <CardHeader>
               <CardTitle className="text-base">
-                Selecione a Data de Referência
+                Selecione a Data de Referência e Índice
               </CardTitle>
               <CardDescription className="text-xs">
-                Escolha o mês e ano de referência para calcular o IPC acumulado
+                Escolha o mês, ano e índice de referência para calcular o valor acumulado
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col gap-2">
-                <label
-                  htmlFor="dataReferencia"
-                  className="text-sm font-medium text-azul-vca"
-                >
-                  Data de Referência:
-                </label>
-                <input
-                  id="dataReferencia"
-                  type="month"
-                  value={dataReferencia}
-                  onChange={(e) => setDataReferencia(e.target.value)}
-                  className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-azul-claro-vca w-fit"
-                />
+              <div className="flex gap-4">
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="indiceSelecionado"
+                    className="text-sm font-medium text-azul-vca"
+                  >
+                    Índice de Correção:
+                  </label>
+                  <select
+                    id="indiceSelecionado"
+                    value={indiceSelecionado}
+                    onChange={(e) => setIndiceSelecionado(e.target.value as IndexType)}
+                    className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-azul-claro-vca w-fit"
+                  >
+                    <option value="IPC-DI">IPC-DI (FGV)</option>
+                    <option value="IGP-M">IGP-M (FGV)</option>
+                    <option value="IPCA">IPCA (IBGE)</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="dataReferencia"
+                    className="text-sm font-medium text-azul-vca"
+                  >
+                    Data de Referência:
+                  </label>
+                  <input
+                    id="dataReferencia"
+                    type="month"
+                    value={dataReferencia}
+                    onChange={(e) => setDataReferencia(e.target.value)}
+                    className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-azul-claro-vca w-fit"
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Card de Parcelas com Correção IPC-DI */}
+          {/* Card de Parcelas com Correção */}
           {parcelasFiltradas.length > 0 && (
             <Card className="w-full">
               <CardHeader>
                 <CardTitle className="text-base">
-                  Parcelas com Correção IPC-DI
+                  Parcelas com Correção {indiceSelecionado}
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Parcelas pagas com cálculo automático de correção pelo IPC-DI.
+                  Parcelas pagas com cálculo automático de correção pelo {indiceSelecionado}.
                 </CardDescription>
                 {parcelasFiltradas.length > 0 && (
                   <div className="flex flex-row-reverse gap-3 mt-4">
@@ -524,14 +566,14 @@ export function ParcelasTabela({
         <Loader2Icon className="animate-spin duration-1000 text-neutral-500" />
       )}
 
-      {/* AlertDialog para avisar sobre taxas IPC faltantes */}
+      {/* AlertDialog para avisar sobre taxas faltantes */}
       <AlertDialog open={mostrarAlertaIpc} onOpenChange={setMostrarAlertaIpc}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Taxas IPC-DI Não Cadastradas</AlertDialogTitle>
+            <AlertDialogTitle>Taxas {indiceSelecionado} Não Cadastradas</AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <p>
-                Os seguintes meses não possuem taxa IPC-DI cadastrada no
+                Os seguintes meses não possuem taxa {indiceSelecionado} cadastrada no
                 sistema:
               </p>
               <ul className="list-disc list-inside ml-4 text-sm">
@@ -541,7 +583,7 @@ export function ParcelasTabela({
               </ul>
               <p className="mt-4">
                 O cálculo será feito normalmente para os meses que possuem taxa
-                cadastrada. Os meses sem taxa serão ignorados no cálculo do IPC
+                cadastrada. Os meses sem taxa serão ignorados no cálculo do {indiceSelecionado}
                 acumulado.
               </p>
               <p className="font-semibold">

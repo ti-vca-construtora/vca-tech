@@ -28,7 +28,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "src/app/dashboard/(solucoes)/agenda-vistorias/horarios/_components/disponibilizar-horarios.tsx",
-    "src/scripts.mjs"
+    "src/scripts.mjs",
+    "redis-test.js"
   ],
   "exclude": ["node_modules"]
 }

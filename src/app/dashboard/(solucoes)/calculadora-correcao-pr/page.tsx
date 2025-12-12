@@ -69,7 +69,7 @@ export default function CalculadoraCorrecaoPR() {
               />
               <MenuCard
                 title="Configurações"
-                description="Gerenciar taxas IPC-DI e parcelas a desconsiderar"
+                description="Gerenciar taxas de índices mensais e parcelas a desconsiderar"
                 Icon={Settings}
                 onClick={() => setCurrentView("configuracoes")}
               />

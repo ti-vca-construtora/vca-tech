@@ -141,24 +141,45 @@ export const isStringInArray = (
 };
 
 /**
- * Busca a taxa IPC-DI para um mês/ano específico no localStorage
+ * Tipos de índices de correção monetária disponíveis
  */
-export const getIpcDiRate = (mes: number, ano: number): number | null => {
+export type IndexType = "IPC-DI" | "IGP-M" | "IPCA";
+
+/**
+ * Busca a taxa de um índice específico para um mês/ano no localStorage
+ * @param mes Mês (1-12)
+ * @param ano Ano
+ * @param indexType Tipo de índice (IPC-DI, IGP-M, IPCA)
+ * @returns Taxa percentual ou null se não encontrada
+ */
+export const getIndexRate = (
+  mes: number,
+  ano: number,
+  indexType: IndexType = "IPC-DI",
+): number | null => {
   try {
-    const stored = localStorage.getItem("ipc-di-entries");
+    const stored = localStorage.getItem("index-entries");
     if (!stored) return null;
 
     const entries = JSON.parse(stored);
     const entry = entries.find(
-      (e: { mes: number; ano: number; ipc: number }) =>
-        e.mes === mes && e.ano === ano,
+      (e: { mes: number; ano: number; valor: number; tipo: IndexType }) =>
+        e.mes === mes && e.ano === ano && e.tipo === indexType,
     );
 
-    return entry ? entry.ipc : null;
+    return entry ? entry.valor : null;
   } catch (error) {
-    console.error("Erro ao buscar taxa IPC-DI:", error);
+    console.error(`Erro ao buscar taxa ${indexType}:`, error);
     return null;
   }
+};
+
+/**
+ * Busca a taxa IPC-DI para um mês/ano específico no localStorage
+ * @deprecated Use getIndexRate() para maior flexibilidade
+ */
+export const getIpcDiRate = (mes: number, ano: number): number | null => {
+  return getIndexRate(mes, ano, "IPC-DI");
 };
 
 /**
@@ -218,16 +239,18 @@ export const calcularValorAtualizado = (
 };
 
 /**
- * Calcula o IPC acumulado reverso (de trás para frente) a partir de uma data de referência
- * Fórmula: IPC Acum = (1 + IPC Acum do próximo mês) * (1 + IPC do mês atual) - 1
- * No mês de referência: IPC Acum = IPC do próprio mês
+ * Calcula o índice acumulado reverso (de trás para frente) a partir de uma data de referência
+ * Fórmula: Índice Acum = (1 + Índice Acum do próximo mês) * (1 + Índice do mês atual) - 1
+ * No mês de referência: Índice Acum = Índice do próprio mês
  * @param dataBaixa Data da baixa/pagamento da parcela
  * @param dataReferencia Data de referência no formato 'YYYY-MM' (ex: '2025-08')
- * @returns Percentual de IPC acumulado (ex: 0.95 para 0,95%)
+ * @param indexType Tipo de índice a ser utilizado
+ * @returns Percentual de índice acumulado (ex: 0.95 para 0,95%)
  */
-export const calcularIpcAcumuladoReverso = (
+export const calcularIndexAcumuladoReverso = (
   dataBaixa: string,
   dataReferencia: string,
+  indexType: IndexType = "IPC-DI",
 ): number => {
   const dataBaixaObj = new Date(dataBaixa);
   const [anoRef, mesRef] = dataReferencia.split("-").map(Number);
@@ -240,16 +263,16 @@ export const calcularIpcAcumuladoReverso = (
     return 0;
   }
 
-  // Se é o mesmo mês, retorna o IPC do próprio mês
+  // Se é o mesmo mês, retorna o índice do próprio mês
   if (anoBaixa === anoRef && mesBaixa === mesRef) {
-    const taxaIpc = getIpcDiRate(mesRef, anoRef);
-    return taxaIpc !== null ? taxaIpc : 0;
+    const taxaIndex = getIndexRate(mesRef, anoRef, indexType);
+    return taxaIndex !== null ? taxaIndex : 0;
   }
 
-  // Inicializar com o IPC do mês de referência (ponto de partida)
+  // Inicializar com o índice do mês de referência (ponto de partida)
   // Se não houver taxa para o mês de referência, inicia com 0 mas continua o cálculo
-  const ipcMesReferencia = getIpcDiRate(mesRef, anoRef);
-  let ipcAcumulado = ipcMesReferencia !== null ? ipcMesReferencia : 0;
+  const indexMesReferencia = getIndexRate(mesRef, anoRef, indexType);
+  let indexAcumulado = indexMesReferencia !== null ? indexMesReferencia : 0;
 
   // Começar do mês anterior ao de referência e ir até o mês da baixa
   let mesAtual = mesRef - 1;
@@ -264,14 +287,14 @@ export const calcularIpcAcumuladoReverso = (
     anoAtual > anoBaixa ||
     (anoAtual === anoBaixa && mesAtual >= mesBaixa)
   ) {
-    const taxaIpc = getIpcDiRate(mesAtual, anoAtual);
+    const taxaIndex = getIndexRate(mesAtual, anoAtual, indexType);
 
-    if (taxaIpc !== null) {
-      // Aplicar a fórmula: IPC Acum = (1 + IPC Acum próximo) * (1 + IPC atual) - 1
-      ipcAcumulado = (1 + ipcAcumulado / 100) * (1 + taxaIpc / 100) - 1;
-      ipcAcumulado *= 100; // Converter de volta para percentual
+    if (taxaIndex !== null) {
+      // Aplicar a fórmula: Índice Acum = (1 + Índice Acum próximo) * (1 + Índice atual) - 1
+      indexAcumulado = (1 + indexAcumulado / 100) * (1 + taxaIndex / 100) - 1;
+      indexAcumulado *= 100; // Converter de volta para percentual
     }
-    // Se taxaIpc for null, apenas pula este mês sem aplicar correção
+    // Se taxaIndex for null, apenas pula este mês sem aplicar correção
 
     // Voltar um mês
     mesAtual--;
@@ -281,7 +304,18 @@ export const calcularIpcAcumuladoReverso = (
     }
   }
 
-  return ipcAcumulado;
+  return indexAcumulado;
+};
+
+/**
+ * Calcula o IPC acumulado reverso (de trás para frente) a partir de uma data de referência
+ * @deprecated Use calcularIndexAcumuladoReverso() para maior flexibilidade
+ */
+export const calcularIpcAcumuladoReverso = (
+  dataBaixa: string,
+  dataReferencia: string,
+): number => {
+  return calcularIndexAcumuladoReverso(dataBaixa, dataReferencia, "IPC-DI");
 };
 
 export const calcularVPA = (TJM: number, MD: number, VPO: number) => {
