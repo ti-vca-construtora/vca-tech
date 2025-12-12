@@ -2,16 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Queue } from 'bullmq'
 
 const redisConnection = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: Number(process.env.REDIS_PORT) || 6379,
+  url: process.env.REDIS_URL,
   maxRetriesPerRequest: null,
 }
 
 console.log('🔍 [Redis Config]', {
-  host: redisConnection.host,
-  port: redisConnection.port,
-  env_host: process.env.REDIS_HOST,
-  env_port: process.env.REDIS_PORT
+  url: process.env.REDIS_URL,
 })
 
 // Só criar a fila se não estiver em build time
