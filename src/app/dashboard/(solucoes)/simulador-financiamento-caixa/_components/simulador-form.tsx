@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Loader2, PlayCircle, ChevronRight, ChevronLeft, User, Home, UserPen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -647,6 +647,12 @@ export function SimuladorForm() {
       {/* Modal de Carregamento */}
       <Dialog open={loading || erro !== null}>
         <DialogContent className="sm:max-w-md">
+          <DialogTitle className="sr-only">
+            {erro ? "Erro na Simulação" : "Processando Simulação"}
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            {erro ? "Ocorreu um erro durante o processamento da simulação" : "Aguarde enquanto processamos sua simulação"}
+          </DialogDescription>
           {erro ? (
             // Tela de Erro
             <div className="flex flex-col items-center justify-center space-y-4 py-8">

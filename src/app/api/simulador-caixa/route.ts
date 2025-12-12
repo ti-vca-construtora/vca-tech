@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const upstreamUrl = 'https://workers-caixa-production.up.railway.app/simulador-caixa?wait=true'
+const upstreamUrl = 'https://workers-caixa-production.up.railway.app/simulador-caixa'
 
 export async function POST(request: NextRequest) {
   try {
