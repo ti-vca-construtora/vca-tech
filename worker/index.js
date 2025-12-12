@@ -3,14 +3,16 @@ const { chromium } = require("playwright");
 
 // Configuração do Redis
 const redisConnection = {
-  host: process.env.REDIS_HOST || "localhost",
-  port: Number(process.env.REDIS_PORT) || 6379,
+  url: process.env.REDIS_URL,
   maxRetriesPerRequest: null, // Importante para BullMQ
 };
 
 // Criar fila (para adicionar jobs - usado pela API)
 const simuladorQueue = new Queue("simulador-caixa", {
-  connection: redisConnection,
+  connection: {
+    url: process.env.REDIS_URL,
+    maxRetriesPerRequest: null,
+  },
 });
 
 // Função principal de processamento
@@ -822,15 +824,16 @@ async function processSimulacao(job) {
   }
 }
 
-// Criar worker
 const worker = new Worker("simulador-caixa", processSimulacao, {
-  connection: redisConnection,
-  concurrency: 2, // Processar 2 jobs simultaneamente
-  limiter: {
-    max: 10, // Máximo 10 jobs
-    duration: 60000, // Por minuto
+  connection: {
+    url: process.env.REDIS_URL,
+    maxRetriesPerRequest: null,
   },
-  // Desabilitar retry automático - usuário decide se tenta novamente
+  concurrency: 2,
+  limiter: {
+    max: 10,
+    duration: 60000,
+  },
   attempts: 1,
   backoff: {
     type: "fixed",
