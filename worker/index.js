@@ -7,6 +7,21 @@ const redisConnection = {
   maxRetriesPerRequest: null, // Importante para BullMQ
 };
 
+const http = require("http");
+
+// O Railway injeta a porta automaticamente na variável process.env.PORT
+const port = process.env.PORT || 3000;
+
+const server = http.createServer((req, res) => {
+  res.statusCode = 200;
+  res.setHeader("Content-Type", "text/plain");
+  res.end("Worker is active 🚀\n");
+});
+
+server.listen(port, "0.0.0.0", () => {
+  console.log(`Health Check server rodando na porta ${port}`);
+});
+
 // Criar fila (para adicionar jobs - usado pela API)
 const simuladorQueue = new Queue("simulador-caixa", {
   connection: {
