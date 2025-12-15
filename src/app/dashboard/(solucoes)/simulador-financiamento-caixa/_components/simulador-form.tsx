@@ -438,8 +438,9 @@ export function SimuladorForm() {
           // Capturar resultados
           if (data.result?.resultados) {
             sessionStorage.setItem("resultadosSimulacao", JSON.stringify(data.result.resultados));
-            console.log('📋 Resultados salvos:', data.result.resultados)
-          }
+          } else if (data.resultados) {
+            sessionStorage.setItem("resultadosSimulacao", JSON.stringify(data.resultados));
+}
 
           // Download automático do PDF
           if (data.result?.pdfBase64) {
