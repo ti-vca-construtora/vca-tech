@@ -216,25 +216,30 @@ export function SimuladorForm() {
     }));
 
     try {
-      const response = await fetch("/api/simulador-caixa", {
+      const API_URL = process.env.NEXT_PUBLIC_CAIXA_URL ?? "/api/simulador-caixa";
+
+      const payload = {
+        origemRecurso,
+        valorImovel: valorImovel.replace(/\D/g, ""),
+        valorAvaliacao: valorAvaliacao.replace(/\D/g, ""),
+        cidade,
+        rendaFamiliar: rendaFamiliar.replace(/\D/g, ""),
+        dataNascimento: dataNascimentoCliente,
+        possuiTresAnosFGTS,
+        jaBeneficiadoSubsidio,
+        possuiDependentes,
+        quantidadeParticipantes,
+        sistemaAmortizacao,
+        participantes: participantesAjustados.map((p, i) => ({
+          dataNascimento: i === 0 ? dataNascimentoCliente : p.dataNascimento,
+          pactuacao: p.pactuacao,
+        })),
+      };
+
+      const response = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nomeCliente,
-          valorImovel: valorImovel.replace(/\D/g, ""),
-          nomeEmpreendimento,
-          unidade,
-          origemRecurso,
-          cidade,
-          valorAvaliacao: valorAvaliacao.replace(/\D/g, ""),
-          rendaFamiliar: rendaFamiliar.replace(/\D/g, ""),
-          quantidadeParticipantes,
-          participantes: participantesAjustados,
-          possuiTresAnosFGTS,
-          jaBeneficiadoSubsidio,
-          sistemaAmortizacao,
-          possuiDependentes,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -243,14 +248,86 @@ export function SimuladorForm() {
         throw new Error(data.error || "Erro ao iniciar simulação");
       }
 
-      setJobId(data.jobId);
-      setStatus("Aguardando processamento...");
-      pollJobStatus(data.jobId);
+      // Suporta dois fluxos: assíncrono (com jobId) e síncrono (resultado imediato)
+      if (data.jobId) {
+        setJobId(data.jobId);
+        setStatus("Aguardando processamento...");
+        pollJobStatus(data.jobId);
 
-      toast({
-        title: "Simulação iniciada",
-        description: `Job ID: ${data.jobId}`,
-      });
+        toast({
+          title: "Simulação iniciada",
+          description: `Job ID: ${data.jobId}`,
+        });
+      } else {
+        // Resultado imediato
+        const resultadoCompleto = data.result ?? data;
+        const resultados = resultadoCompleto.resultados ?? null;
+        const pdfBase64 = resultadoCompleto.pdfBase64 ?? null;
+
+        setStatus("Simulação concluída!");
+        setLoading(false);
+
+        // Salvar dados da simulação (entrada)
+        const dadosParaSalvar: DadosSimulacao = {
+          nomeCliente,
+          valorImovel,
+          nomeEmpreendimento,
+          unidade,
+          origemRecurso,
+          cidade,
+          valorAvaliacao,
+          rendaFamiliar,
+          quantidadeParticipantes,
+          participantes,
+          possuiTresAnosFGTS,
+          jaBeneficiadoSubsidio,
+          sistemaAmortizacao,
+          possuiDependentes,
+        };
+        sessionStorage.setItem("dadosSimulacao", JSON.stringify(dadosParaSalvar));
+
+        if (resultados) {
+          sessionStorage.setItem("resultadosSimulacao", JSON.stringify(resultados));
+        }
+
+        if (pdfBase64) {
+          try {
+            const byteCharacters = atob(pdfBase64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const nomeArquivo = nomeCliente 
+              ? `simulacao-${nomeCliente.replace(/\s+/g, '-')}.pdf`
+              : `simulacao-${Date.now()}.pdf`;
+            a.download = nomeArquivo;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+          } catch (error) {
+            console.error('Erro ao fazer download do PDF:', error);
+          }
+        }
+
+        toast({
+          title: "Sucesso!",
+          description: "Simulação concluída! Redirecionando...",
+        });
+
+        setTimeout(() => {
+          try {
+            router.push("/dashboard/simulador-financiamento-caixa/resultados");
+          } catch (error) {
+            console.error('Erro ao redirecionar:', error);
+          }
+        }, 1000);
+      }
     } catch (error) {
       console.error("Erro:", error);
       toast({
