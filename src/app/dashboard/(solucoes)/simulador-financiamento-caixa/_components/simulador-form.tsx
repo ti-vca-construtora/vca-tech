@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -22,15 +22,6 @@ import { Badge } from "@/components/ui/badge";
 interface Participante {
   pactuacao: number;
   dataNascimento: string;
-}
-
-interface Resultados {
-  tipoFinanciamento: string;
-  valorImovel: string;
-  subsidio: string;
-  valorFinanciado: string;
-  prestacao: string;
-  prazo: string;
 }
 
 interface DadosSimulacao {
@@ -130,14 +121,12 @@ export function SimuladorForm() {
   };
 
   const proximaEtapa = (e?: React.MouseEvent<HTMLButtonElement>) => {
-    // Prevenir submit do formulário
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
     
     if (etapaAtual === 1) {
-      // Validar etapa 1
       if (!nomeCliente || !dataNascimentoCliente || !cidade || !rendaFamiliar) {
         toast({
           title: "Campos obrigatórios",
@@ -147,7 +136,6 @@ export function SimuladorForm() {
         return;
       }
     } else if (etapaAtual === 2) {
-      // Validar etapa 2
       if (!valorAvaliacao || !valorImovel || !nomeEmpreendimento || !unidade) {
         toast({
           title: "Campos obrigatórios",
@@ -160,14 +148,7 @@ export function SimuladorForm() {
     setEtapaAtual(etapaAtual + 1);
   };
 
-  const novaSimulacao = () => {
-    setEtapaAtual(1);
-    setJobId(null);
-    setStatus("");
-  };
-
   const etapaAnterior = (e?: React.MouseEvent<HTMLButtonElement>) => {
-    // Prevenir submit do formulário
     if (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -190,7 +171,6 @@ export function SimuladorForm() {
         return;
       }
       
-      // Verificar se todas as datas foram preenchidas
       for (let i = 0; i < participantes.length; i++) {
         if (!participantes[i].dataNascimento) {
           toast({
@@ -209,14 +189,12 @@ export function SimuladorForm() {
     setErro(null);
     setLoadingMessage("🚀 Iniciando automação...");
 
-    // Garantir que participante 1 sempre tem a data do cliente
     const participantesAjustados = participantes.map((p, i) => ({
       ...p,
       dataNascimento: i === 0 ? dataNascimentoCliente : p.dataNascimento,
     }));
 
     try {
-      // Garante que a URL sempre termina com /api/simulador-caixa
       let API_URL = process.env.NEXT_PUBLIC_CAIXA_URL ?? "/api/simulador-caixa";
       if (API_URL && !API_URL.endsWith("/api/simulador-caixa")) {
         API_URL = API_URL.replace(/\/?$/, "/api/simulador-caixa");
@@ -240,100 +218,101 @@ export function SimuladorForm() {
         })),
       };
 
+      console.log('📤 Enviando payload para API:', payload);
+
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      // Tenta ler o body, pode falhar se não for JSON
       let data;
-      let response;
       try {
-        response = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        // Tenta parsear JSON, se falhar, captura erro
         data = await response.json();
       } catch (err) {
-        // Se não for JSON, tenta ler texto e lança erro mais amigável
-        let errorText = "";
-        if (response) {
-          try {
-            errorText = await response.text();
-          } catch {}
-        }
-        throw new Error(errorText || "Erro desconhecido ao conectar ao endpoint");
+        const text = await response.text();
+        throw new Error(text || "Erro desconhecido ao conectar ao endpoint");
       }
 
       if (!response.ok) {
         throw new Error(data.error || "Erro ao iniciar simulação");
       }
 
-      // Suporta dois fluxos: assíncrono (com jobId) e síncrono (resultado imediato)
+      console.log('📥 Resposta recebida da API:', data);
+
+      // Cenário 1: Retornou Job ID (processamento assíncrono / polling)
       if (data.jobId) {
         setJobId(data.jobId);
         setStatus("Aguardando processamento...");
         pollJobStatus(data.jobId);
-
         toast({
           title: "Simulação iniciada",
           description: `Job ID: ${data.jobId}`,
         });
-      } else {
-        // Resultado imediato
-
-        const resultadoCompleto = data.result ?? data;
-        // Use os dados retornados pela API, se existirem
-        const dadosSimulacaoAPI = resultadoCompleto.dadosSimulacao ?? resultadoCompleto.dados ?? null;
-        // Tenta pegar resultados de todos os formatos possíveis
-        const resultadosAPI = resultadoCompleto.resultados ?? data.resultados ?? data.result?.resultados ?? null;
-        const pdfBase64 = resultadoCompleto.pdfBase64 ?? null;
-
+      } 
+      // Cenário 2: Resultado imediato (Sync)
+      else {
         setStatus("Simulação concluída!");
         setLoading(false);
 
-        // Salvar dados exatamente como vieram da API, se existirem
-        if (dadosSimulacaoAPI) {
-          sessionStorage.setItem("dadosSimulacao", JSON.stringify(dadosSimulacaoAPI));
-          console.log('💾 dadosSimulacao salvo:', dadosSimulacaoAPI);
+        // A estrutura esperada do 'route.ts' é { status: 'completed', result: { dados, resultados, pdfBase64 } }
+        const workerData = data.result || data;
+        
+        // 1. DADOS DA SIMULAÇÃO
+        // Tenta pegar do retorno do worker, senão usa os dados do form como fallback
+        const dadosRetornados = workerData.dados || workerData.dadosSimulacao;
+        
+        let dadosParaSalvar: DadosSimulacao;
+        
+        if (dadosRetornados) {
+            dadosParaSalvar = dadosRetornados;
         } else {
-          // fallback para dados do formulário
-          const dadosParaSalvar: DadosSimulacao = {
-            nomeCliente,
-            valorImovel,
-            nomeEmpreendimento,
-            unidade,
-            origemRecurso,
-            cidade,
-            valorAvaliacao,
-            rendaFamiliar,
-            quantidadeParticipantes,
-            participantes,
-            possuiTresAnosFGTS,
-            jaBeneficiadoSubsidio,
-            sistemaAmortizacao,
-            possuiDependentes,
-          };
-          sessionStorage.setItem("dadosSimulacao", JSON.stringify(dadosParaSalvar));
-          console.log('💾 dadosSimulacao salvo (fallback):', dadosParaSalvar);
+             dadosParaSalvar = {
+                nomeCliente,
+                valorImovel,
+                nomeEmpreendimento,
+                unidade,
+                origemRecurso,
+                cidade,
+                valorAvaliacao,
+                rendaFamiliar,
+                quantidadeParticipantes,
+                participantes,
+                possuiTresAnosFGTS,
+                jaBeneficiadoSubsidio,
+                sistemaAmortizacao,
+                possuiDependentes,
+            };
+        }
+        
+        // Injetar dados do formulário que o worker pode não retornar (ex: unidade, empreendimento)
+        dadosParaSalvar.nomeEmpreendimento = nomeEmpreendimento;
+        dadosParaSalvar.unidade = unidade;
+
+        sessionStorage.setItem("dadosSimulacao", JSON.stringify(dadosParaSalvar));
+        console.log('💾 dadosSimulacao salvos:', dadosParaSalvar);
+
+        // 2. RESULTADOS
+        // O worker retorna o objeto 'resultados' formatado corretamente.
+        const resultadosAPI = workerData.resultados;
+
+        if (resultadosAPI && Object.keys(resultadosAPI).length > 0) {
+          sessionStorage.setItem("resultadosSimulacao", JSON.stringify(resultadosAPI));
+          console.log('💾 resultadosSimulacao salvos:', resultadosAPI);
+        } else {
+          console.error('❌ ERRO CRÍTICO: Objeto resultados vindo da API está vazio:', workerData);
+          toast({
+             title: "Erro nos resultados",
+             description: "A simulação não retornou os valores financeiros. Verifique o console.",
+             variant: "destructive"
+          });
+          // Não redirecionar se falhar
+          return;
         }
 
-        // Montar resultadosSimulacao conforme solicitado
-        if (resultadosAPI) {
-          const resultadosCustom = {
-            tipoFinanciamento: resultadosAPI.tipoFinanciamento ?? '',
-            valorAvaliacao: valorAvaliacao,
-            valorImovel: valorImovel,
-            entrada: resultadosAPI.entrada ?? '',
-            subsidio: resultadosAPI.subsidio ?? '',
-            valorFinanciado: resultadosAPI.valorFinanciado ?? '',
-            prestacao: resultadosAPI.prestacao ?? '',
-            prazo: resultadosAPI.prazo ?? '',
-          };
-          sessionStorage.setItem("resultadosSimulacao", JSON.stringify(resultadosCustom));
-          console.log('💾 resultadosSimulacao salvo (custom):', resultadosCustom);
-        } else {
-          // Se não veio resultados, salva um objeto vazio para evitar erro de redirecionamento
-          sessionStorage.setItem("resultadosSimulacao", JSON.stringify({}));
-          console.warn('⚠️ resultadosSimulacao não encontrado na resposta, salvando objeto vazio.');
-        }
-
+        // 3. PDF DOWNLOAD
+        const pdfBase64 = workerData.pdfBase64;
         if (pdfBase64) {
           try {
             const byteCharacters = atob(pdfBase64);
@@ -346,9 +325,7 @@ export function SimuladorForm() {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            const nomeArquivo = (dadosSimulacaoAPI?.nomeCliente || nomeCliente)
-              ? `simulacao-${(dadosSimulacaoAPI?.nomeCliente || nomeCliente).replace(/\s+/g, '-')}.pdf`
-              : `simulacao-${Date.now()}.pdf`;
+            const nomeArquivo = `simulacao-${(dadosParaSalvar.nomeCliente || "cliente").replace(/\s+/g, '-')}.pdf`;
             a.download = nomeArquivo;
             document.body.appendChild(a);
             a.click();
@@ -365,23 +342,14 @@ export function SimuladorForm() {
         });
 
         setTimeout(() => {
-          try {
-            // Confirma se os dados estão no sessionStorage antes de redirecionar
-            const checkDados = sessionStorage.getItem("dadosSimulacao");
-            const checkResultados = sessionStorage.getItem("resultadosSimulacao");
-            console.log('🔎 check sessionStorage antes do push:', { checkDados, checkResultados });
-            router.push("/dashboard/simulador-financiamento-caixa/resultados");
-          } catch (error) {
-            console.error('Erro ao redirecionar:', error);
-          }
-        }, 1000);
+          router.push("/dashboard/simulador-financiamento-caixa/resultados");
+        }, 800);
       }
     } catch (error) {
-      console.error("Erro:", error);
+      console.error("Erro no handleSubmit:", error);
       toast({
         title: "Erro",
-        description:
-          error instanceof Error ? error.message : "Erro ao iniciar simulação",
+        description: error instanceof Error ? error.message : "Erro ao iniciar simulação",
         variant: "destructive",
       });
       setLoading(false);
@@ -389,162 +357,101 @@ export function SimuladorForm() {
   };
 
   const pollJobStatus = async (id: string) => {
-    let tentativas = 0
-    const maxTentativas = 150 // 5 minutos com polling de 2 segundos
+    let tentativas = 0;
+    const maxTentativas = 150; // 5 minutos
     
     const interval = setInterval(async () => {
       try {
-        tentativas++
-        
-        // Timeout após 150 tentativas (5 minutos)
+        tentativas++;
         if (tentativas > maxTentativas) {
-          clearInterval(interval)
-          setLoading(false)
-          setStatus("Tempo limite excedido")
+          clearInterval(interval);
+          setLoading(false);
+          setStatus("Tempo limite excedido");
           toast({
             title: "Timeout",
-            description: "A simulação demorou mais de 5 minutos. Por favor, tente novamente.",
+            description: "A simulação demorou mais de 5 minutos.",
             variant: "destructive",
-          })
-          return
+          });
+          return;
         }
         
-        const response = await fetch(`/api/simulador-caixa?jobId=${id}`)
-        const data = await response.json()
+        const response = await fetch(`/api/simulador-caixa?jobId=${id}`);
+        const data = await response.json();
 
-        console.log(`[Polling ${tentativas}] Status:`, data.status, 'Progress:', data.progress, 'Data completo:', data)
+        console.log(`[Polling ${tentativas}]`, data);
 
-        // Atualizar progresso e mensagem
         if (data.progress !== undefined) {
-          setProgresso(data.progress)
-          setLoadingMessage(getMessageFromProgress(data.progress))
+          setProgresso(data.progress);
+          setLoadingMessage(getMessageFromProgress(data.progress));
         }
 
-        // Normalizar status para lowercase para evitar problemas de case sensitivity
-        const statusNormalizado = data.status?.toLowerCase()
+        const statusNormalizado = data.status?.toLowerCase();
 
         if (statusNormalizado === "pending") {
-          setStatus("Aguardando worker processar o job...")
+          setStatus("Aguardando fila...");
         } else if (statusNormalizado === "processing") {
-          setStatus("Processando simulação na Caixa...")
+          setStatus("Processando simulação...");
         } else if (statusNormalizado === "failed") {
-          clearInterval(interval)
-          setLoading(false)
-          setErro(data.error || "Erro desconhecido durante a simulação")
-          toast({
-            title: "Erro na simulação",
-            description: data.error || "Ocorreu um erro durante o processamento",
-            variant: "destructive",
-          })
-        } else if (statusNormalizado === "completed") {
-          console.log('✅ Simulação completada! Iniciando redirecionamento...')
-          console.log('📊 Dados recebidos:', data.result)
-          console.log('📦 Resultado completo:', JSON.stringify(data, null, 2))
-          
-          setStatus("Simulação concluída!")
-          setLoading(false)
-          clearInterval(interval)
-
-          // Salvar dados no sessionStorage
-          const dadosParaSalvar: DadosSimulacao = {
-            nomeCliente,
-            valorImovel,
-            nomeEmpreendimento,
-            unidade,
-            origemRecurso,
-            cidade,
-            valorAvaliacao,
-            rendaFamiliar,
-            quantidadeParticipantes,
-            participantes,
-            possuiTresAnosFGTS,
-            jaBeneficiadoSubsidio,
-            sistemaAmortizacao,
-            possuiDependentes,
-          };
-          
-          sessionStorage.setItem("dadosSimulacao", JSON.stringify(dadosParaSalvar));
-          console.log('💾 Dados salvos no sessionStorage')
-          
-          // Capturar resultados
-          // Salvar resultados exatamente como vieram da API
-          if (data.result?.resultados) {
-            sessionStorage.setItem("resultadosSimulacao", JSON.stringify(data.result.resultados));
-          } else if (data.resultados) {
-            sessionStorage.setItem("resultadosSimulacao", JSON.stringify(data.resultados));
-          }
-
-          // Download automático do PDF
-          if (data.result?.pdfBase64) {
-            try {
-              // Converter base64 para blob
-              const byteCharacters = atob(data.result.pdfBase64);
-              const byteNumbers = new Array(byteCharacters.length);
-              for (let i = 0; i < byteCharacters.length; i++) {
-                byteNumbers[i] = byteCharacters.charCodeAt(i);
-              }
-              const byteArray = new Uint8Array(byteNumbers);
-              const blob = new Blob([byteArray], { type: 'application/pdf' });
-              
-              // Criar link de download
-              const url = window.URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              const nomeArquivo = data.result.nomeCliente 
-                ? `simulacao-${data.result.nomeCliente.replace(/\s+/g, '-')}.pdf`
-                : `simulacao-${id}.pdf`;
-              a.download = nomeArquivo;
-              document.body.appendChild(a);
-              a.click();
-              window.URL.revokeObjectURL(url);
-              document.body.removeChild(a);
-              
-              console.log('✅ PDF baixado automaticamente');
-            } catch (error) {
-              console.error('Erro ao fazer download do PDF:', error);
-            }
-          }
-
-          toast({
-            title: "Sucesso!",
-            description: "Simulação concluída! Redirecionando...",
-          });
-          
-          console.log('🚀 Iniciando redirecionamento em 1 segundo...')
-          
-          // Navegar para página de resultados - aumentar timeout para garantir que sessionStorage foi salvo
-          setTimeout(() => {
-            console.log('🔄 Executando router.push para /dashboard/simulador-financiamento-caixa/resultados')
-            try {
-              router.push("/dashboard/simulador-financiamento-caixa/resultados");
-              console.log('✅ Router.push executado com sucesso')
-            } catch (error) {
-              console.error('❌ Erro ao executar router.push:', error)
-            }
-          }, 1000);
-        } else if (statusNormalizado === "error") {
-          setStatus("Erro no processamento");
-          setLoading(false);
           clearInterval(interval);
+          setLoading(false);
+          setErro(data.error || "Erro desconhecido durante a simulação");
+          toast({ title: "Erro", description: data.error, variant: "destructive" });
+        } else if (statusNormalizado === "completed") {
+          clearInterval(interval);
+          setStatus("Simulação concluída!");
+          setLoading(false);
+          
+          const resultado = data.result;
 
-          toast({
-            title: "Erro",
-            description: data.error || "Erro ao processar simulação",
-            variant: "destructive",
-          });
+          // Salvar Dados
+          if (resultado?.dados) {
+             // Injetar dados locais que não vão para o worker
+             const dadosFinal = {
+                 ...resultado.dados,
+                 nomeEmpreendimento,
+                 unidade
+             };
+             sessionStorage.setItem("dadosSimulacao", JSON.stringify(dadosFinal));
+          }
+
+          // Salvar Resultados
+          if (resultado?.resultados) {
+             sessionStorage.setItem("resultadosSimulacao", JSON.stringify(resultado.resultados));
+          } else {
+             console.error("❌ Polling completou mas sem resultados:", resultado);
+          }
+
+          // PDF Download
+          if (resultado?.pdfBase64) {
+             // Lógica de download do blob igual ao sync
+             try {
+                const byteCharacters = atob(resultado.pdfBase64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                  byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: 'application/pdf' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `simulacao-${id}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+             } catch(e) { console.error(e); }
+          }
+
+          toast({ title: "Sucesso!", description: "Redirecionando..." });
+          setTimeout(() => {
+            router.push("/dashboard/simulador-financiamento-caixa/resultados");
+          }, 1000);
         }
       } catch (error) {
-        console.error("Erro ao verificar status:", error);
-        clearInterval(interval);
-        setLoading(false);
-        setStatus("Erro ao verificar status");
-        toast({
-          title: "Erro",
-          description: "Erro ao verificar status da simulação",
-          variant: "destructive",
-        });
+        console.error("Erro no polling:", error);
       }
-    }, 2000); // Polling a cada 2 segundos
+    }, 2000);
   };
 
   const renderEtapa1 = () => (
@@ -601,12 +508,7 @@ export function SimuladorForm() {
             checked={possuiTresAnosFGTS}
             onCheckedChange={(checked) => setPossuiTresAnosFGTS(!!checked)}
           />
-          <label
-            htmlFor="possuiTresAnosFGTS"
-            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-          >
-            Possui 3 anos de FGTS
-          </label>
+          <label htmlFor="possuiTresAnosFGTS" className="text-sm font-medium">Possui 3 anos de FGTS</label>
         </div>
         <div className="flex items-center space-x-2">
           <Checkbox
@@ -614,12 +516,7 @@ export function SimuladorForm() {
             checked={jaBeneficiadoSubsidio}
             onCheckedChange={(checked) => setJaBeneficiadoSubsidio(!!checked)}
           />
-          <label
-            htmlFor="jaBeneficiadoSubsidio"
-            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-          >
-            Já beneficiado com subsídio
-          </label>
+          <label htmlFor="jaBeneficiadoSubsidio" className="text-sm font-medium">Já beneficiado com subsídio</label>
         </div>
         <div className="flex items-center space-x-2">
           <Checkbox
@@ -627,12 +524,7 @@ export function SimuladorForm() {
             checked={possuiDependentes}
             onCheckedChange={(checked) => setPossuiDependentes(!!checked)}
           />
-          <label
-            htmlFor="possuiDependentes"
-            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-          >
-            Possui dependentes
-          </label>
+          <label htmlFor="possuiDependentes" className="text-sm font-medium">Possui dependentes</label>
         </div>
       </div>
     </div>
@@ -788,33 +680,22 @@ export function SimuladorForm() {
 
   return (
     <div className="space-y-6">
-      {/* Modal de Carregamento */}
       <Dialog open={loading || erro !== null}>
         <DialogContent className="sm:max-w-md">
           {erro ? (
-            // Tela de Erro
             <div className="flex flex-col items-center justify-center space-y-4 py-8">
               <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center">
                 <span className="text-4xl">❌</span>
               </div>
               <div className="text-center space-y-2">
                 <h3 className="text-lg font-semibold text-destructive">Erro na Simulação</h3>
-                <p className="text-sm text-muted-foreground">
-                  {erro}
-                </p>
-                <Button 
-                  onClick={() => {
-                    setErro(null);
-                    setLoading(false);
-                  }}
-                  className="mt-4"
-                >
+                <p className="text-sm text-muted-foreground">{erro}</p>
+                <Button onClick={() => { setErro(null); setLoading(false); }} className="mt-4">
                   Fechar
                 </Button>
               </div>
             </div>
           ) : (
-            // Tela de Carregamento sem barra de progresso
             <div className="flex flex-col items-center justify-center space-y-4 py-8">
               <Loader2 className="h-16 w-16 animate-spin text-primary" />
               <div className="text-center space-y-4 w-full px-4">
@@ -828,22 +709,18 @@ export function SimuladorForm() {
         </DialogContent>
       </Dialog>
 
-      {/* Formulário */}
       <Card className="w-full mx-auto">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex gap-2">
               <Badge variant={etapaAtual === 1 ? "default" : "outline"}>
-                <User className="h-3 w-3 mr-1" />
-                Cliente
+                <User className="h-3 w-3 mr-1" /> Cliente
               </Badge>
               <Badge variant={etapaAtual === 2 ? "default" : "outline"}>
-                <Home className="h-3 w-3 mr-1" />
-                Imóvel
+                <Home className="h-3 w-3 mr-1" /> Imóvel
               </Badge>
               <Badge variant={etapaAtual === 3 ? "default" : "outline"}>
-                <UserPen  className="h-3 w-3 mr-1" />
-                Pactuação
+                <UserPen className="h-3 w-3 mr-1" /> Pactuação
               </Badge>
             </div>
           </div>
@@ -854,38 +731,20 @@ export function SimuladorForm() {
               {etapaAtual === 2 && renderEtapa2()}
               {etapaAtual === 3 && renderEtapa3()}
 
-              {/* Navegação */}
               <div className="flex justify-between gap-3">
                 {etapaAtual > 1 && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={etapaAnterior}
-                    disabled={loading}
-                  >
-                    <ChevronLeft className="mr-2 h-4 w-4" />
-                    Voltar
+                  <Button type="button" variant="outline" onClick={etapaAnterior} disabled={loading}>
+                    <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
                   </Button>
                 )}
 
                 {etapaAtual < 3 ? (
-                  <Button
-                    type="button"
-                    onClick={proximaEtapa}
-                    disabled={loading}
-                    className="ml-auto"
-                  >
-                    Próximo
-                    <ChevronRight className="ml-2 h-4 w-4" />
+                  <Button type="button" onClick={proximaEtapa} disabled={loading} className="ml-auto">
+                    Próximo <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
                 ) : (
-                  <Button
-                    type="submit"
-                    className="ml-auto"
-                    disabled={loading}
-                  >
-                    <PlayCircle className="mr-2 h-4 w-4" />
-                    Iniciar Simulação
+                  <Button type="submit" className="ml-auto" disabled={loading}>
+                    <PlayCircle className="mr-2 h-4 w-4" /> Iniciar Simulação
                   </Button>
                 )}
               </div>

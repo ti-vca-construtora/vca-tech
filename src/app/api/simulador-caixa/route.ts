@@ -7,7 +7,7 @@ const redisConnection = {
 }
 
 console.log('🔍 [Redis Config]', {
-  url: process.env.REDIS_URL,
+  url: process.env.REDIS_URL ? 'URL Definida' : 'URL Indefinida',
 })
 
 // Só criar a fila se não estiver em build time
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     // Adicionar job à fila
     const job = await simuladorQueue.add('processar-simulacao', { dados }, {
-      attempts: 1, // Apenas 1 tentativa - usuário decide se tenta novamente
+      attempts: 1, 
       removeOnComplete: {
         age: 3600, // Remover após 1 hora
         count: 100, // Manter últimos 100
@@ -51,22 +51,40 @@ export async function POST(request: NextRequest) {
     // Aguarda o job finalizar e retorna o resultado direto
     const QueueEvents = await import('bullmq').then(m => m.QueueEvents)
     const events = new QueueEvents('simulador-caixa', { connection: redisConnection })
+    
     try {
-      const result = await job.waitUntilFinished(events)
+      // Aumentei o timeout para 2 minutos (120000ms) pois Puppeteer pode demorar
+      // O 'waitUntilFinished' lança erro se der timeout ou se o job falhar
+      const result = await job.waitUntilFinished(events, 120000)
+      
+      console.log(`[API] Job ${job.id} concluído. Resultado presente: ${result ? 'Sim' : 'Não'}`);
+
       return NextResponse.json({ status: 'completed', result })
     } catch (err) {
+      console.error(`[API] Erro esperando job ${job.id}:`, err);
+      
       let errorMessage = 'Erro desconhecido';
-      if (err && typeof err === 'object' && 'message' in err && typeof (err as { message?: unknown }).message === 'string') {
+      if (err && typeof err === 'object' && 'message' in err) {
         errorMessage = (err as { message: string }).message;
       }
+      
+      // Se for timeout, ainda retornamos o Job ID para o front poder fazer polling se quiser
+      if (errorMessage.includes('timed out')) {
+          return NextResponse.json({ 
+              status: 'pending', 
+              jobId: job.id,
+              message: 'Tempo limite de espera inicial excedido, continuando em background.' 
+          }, { status: 200 });
+      }
+
       return NextResponse.json({ status: 'failed', error: errorMessage }, { status: 500 })
     } finally {
       await events.close()
     }
   } catch (error) {
-    console.error('Erro ao criar job:', error)
+    console.error('Erro ao processar requisição POST:', error)
     return NextResponse.json(
-      { error: 'Erro ao processar requisição' },
+      { error: 'Erro interno ao processar requisição' },
       { status: 500 }
     )
   }
@@ -134,7 +152,7 @@ export async function GET(request: NextRequest) {
       progress: 0
     })
   } catch (error) {
-    console.error('Erro ao verificar status:', error)
+    console.error('Erro ao verificar status GET:', error)
     return NextResponse.json(
       { error: 'Erro ao verificar status' },
       { status: 500 }
