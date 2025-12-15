@@ -49,13 +49,17 @@ export async function POST(request: NextRequest) {
     console.log(`[API] Job criado: ${job.id}`)
 
     // Aguarda o job finalizar e retorna o resultado direto
-    const queueEvents = await import('bullmq').then(m => m.QueueEvents)
-    const events = new queueEvents('simulador-caixa', { connection: redisConnection })
+    const QueueEvents = await import('bullmq').then(m => m.QueueEvents)
+    const events = new QueueEvents('simulador-caixa', { connection: redisConnection })
     try {
       const result = await job.waitUntilFinished(events)
       return NextResponse.json({ status: 'completed', result })
     } catch (err) {
-      return NextResponse.json({ status: 'failed', error: err?.message || 'Erro desconhecido' }, { status: 500 })
+      let errorMessage = 'Erro desconhecido';
+      if (err && typeof err === 'object' && 'message' in err && typeof (err as { message?: unknown }).message === 'string') {
+        errorMessage = (err as { message: string }).message;
+      }
+      return NextResponse.json({ status: 'failed', error: errorMessage }, { status: 500 })
     } finally {
       await events.close()
     }
