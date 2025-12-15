@@ -277,10 +277,12 @@ export function SimuladorForm() {
         });
       } else {
         // Resultado imediato
+
         const resultadoCompleto = data.result ?? data;
         // Use os dados retornados pela API, se existirem
         const dadosSimulacaoAPI = resultadoCompleto.dadosSimulacao ?? resultadoCompleto.dados ?? null;
-        const resultadosAPI = resultadoCompleto.resultados ?? data.resultados ?? null;
+        // Tenta pegar resultados de todos os formatos possíveis
+        const resultadosAPI = resultadoCompleto.resultados ?? data.resultados ?? data.result?.resultados ?? null;
         const pdfBase64 = resultadoCompleto.pdfBase64 ?? null;
 
         setStatus("Simulação concluída!");
@@ -289,6 +291,7 @@ export function SimuladorForm() {
         // Salvar dados exatamente como vieram da API, se existirem
         if (dadosSimulacaoAPI) {
           sessionStorage.setItem("dadosSimulacao", JSON.stringify(dadosSimulacaoAPI));
+          console.log('💾 dadosSimulacao salvo:', dadosSimulacaoAPI);
         } else {
           // fallback para dados do formulário
           const dadosParaSalvar: DadosSimulacao = {
@@ -308,10 +311,16 @@ export function SimuladorForm() {
             possuiDependentes,
           };
           sessionStorage.setItem("dadosSimulacao", JSON.stringify(dadosParaSalvar));
+          console.log('💾 dadosSimulacao salvo (fallback):', dadosParaSalvar);
         }
 
         if (resultadosAPI) {
           sessionStorage.setItem("resultadosSimulacao", JSON.stringify(resultadosAPI));
+          console.log('💾 resultadosSimulacao salvo:', resultadosAPI);
+        } else {
+          // Se não veio resultados, salva um objeto vazio para evitar erro de redirecionamento
+          sessionStorage.setItem("resultadosSimulacao", JSON.stringify({}));
+          console.warn('⚠️ resultadosSimulacao não encontrado na resposta, salvando objeto vazio.');
         }
 
         if (pdfBase64) {
@@ -346,6 +355,10 @@ export function SimuladorForm() {
 
         setTimeout(() => {
           try {
+            // Confirma se os dados estão no sessionStorage antes de redirecionar
+            const checkDados = sessionStorage.getItem("dadosSimulacao");
+            const checkResultados = sessionStorage.getItem("resultadosSimulacao");
+            console.log('🔎 check sessionStorage antes do push:', { checkDados, checkResultados });
             router.push("/dashboard/simulador-financiamento-caixa/resultados");
           } catch (error) {
             console.error('Erro ao redirecionar:', error);
