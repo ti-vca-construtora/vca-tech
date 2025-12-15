@@ -216,7 +216,11 @@ export function SimuladorForm() {
     }));
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_CAIXA_URL ?? "/api/simulador-caixa";
+      // Garante que a URL sempre termina com /api/simulador-caixa
+      let API_URL = process.env.NEXT_PUBLIC_CAIXA_URL ?? "/api/simulador-caixa";
+      if (API_URL && !API_URL.endsWith("/api/simulador-caixa")) {
+        API_URL = API_URL.replace(/\/?$/, "/api/simulador-caixa");
+      }
 
       const payload = {
         origemRecurso,
@@ -236,13 +240,26 @@ export function SimuladorForm() {
         })),
       };
 
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
+      let data;
+      let response;
+      try {
+        response = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        // Tenta parsear JSON, se falhar, captura erro
+        data = await response.json();
+      } catch (err) {
+        // Se não for JSON, tenta ler texto e lança erro mais amigável
+        let errorText = "";
+        if (response) {
+          try {
+            errorText = await response.text();
+          } catch {}
+        }
+        throw new Error(errorText || "Erro desconhecido ao conectar ao endpoint");
+      }
 
       if (!response.ok) {
         throw new Error(data.error || "Erro ao iniciar simulação");
