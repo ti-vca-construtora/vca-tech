@@ -358,63 +358,74 @@ export function SimuladorForm() {
   };
 
   const pollJobStatus = async (id: string) => {
-    let tentativas = 0
-    const maxTentativas = 150 // 5 minutos com polling de 2 segundos
-    
+    let tentativas = 0;
+    const maxTentativas = 150; // 5 minutos com polling de 2 segundos
+
+    // Garante que a URL base é igual ao POST
+    let API_URL = process.env.NEXT_PUBLIC_CAIXA_URL ?? "/api/simulador-caixa";
+    if (API_URL && !API_URL.endsWith("/api/simulador-caixa")) {
+      API_URL = API_URL.replace(/\/?$/, "/api/simulador-caixa");
+    }
+
     const interval = setInterval(async () => {
       try {
-        tentativas++
-        
-        // Timeout após 150 tentativas (5 minutos)
+        tentativas++;
         if (tentativas > maxTentativas) {
-          clearInterval(interval)
-          setLoading(false)
-          setStatus("Tempo limite excedido")
+          clearInterval(interval);
+          setLoading(false);
+          setStatus("Tempo limite excedido");
           toast({
             title: "Timeout",
             description: "A simulação demorou mais de 5 minutos. Por favor, tente novamente.",
             variant: "destructive",
-          })
-          return
+          });
+          return;
         }
-        
-        const response = await fetch(`/api/simulador-caixa?jobId=${id}`)
-        const data = await response.json()
 
-        console.log(`[Polling ${tentativas}] Status:`, data.status, 'Progress:', data.progress, 'Data completo:', data)
+        let data;
+        let response;
+        try {
+          response = await fetch(`${API_URL}?jobId=${id}`);
+          data = await response.json();
+        } catch (err) {
+          let errorText = "";
+          if (response) {
+            try {
+              errorText = await response.text();
+            } catch {}
+          }
+          throw new Error(errorText || "Erro desconhecido ao conectar ao endpoint");
+        }
 
-        // Atualizar progresso e mensagem
+        // ...existing code...
+        console.log(`[Polling ${tentativas}] Status:`, data.status, 'Progress:', data.progress, 'Data completo:', data);
+
         if (data.progress !== undefined) {
-          setProgresso(data.progress)
-          setLoadingMessage(getMessageFromProgress(data.progress))
+          setProgresso(data.progress);
+          setLoadingMessage(getMessageFromProgress(data.progress));
         }
 
-        // Normalizar status para lowercase para evitar problemas de case sensitivity
-        const statusNormalizado = data.status?.toLowerCase()
+        const statusNormalizado = data.status?.toLowerCase();
 
         if (statusNormalizado === "pending") {
-          setStatus("Aguardando worker processar o job...")
+          setStatus("Aguardando worker processar o job...");
         } else if (statusNormalizado === "processing") {
-          setStatus("Processando simulação na Caixa...")
+          setStatus("Processando simulação na Caixa...");
         } else if (statusNormalizado === "failed") {
-          clearInterval(interval)
-          setLoading(false)
-          setErro(data.error || "Erro desconhecido durante a simulação")
+          clearInterval(interval);
+          setLoading(false);
+          setErro(data.error || "Erro desconhecido durante a simulação");
           toast({
             title: "Erro na simulação",
             description: data.error || "Ocorreu um erro durante o processamento",
             variant: "destructive",
-          })
+          });
         } else if (statusNormalizado === "completed") {
-          console.log('✅ Simulação completada! Iniciando redirecionamento...')
-          console.log('📊 Dados recebidos:', data.result)
-          console.log('📦 Resultado completo:', JSON.stringify(data, null, 2))
-          
-          setStatus("Simulação concluída!")
-          setLoading(false)
-          clearInterval(interval)
+          // ...existing code...
+          setStatus("Simulação concluída!");
+          setLoading(false);
+          clearInterval(interval);
 
-          // Salvar dados no sessionStorage
           const dadosParaSalvar: DadosSimulacao = {
             nomeCliente,
             valorImovel,
@@ -431,20 +442,14 @@ export function SimuladorForm() {
             sistemaAmortizacao,
             possuiDependentes,
           };
-          
           sessionStorage.setItem("dadosSimulacao", JSON.stringify(dadosParaSalvar));
-          console.log('💾 Dados salvos no sessionStorage')
-          
-          // Capturar resultados
+
           if (data.result?.resultados) {
             sessionStorage.setItem("resultadosSimulacao", JSON.stringify(data.result.resultados));
-            console.log('📋 Resultados salvos:', data.result.resultados)
           }
 
-          // Download automático do PDF
           if (data.result?.pdfBase64) {
             try {
-              // Converter base64 para blob
               const byteCharacters = atob(data.result.pdfBase64);
               const byteNumbers = new Array(byteCharacters.length);
               for (let i = 0; i < byteCharacters.length; i++) {
@@ -452,8 +457,6 @@ export function SimuladorForm() {
               }
               const byteArray = new Uint8Array(byteNumbers);
               const blob = new Blob([byteArray], { type: 'application/pdf' });
-              
-              // Criar link de download
               const url = window.URL.createObjectURL(blob);
               const a = document.createElement('a');
               a.href = url;
@@ -465,8 +468,6 @@ export function SimuladorForm() {
               a.click();
               window.URL.revokeObjectURL(url);
               document.body.removeChild(a);
-              
-              console.log('✅ PDF baixado automaticamente');
             } catch (error) {
               console.error('Erro ao fazer download do PDF:', error);
             }
@@ -476,24 +477,18 @@ export function SimuladorForm() {
             title: "Sucesso!",
             description: "Simulação concluída! Redirecionando...",
           });
-          
-          console.log('🚀 Iniciando redirecionamento em 1 segundo...')
-          
-          // Navegar para página de resultados - aumentar timeout para garantir que sessionStorage foi salvo
+
           setTimeout(() => {
-            console.log('🔄 Executando router.push para /dashboard/simulador-financiamento-caixa/resultados')
             try {
               router.push("/dashboard/simulador-financiamento-caixa/resultados");
-              console.log('✅ Router.push executado com sucesso')
             } catch (error) {
-              console.error('❌ Erro ao executar router.push:', error)
+              console.error('❌ Erro ao executar router.push:', error);
             }
           }, 1000);
         } else if (statusNormalizado === "error") {
           setStatus("Erro no processamento");
           setLoading(false);
           clearInterval(interval);
-
           toast({
             title: "Erro",
             description: data.error || "Erro ao processar simulação",
@@ -507,11 +502,11 @@ export function SimuladorForm() {
         setStatus("Erro ao verificar status");
         toast({
           title: "Erro",
-          description: "Erro ao verificar status da simulação",
+          description: error instanceof Error ? error.message : "Erro ao verificar status da simulação",
           variant: "destructive",
         });
       }
-    }, 2000); // Polling a cada 2 segundos
+    }, 2000);
   };
 
   const renderEtapa1 = () => (
