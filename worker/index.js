@@ -38,12 +38,14 @@ async function processSimulacao(job) {
   console.log(`📊 Progresso inicial: ${job.progress}%`);
 
   const browser = await chromium.launch({
-    headless: false,
+    headless: true,
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
       "--disable-blink-features=AutomationControlled",
+      "--disable-gpu",
+      "--disable-software-rasterizer",
     ],
   });
 
@@ -51,11 +53,12 @@ async function processSimulacao(job) {
     const context = await browser.newContext({
       userAgent:
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+      viewport: { width: 1920, height: 1080 },
     });
     const page = await context.newPage();
 
-    page.setDefaultTimeout(30000);
-    page.setDefaultNavigationTimeout(30000);
+    page.setDefaultTimeout(60000);
+    page.setDefaultNavigationTimeout(60000);
 
     console.log("📝 Dados recebidos:", dados);
 
@@ -63,16 +66,33 @@ async function processSimulacao(job) {
     await job.updateProgress(10);
     console.log("🌐 Navegando para o simulador...");
     await page.goto(
-      "https://www.portaldeempreendimentos.caixa.gov.br/simulador/"
+      "https://www.portaldeempreendimentos.caixa.gov.br/simulador/",
+      { waitUntil: "domcontentloaded" }
     );
-    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(3000);
+
+    // Debug: Verificar se página carregou
+    const url = page.url();
+    console.log("📍 URL atual:", url);
+
+    const html = await page.content();
+    console.log("📄 Tamanho do HTML carregado:", html.length, "chars");
+    console.log("📄 HTML snippet:", html.substring(0, 300));
 
     // ========== ETAPA 2: Origem de Recurso ==========
     await job.updateProgress(20);
     console.log(`💰 Selecionando origem de recurso: ${dados.origemRecurso}`);
+
+    // Debug: Verificar se elemento existe
+    const seletorEncontrado = await page.evaluate(() => {
+      const select = document.getElementById("origemRecurso");
+      return select ? "encontrado" : "não encontrado";
+    });
+    console.log(`🔍 Elemento #origemRecurso: ${seletorEncontrado}`);
+
     await page.waitForSelector("#origemRecurso", {
       state: "visible",
-      timeout: 10000,
+      timeout: 30000,
     });
 
     // Focar no select e usar tecla 'F' para FGTS ou 'P' para Poupança/SBPE

@@ -12,6 +12,7 @@ COPY index.js ./
 
 # Instalar browsers do Playwright
 RUN npx playwright install chromium
+RUN npx playwright install-deps chromium
 
 # Comando para executar o worker
 CMD ["node", "index.js"]
