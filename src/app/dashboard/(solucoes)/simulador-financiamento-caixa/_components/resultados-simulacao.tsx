@@ -129,12 +129,18 @@ export function ResultadosSimulacao() {
     router.push('/dashboard/simulador-financiamento-caixa');
   };
 
+
+  // Se resultados for um objeto vazio, mostrar aviso
   if (!resultados || !dadosSimulacao) {
     return <div>Carregando...</div>;
   }
+  const isResultadosVazio = resultados && Object.keys(resultados).length === 0;
 
   return (
     <div className="space-y-6 w-full mx-auto" id="resultados-simulacao">
+      {isResultadosVazio && (
+        <div className="text-red-500 text-center">Nenhum resultado retornado pela simulação.<br/>Verifique o backend ou os dados enviados.</div>
+      )}
       {/* Cabeçalho com Título e Botão Voltar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -155,6 +161,12 @@ export function ResultadosSimulacao() {
         </div>
       </div>
 
+      {/* Debug visual dos dados carregados */}
+      <details className="mb-4">
+        <summary className="cursor-pointer text-xs text-gray-400">Debug sessionStorage</summary>
+        <pre className="text-xs text-left bg-gray-200 p-2 rounded">dadosSimulacao: {JSON.stringify(dadosSimulacao, null, 2)}
+    resultados: {JSON.stringify(resultados, null, 2)}</pre>
+      </details>
       {/* Grid Layout: Cliente (esquerda - 1/3) e Simulação (direita - 2/3) */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
         {/* Card do Cliente - Menor, à esquerda */}
