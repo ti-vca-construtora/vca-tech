@@ -139,6 +139,21 @@ async function processSimulacao(job) {
         console.error(
           "❌ [ETAPA 1] BLOQUEADO: Servidor retornou 403 Forbidden"
         );
+
+        // Tirar screenshot do erro 403
+        console.log("📸 [ETAPA 1] Tentando capturar screenshot do erro 403...");
+        try {
+          await page.screenshot({ path: "/tmp/error-403.png", fullPage: true });
+          console.log(
+            "✅ [ETAPA 1] Screenshot do erro 403 salvo em /tmp/error-403.png"
+          );
+        } catch (e) {
+          console.log(
+            "⚠️ [ETAPA 1] Não foi possível salvar screenshot do erro:",
+            e.message
+          );
+        }
+
         throw new Error(
           "Acesso bloqueado pelo servidor (403). O site pode estar detectando automação."
         );
