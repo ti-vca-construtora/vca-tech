@@ -46,6 +46,12 @@ async function processSimulacao(job) {
       "--disable-blink-features=AutomationControlled",
       "--disable-gpu",
       "--disable-software-rasterizer",
+      "--disable-web-security",
+      "--disable-features=IsolateOrigins,site-per-process",
+      "--allow-running-insecure-content",
+      "--disable-infobars",
+      "--window-size=1920,1080",
+      "--start-maximized",
     ],
   });
 
@@ -54,8 +60,49 @@ async function processSimulacao(job) {
       userAgent:
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
       viewport: { width: 1920, height: 1080 },
+      permissions: ["geolocation"],
+      geolocation: { latitude: -15.7942, longitude: -47.8822 },
+      locale: "pt-BR",
+      timezoneId: "America/Sao_Paulo",
+      ignoreHTTPSErrors: true,
+      extraHTTPHeaders: {
+        "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Accept-Encoding": "gzip, deflate, br",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-User": "?1",
+        "Sec-Fetch-Dest": "document",
+        "Upgrade-Insecure-Requests": "1",
+      },
     });
     const page = await context.newPage();
+
+    // Remover sinais de webdriver/automação
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "webdriver", {
+        get: () => undefined,
+      });
+
+      Object.defineProperty(navigator, "plugins", {
+        get: () => [1, 2, 3, 4, 5],
+      });
+
+      Object.defineProperty(navigator, "languages", {
+        get: () => ["pt-BR", "pt", "en-US", "en"],
+      });
+
+      window.chrome = {
+        runtime: {},
+      };
+
+      const originalQuery = window.navigator.permissions.query;
+      window.navigator.permissions.query = (parameters) =>
+        parameters.name === "notifications"
+          ? Promise.resolve({ state: Notification.permission })
+          : originalQuery(parameters);
+    });
 
     page.setDefaultTimeout(60000);
     page.setDefaultNavigationTimeout(60000);
@@ -68,13 +115,32 @@ async function processSimulacao(job) {
       console.log("🌐 [ETAPA 1] Iniciando navegação para o simulador...");
 
       console.log("🔗 [ETAPA 1] Chamando page.goto()...");
+
+      // Delay aleatório para simular comportamento humano
+      const delay = Math.random() * 2000 + 1000;
+      console.log(
+        `⏳ [ETAPA 1] Aguardando ${Math.round(delay)}ms (comportamento humano)...`
+      );
+      await page.waitForTimeout(delay);
+
       const response = await page.goto(
         "https://www.portaldeempreendimentos.caixa.gov.br/simulador/",
         { waitUntil: "domcontentloaded", timeout: 60000 }
       );
 
+      const status = response?.status();
+      console.log(`📡 [ETAPA 1] Status da resposta: ${status}`);
+
+      if (status === 403) {
+        console.error(
+          "❌ [ETAPA 1] BLOQUEADO: Servidor retornou 403 Forbidden"
+        );
+        throw new Error(
+          "Acesso bloqueado pelo servidor (403). O site pode estar detectando automação."
+        );
+      }
+
       console.log("✅ [ETAPA 1] page.goto() completado");
-      console.log(`📡 [ETAPA 1] Status da resposta: ${response?.status()}`);
 
       console.log("⏳ [ETAPA 1] Aguardando 3 segundos...");
       await page.waitForTimeout(3000);
