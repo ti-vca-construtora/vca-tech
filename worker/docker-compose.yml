@@ -26,8 +26,7 @@ services:
       redis:
         condition: service_healthy
     environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - REDIS_URL=redis://195.35.40.149:6379
       - NODE_ENV=production
     volumes:
       - playwright_cache:/root/.cache/ms-playwright
