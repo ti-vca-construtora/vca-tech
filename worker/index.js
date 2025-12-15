@@ -38,7 +38,7 @@ async function processSimulacao(job) {
   console.log(`📊 Progresso inicial: ${job.progress}%`);
 
   const browser = await chromium.launch({
-    headless: true,
+    headless: false,
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
