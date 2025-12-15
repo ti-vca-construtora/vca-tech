@@ -63,21 +63,53 @@ async function processSimulacao(job) {
     console.log("📝 Dados recebidos:", dados);
 
     // ========== ETAPA 1: Navegação ==========
-    await job.updateProgress(10);
-    console.log("🌐 Navegando para o simulador...");
-    await page.goto(
-      "https://www.portaldeempreendimentos.caixa.gov.br/simulador/",
-      { waitUntil: "domcontentloaded" }
-    );
-    await page.waitForTimeout(3000);
+    try {
+      await job.updateProgress(10);
+      console.log("🌐 [ETAPA 1] Iniciando navegação para o simulador...");
 
-    // Debug: Verificar se página carregou
-    const url = page.url();
-    console.log("📍 URL atual:", url);
+      console.log("🔗 [ETAPA 1] Chamando page.goto()...");
+      const response = await page.goto(
+        "https://www.portaldeempreendimentos.caixa.gov.br/simulador/",
+        { waitUntil: "domcontentloaded", timeout: 60000 }
+      );
 
-    const html = await page.content();
-    console.log("📄 Tamanho do HTML carregado:", html.length, "chars");
-    console.log("📄 HTML snippet:", html.substring(0, 300));
+      console.log("✅ [ETAPA 1] page.goto() completado");
+      console.log(`📡 [ETAPA 1] Status da resposta: ${response?.status()}`);
+
+      console.log("⏳ [ETAPA 1] Aguardando 3 segundos...");
+      await page.waitForTimeout(3000);
+      console.log("✅ [ETAPA 1] Espera de 3s concluída");
+
+      // Debug: Tirar screenshot antes de procurar elemento
+      console.log("📸 [ETAPA 1] Tentando tirar screenshot para debug...");
+      try {
+        await page.screenshot({ path: "/tmp/debug-page.png", fullPage: true });
+        console.log("✅ [ETAPA 1] Screenshot salvo em /tmp/debug-page.png");
+      } catch (e) {
+        console.log(
+          "⚠️ [ETAPA 1] Não foi possível salvar screenshot:",
+          e.message
+        );
+      }
+
+      // Debug: Verificar se página carregou
+      const url = page.url();
+      console.log("📍 [ETAPA 1] URL atual:", url);
+
+      const html = await page.content();
+      console.log(
+        "📄 [ETAPA 1] Tamanho do HTML carregado:",
+        html.length,
+        "chars"
+      );
+      console.log("📄 [ETAPA 1] HTML snippet:", html.substring(0, 300));
+
+      console.log("✅ [ETAPA 1] Navegação concluída com sucesso!");
+    } catch (error) {
+      console.error("❌ [ETAPA 1] ERRO na navegação:", error.message);
+      console.error("❌ [ETAPA 1] Stack:", error.stack);
+      throw error;
+    }
 
     // ========== ETAPA 2: Origem de Recurso ==========
     await job.updateProgress(20);
