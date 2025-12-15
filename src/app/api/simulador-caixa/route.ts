@@ -48,10 +48,17 @@ export async function POST(request: NextRequest) {
 
     console.log(`[API] Job criado: ${job.id}`)
 
-    return NextResponse.json({ 
-      jobId: job.id, 
-      status: 'pending' 
-    })
+    // Aguarda o job finalizar e retorna o resultado direto
+    const queueEvents = await import('bullmq').then(m => m.QueueEvents)
+    const events = new queueEvents('simulador-caixa', { connection: redisConnection })
+    try {
+      const result = await job.waitUntilFinished(events)
+      return NextResponse.json({ status: 'completed', result })
+    } catch (err) {
+      return NextResponse.json({ status: 'failed', error: err?.message || 'Erro desconhecido' }, { status: 500 })
+    } finally {
+      await events.close()
+    }
   } catch (error) {
     console.error('Erro ao criar job:', error)
     return NextResponse.json(
