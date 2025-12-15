@@ -314,9 +314,20 @@ export function SimuladorForm() {
           console.log('💾 dadosSimulacao salvo (fallback):', dadosParaSalvar);
         }
 
+        // Montar resultadosSimulacao conforme solicitado
         if (resultadosAPI) {
-          sessionStorage.setItem("resultadosSimulacao", JSON.stringify(resultadosAPI));
-          console.log('💾 resultadosSimulacao salvo:', resultadosAPI);
+          const resultadosCustom = {
+            tipoFinanciamento: resultadosAPI.tipoFinanciamento ?? '',
+            valorAvaliacao: valorAvaliacao,
+            valorImovel: valorImovel,
+            entrada: resultadosAPI.entrada ?? '',
+            subsidio: resultadosAPI.subsidio ?? '',
+            valorFinanciado: resultadosAPI.valorFinanciado ?? '',
+            prestacao: resultadosAPI.prestacao ?? '',
+            prazo: resultadosAPI.prazo ?? '',
+          };
+          sessionStorage.setItem("resultadosSimulacao", JSON.stringify(resultadosCustom));
+          console.log('💾 resultadosSimulacao salvo (custom):', resultadosCustom);
         } else {
           // Se não veio resultados, salva um objeto vazio para evitar erro de redirecionamento
           sessionStorage.setItem("resultadosSimulacao", JSON.stringify({}));
