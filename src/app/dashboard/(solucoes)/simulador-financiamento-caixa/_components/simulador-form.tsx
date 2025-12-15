@@ -75,7 +75,6 @@ export function SimuladorForm() {
     { pactuacao: 100, dataNascimento: "" },
   ]);
 
-  // Mapear progresso para mensagens específicas
   const getMessageFromProgress = (progress: number): string => {
     if (progress <= 10) return "🚀 Iniciando automação...";
     if (progress <= 20) return "🌐 Acessando portal da Caixa...";
@@ -159,7 +158,6 @@ export function SimuladorForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validar etapa 3
     if (quantidadeParticipantes > 1) {
       const totalPactuacao = participantes.reduce((sum, p) => sum + p.pactuacao, 0);
       if (totalPactuacao !== 100) {
@@ -226,7 +224,6 @@ export function SimuladorForm() {
         body: JSON.stringify(payload),
       });
 
-      // Tenta ler o body, pode falhar se não for JSON
       let data;
       try {
         data = await response.json();
@@ -239,10 +236,9 @@ export function SimuladorForm() {
         throw new Error(data.error || "Erro ao iniciar simulação");
       }
 
-      console.log('📥 Resposta recebida da API:', data);
+      console.log('📥 Resposta bruta da API:', data);
 
-      // Cenário 1: Retornou Job ID (processamento assíncrono / polling)
-      if (data.jobId) {
+      if (data.jobId && data.status === "pending") {
         setJobId(data.jobId);
         setStatus("Aguardando processamento...");
         pollJobStatus(data.jobId);
@@ -250,17 +246,44 @@ export function SimuladorForm() {
           title: "Simulação iniciada",
           description: `Job ID: ${data.jobId}`,
         });
-      } 
-      // Cenário 2: Resultado imediato (Sync)
-      else {
+      } else {
         setStatus("Simulação concluída!");
         setLoading(false);
 
-        // A estrutura esperada do 'route.ts' é { status: 'completed', result: { dados, resultados, pdfBase64 } }
+        // EXTRAÇÃO INTELIGENTE DOS DADOS
+        // O route.ts normalmente retorna { status: 'completed', result: { ...dadosDoWorker } }
+        // Se a API retornar o objeto direto, data será o workerData.
+        
         const workerData = data.result || data;
         
-        // 1. DADOS DA SIMULAÇÃO
-        // Tenta pegar do retorno do worker, senão usa os dados do form como fallback
+        // --- 1. Extração dos Resultados ---
+        // Verifica se 'resultados' existe OU se o objeto workerData JÁ É o resultado (flattened)
+        let resultadosAPI = null;
+
+        if (workerData.resultados && Object.keys(workerData.resultados).length > 0) {
+            // Caso ideal: aninhado
+            resultadosAPI = workerData.resultados;
+        } else if (workerData.valorFinanciado || workerData.tipoFinanciamento) {
+            // Caso flattened: o objeto workerData já contém as chaves
+            console.log('⚠️ Detectada estrutura plana (flat) de resultados.');
+            resultadosAPI = workerData;
+        }
+
+        if (!resultadosAPI) {
+          console.error('❌ ERRO CRÍTICO: Não foi possível encontrar os resultados no objeto:', workerData);
+          toast({
+             title: "Erro nos resultados",
+             description: "A simulação ocorreu, mas a estrutura de resposta é inválida. Verifique o console.",
+             variant: "destructive"
+          });
+          return;
+        }
+
+        sessionStorage.setItem("resultadosSimulacao", JSON.stringify(resultadosAPI));
+        console.log('💾 resultadosSimulacao salvos com sucesso:', resultadosAPI);
+
+
+        // --- 2. Extração dos Dados da Simulação ---
         const dadosRetornados = workerData.dados || workerData.dadosSimulacao;
         
         let dadosParaSalvar: DadosSimulacao;
@@ -268,6 +291,7 @@ export function SimuladorForm() {
         if (dadosRetornados) {
             dadosParaSalvar = dadosRetornados;
         } else {
+            // Fallback usando estado local
              dadosParaSalvar = {
                 nomeCliente,
                 valorImovel,
@@ -286,33 +310,18 @@ export function SimuladorForm() {
             };
         }
         
-        // Injetar dados do formulário que o worker pode não retornar (ex: unidade, empreendimento)
+        // Injeção forçada de dados do imóvel que o worker pode não retornar
         dadosParaSalvar.nomeEmpreendimento = nomeEmpreendimento;
         dadosParaSalvar.unidade = unidade;
 
         sessionStorage.setItem("dadosSimulacao", JSON.stringify(dadosParaSalvar));
         console.log('💾 dadosSimulacao salvos:', dadosParaSalvar);
 
-        // 2. RESULTADOS
-        // O worker retorna o objeto 'resultados' formatado corretamente.
-        const resultadosAPI = workerData.resultados;
 
-        if (resultadosAPI && Object.keys(resultadosAPI).length > 0) {
-          sessionStorage.setItem("resultadosSimulacao", JSON.stringify(resultadosAPI));
-          console.log('💾 resultadosSimulacao salvos:', resultadosAPI);
-        } else {
-          console.error('❌ ERRO CRÍTICO: Objeto resultados vindo da API está vazio:', workerData);
-          toast({
-             title: "Erro nos resultados",
-             description: "A simulação não retornou os valores financeiros. Verifique o console.",
-             variant: "destructive"
-          });
-          // Não redirecionar se falhar
-          return;
-        }
-
-        // 3. PDF DOWNLOAD
-        const pdfBase64 = workerData.pdfBase64;
+        // --- 3. Extração do PDF ---
+        // Verifica pdfBase64 (padrão) ou apenas pdf (visto nos logs)
+        const pdfBase64 = workerData.pdfBase64 || workerData.pdf;
+        
         if (pdfBase64) {
           try {
             const byteCharacters = atob(pdfBase64);
@@ -331,6 +340,7 @@ export function SimuladorForm() {
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
+            console.log('✅ PDF baixado com sucesso');
           } catch (error) {
             console.error('Erro ao fazer download do PDF:', error);
           }
@@ -358,7 +368,7 @@ export function SimuladorForm() {
 
   const pollJobStatus = async (id: string) => {
     let tentativas = 0;
-    const maxTentativas = 150; // 5 minutos
+    const maxTentativas = 150; 
     
     const interval = setInterval(async () => {
       try {
@@ -378,8 +388,6 @@ export function SimuladorForm() {
         const response = await fetch(`/api/simulador-caixa?jobId=${id}`);
         const data = await response.json();
 
-        console.log(`[Polling ${tentativas}]`, data);
-
         if (data.progress !== undefined) {
           setProgresso(data.progress);
           setLoadingMessage(getMessageFromProgress(data.progress));
@@ -387,45 +395,41 @@ export function SimuladorForm() {
 
         const statusNormalizado = data.status?.toLowerCase();
 
-        if (statusNormalizado === "pending") {
-          setStatus("Aguardando fila...");
-        } else if (statusNormalizado === "processing") {
-          setStatus("Processando simulação...");
-        } else if (statusNormalizado === "failed") {
-          clearInterval(interval);
-          setLoading(false);
-          setErro(data.error || "Erro desconhecido durante a simulação");
-          toast({ title: "Erro", description: data.error, variant: "destructive" });
-        } else if (statusNormalizado === "completed") {
+        if (statusNormalizado === "completed") {
           clearInterval(interval);
           setStatus("Simulação concluída!");
           setLoading(false);
           
           const resultado = data.result;
+          
+          // Lógica de salvamento idêntica ao Sync
+          // 1. Dados
+          const dadosFinal = {
+             ...(resultado.dados || {}),
+             nomeEmpreendimento,
+             unidade
+          };
+          sessionStorage.setItem("dadosSimulacao", JSON.stringify(dadosFinal));
 
-          // Salvar Dados
-          if (resultado?.dados) {
-             // Injetar dados locais que não vão para o worker
-             const dadosFinal = {
-                 ...resultado.dados,
-                 nomeEmpreendimento,
-                 unidade
-             };
-             sessionStorage.setItem("dadosSimulacao", JSON.stringify(dadosFinal));
+          // 2. Resultados (Verificação Híbrida)
+          let resultadosFinal = null;
+          if (resultado.resultados && Object.keys(resultado.resultados).length > 0) {
+             resultadosFinal = resultado.resultados;
+          } else if (resultado.valorFinanciado) {
+             resultadosFinal = resultado;
           }
 
-          // Salvar Resultados
-          if (resultado?.resultados) {
-             sessionStorage.setItem("resultadosSimulacao", JSON.stringify(resultado.resultados));
+          if (resultadosFinal) {
+             sessionStorage.setItem("resultadosSimulacao", JSON.stringify(resultadosFinal));
           } else {
-             console.error("❌ Polling completou mas sem resultados:", resultado);
+             console.error("❌ Erro Polling: Resultados vazios", resultado);
           }
 
-          // PDF Download
-          if (resultado?.pdfBase64) {
-             // Lógica de download do blob igual ao sync
+          // 3. PDF
+          const pdfStr = resultado.pdfBase64 || resultado.pdf;
+          if (pdfStr) {
              try {
-                const byteCharacters = atob(resultado.pdfBase64);
+                const byteCharacters = atob(pdfStr);
                 const byteNumbers = new Array(byteCharacters.length);
                 for (let i = 0; i < byteCharacters.length; i++) {
                   byteNumbers[i] = byteCharacters.charCodeAt(i);
@@ -447,6 +451,11 @@ export function SimuladorForm() {
           setTimeout(() => {
             router.push("/dashboard/simulador-financiamento-caixa/resultados");
           }, 1000);
+
+        } else if (statusNormalizado === "failed") {
+          clearInterval(interval);
+          setLoading(false);
+          setErro(data.error || "Erro desconhecido");
         }
       } catch (error) {
         console.error("Erro no polling:", error);
@@ -458,73 +467,33 @@ export function SimuladorForm() {
     <div className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="nomeCliente">Nome do Cliente *</Label>
-        <Input
-          id="nomeCliente"
-          value={nomeCliente}
-          onChange={(e) => setNomeCliente(e.target.value)}
-          placeholder="Digite o nome completo"
-          required
-        />
+        <Input id="nomeCliente" value={nomeCliente} onChange={(e) => setNomeCliente(e.target.value)} required />
       </div>
-
       <div className="space-y-2">
         <Label htmlFor="dataNascimento">Data de Nascimento *</Label>
-        <Input
-          id="dataNascimento"
-          type="date"
-          value={dataNascimentoCliente}
-          onChange={(e) => setDataNascimentoCliente(e.target.value)}
-          required
-        />
+        <Input id="dataNascimento" type="date" value={dataNascimentoCliente} onChange={(e) => setDataNascimentoCliente(e.target.value)} required />
       </div>
-
       <div className="space-y-2">
         <Label htmlFor="cidade">Cidade *</Label>
-        <Input
-          id="cidade"
-          value={cidade}
-          onChange={(e) => setCidade(e.target.value)}
-          placeholder="Ex: Fortaleza"
-          required
-        />
+        <Input id="cidade" value={cidade} onChange={(e) => setCidade(e.target.value)} required />
       </div>
-
       <div className="space-y-2">
         <Label htmlFor="rendaFamiliar">Renda Familiar *</Label>
-        <Input
-          id="rendaFamiliar"
-          value={rendaFamiliar}
-          onChange={(e) => setRendaFamiliar(formatCurrency(e.target.value))}
-          placeholder="R$ 0,00"
-          required
-        />
+        <Input id="rendaFamiliar" value={rendaFamiliar} onChange={(e) => setRendaFamiliar(formatCurrency(e.target.value))} required />
       </div>
-
       <div className="space-y-3">
         <Label>Condições Especiais</Label>
         <div className="flex items-center space-x-2">
-          <Checkbox
-            id="possuiTresAnosFGTS"
-            checked={possuiTresAnosFGTS}
-            onCheckedChange={(checked) => setPossuiTresAnosFGTS(!!checked)}
-          />
-          <label htmlFor="possuiTresAnosFGTS" className="text-sm font-medium">Possui 3 anos de FGTS</label>
+          <Checkbox id="possuiTresAnosFGTS" checked={possuiTresAnosFGTS} onCheckedChange={(c) => setPossuiTresAnosFGTS(!!c)} />
+          <Label htmlFor="possuiTresAnosFGTS">Possui 3 anos de FGTS</Label>
         </div>
         <div className="flex items-center space-x-2">
-          <Checkbox
-            id="jaBeneficiadoSubsidio"
-            checked={jaBeneficiadoSubsidio}
-            onCheckedChange={(checked) => setJaBeneficiadoSubsidio(!!checked)}
-          />
-          <label htmlFor="jaBeneficiadoSubsidio" className="text-sm font-medium">Já beneficiado com subsídio</label>
+          <Checkbox id="jaBeneficiadoSubsidio" checked={jaBeneficiadoSubsidio} onCheckedChange={(c) => setJaBeneficiadoSubsidio(!!c)} />
+          <Label htmlFor="jaBeneficiadoSubsidio">Já beneficiado com subsídio</Label>
         </div>
         <div className="flex items-center space-x-2">
-          <Checkbox
-            id="possuiDependentes"
-            checked={possuiDependentes}
-            onCheckedChange={(checked) => setPossuiDependentes(!!checked)}
-          />
-          <label htmlFor="possuiDependentes" className="text-sm font-medium">Possui dependentes</label>
+          <Checkbox id="possuiDependentes" checked={possuiDependentes} onCheckedChange={(c) => setPossuiDependentes(!!c)} />
+          <Label htmlFor="possuiDependentes">Possui dependentes</Label>
         </div>
       </div>
     </div>
@@ -534,77 +503,32 @@ export function SimuladorForm() {
     <div className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="nomeEmpreendimento">Nome do Empreendimento *</Label>
-        <Input
-          id="nomeEmpreendimento"
-          value={nomeEmpreendimento}
-          onChange={(e) => setNomeEmpreendimento(e.target.value)}
-          placeholder="Digite o nome do empreendimento"
-          required
-        />
+        <Input id="nomeEmpreendimento" value={nomeEmpreendimento} onChange={(e) => setNomeEmpreendimento(e.target.value)} required />
       </div>
-
       <div className="space-y-2">
         <Label htmlFor="unidade">Unidade *</Label>
-        <Input
-          id="unidade"
-          value={unidade}
-          onChange={(e) => setUnidade(e.target.value)}
-          placeholder="BLXX - APTXX"
-          required
-        />
+        <Input id="unidade" value={unidade} onChange={(e) => setUnidade(e.target.value)} required />
       </div>
-
       <div className="space-y-2">
         <Label htmlFor="valorAvaliacao">Valor de Avaliação *</Label>
-        <Input
-          id="valorAvaliacao"
-          value={valorAvaliacao}
-          onChange={(e) => setValorAvaliacao(formatCurrency(e.target.value))}
-          placeholder="R$ 0,00"
-          required
-        />
+        <Input id="valorAvaliacao" value={valorAvaliacao} onChange={(e) => setValorAvaliacao(formatCurrency(e.target.value))} required />
       </div>
-
       <div className="space-y-2">
         <Label htmlFor="valorImovel">Valor do Imóvel *</Label>
-        <Input
-          id="valorImovel"
-          value={valorImovel}
-          onChange={(e) => setValorImovel(formatCurrency(e.target.value))}
-          placeholder="R$ 0,00"
-          required
-        />
+        <Input id="valorImovel" value={valorImovel} onChange={(e) => setValorImovel(formatCurrency(e.target.value))} required />
       </div>
-
       <div className="space-y-2">
         <Label htmlFor="origemRecurso">Origem de Recurso</Label>
-        <Select
-          value={origemRecurso}
-          onValueChange={(value: "FGTS" | "SBPE") => setOrigemRecurso(value)}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="FGTS">FGTS</SelectItem>
-            <SelectItem value="SBPE">SBPE</SelectItem>
-          </SelectContent>
+        <Select value={origemRecurso} onValueChange={(v: "FGTS" | "SBPE") => setOrigemRecurso(v)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="FGTS">FGTS</SelectItem><SelectItem value="SBPE">SBPE</SelectItem></SelectContent>
         </Select>
       </div>
-
       <div className="space-y-2">
         <Label htmlFor="sistemaAmortizacao">Sistema de Amortização</Label>
-        <Select
-          value={sistemaAmortizacao}
-          onValueChange={(value: "SAC" | "PRICE") => setSistemaAmortizacao(value)}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="SAC">SAC</SelectItem>
-            <SelectItem value="PRICE">PRICE</SelectItem>
-          </SelectContent>
+        <Select value={sistemaAmortizacao} onValueChange={(v: "SAC" | "PRICE") => setSistemaAmortizacao(v)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="SAC">SAC</SelectItem><SelectItem value="PRICE">PRICE</SelectItem></SelectContent>
         </Select>
       </div>
     </div>
@@ -614,13 +538,8 @@ export function SimuladorForm() {
     <div className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="quantidadeParticipantes">Quantidade de Participantes</Label>
-        <Select
-          value={quantidadeParticipantes.toString()}
-          onValueChange={(value) => handleQuantidadeChange(Number(value))}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
+        <Select value={quantidadeParticipantes.toString()} onValueChange={(v) => handleQuantidadeChange(Number(v))}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="1">1 Participante</SelectItem>
             <SelectItem value="2">2 Participantes</SelectItem>
@@ -629,46 +548,22 @@ export function SimuladorForm() {
           </SelectContent>
         </Select>
       </div>
-
       {quantidadeParticipantes > 1 && (
         <div className="space-y-4">
           <Label>Configurações de Pactuação</Label>
-          {participantes.map((participante, index) => (
+          {participantes.map((p, index) => (
             <div key={index} className="p-4 border rounded-lg space-y-3">
               <h4 className="font-semibold text-sm">
-                Participante {index + 1}
-                {index === 0 && (
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    (Cliente Principal: {nomeCliente})
-                  </span>
-                )}
+                Participante {index + 1} {index === 0 && "(Cliente Principal)"}
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor={`pactuacao-${index}`}>% de Pactuação</Label>
-                  <Input
-                    id={`pactuacao-${index}`}
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={participante.pactuacao}
-                    onChange={(e) =>
-                      handleParticipanteChange(index, "pactuacao", Number(e.target.value))
-                    }
-                  />
+                  <Input id={`pactuacao-${index}`} type="number" min="0" max="100" value={p.pactuacao} onChange={(e) => handleParticipanteChange(index, "pactuacao", Number(e.target.value))} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor={`dataNascimento-${index}`}>Data de Nascimento</Label>
-                  <Input
-                    id={`dataNascimento-${index}`}
-                    type="date"
-                    value={index === 0 ? dataNascimentoCliente : participante.dataNascimento}
-                    onChange={(e) =>
-                      handleParticipanteChange(index, "dataNascimento", e.target.value)
-                    }
-                    disabled={index === 0}
-                    className={index === 0 ? "bg-muted" : ""}
-                  />
+                  <Input id={`dataNascimento-${index}`} type="date" value={index === 0 ? dataNascimentoCliente : p.dataNascimento} onChange={(e) => handleParticipanteChange(index, "dataNascimento", e.target.value)} disabled={index === 0} className={index === 0 ? "bg-muted" : ""} />
                 </div>
               </div>
             </div>
@@ -684,15 +579,11 @@ export function SimuladorForm() {
         <DialogContent className="sm:max-w-md">
           {erro ? (
             <div className="flex flex-col items-center justify-center space-y-4 py-8">
-              <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center">
-                <span className="text-4xl">❌</span>
-              </div>
+              <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center"><span className="text-4xl">❌</span></div>
               <div className="text-center space-y-2">
                 <h3 className="text-lg font-semibold text-destructive">Erro na Simulação</h3>
                 <p className="text-sm text-muted-foreground">{erro}</p>
-                <Button onClick={() => { setErro(null); setLoading(false); }} className="mt-4">
-                  Fechar
-                </Button>
+                <Button onClick={() => { setErro(null); setLoading(false); }} className="mt-4">Fechar</Button>
               </div>
             </div>
           ) : (
@@ -700,9 +591,7 @@ export function SimuladorForm() {
               <Loader2 className="h-16 w-16 animate-spin text-primary" />
               <div className="text-center space-y-4 w-full px-4">
                 <h3 className="text-lg font-semibold">{loadingMessage}</h3>
-                <p className="text-sm text-muted-foreground">
-                  Por favor, aguarde enquanto processamos sua simulação...
-                </p>
+                <p className="text-sm text-muted-foreground">Por favor, aguarde enquanto processamos sua simulação...</p>
               </div>
             </div>
           )}
@@ -713,44 +602,31 @@ export function SimuladorForm() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex gap-2">
-              <Badge variant={etapaAtual === 1 ? "default" : "outline"}>
-                <User className="h-3 w-3 mr-1" /> Cliente
-              </Badge>
-              <Badge variant={etapaAtual === 2 ? "default" : "outline"}>
-                <Home className="h-3 w-3 mr-1" /> Imóvel
-              </Badge>
-              <Badge variant={etapaAtual === 3 ? "default" : "outline"}>
-                <UserPen className="h-3 w-3 mr-1" /> Pactuação
-              </Badge>
+              <Badge variant={etapaAtual === 1 ? "default" : "outline"}><User className="h-3 w-3 mr-1" /> Cliente</Badge>
+              <Badge variant={etapaAtual === 2 ? "default" : "outline"}><Home className="h-3 w-3 mr-1" /> Imóvel</Badge>
+              <Badge variant={etapaAtual === 3 ? "default" : "outline"}><UserPen className="h-3 w-3 mr-1" /> Pactuação</Badge>
             </div>
           </div>
         </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {etapaAtual === 1 && renderEtapa1()}
-              {etapaAtual === 2 && renderEtapa2()}
-              {etapaAtual === 3 && renderEtapa3()}
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {etapaAtual === 1 && renderEtapa1()}
+            {etapaAtual === 2 && renderEtapa2()}
+            {etapaAtual === 3 && renderEtapa3()}
 
-              <div className="flex justify-between gap-3">
-                {etapaAtual > 1 && (
-                  <Button type="button" variant="outline" onClick={etapaAnterior} disabled={loading}>
-                    <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
-                  </Button>
-                )}
-
-                {etapaAtual < 3 ? (
-                  <Button type="button" onClick={proximaEtapa} disabled={loading} className="ml-auto">
-                    Próximo <ChevronRight className="ml-2 h-4 w-4" />
-                  </Button>
-                ) : (
-                  <Button type="submit" className="ml-auto" disabled={loading}>
-                    <PlayCircle className="mr-2 h-4 w-4" /> Iniciar Simulação
-                  </Button>
-                )}
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+            <div className="flex justify-between gap-3">
+              {etapaAtual > 1 && (
+                <Button type="button" variant="outline" onClick={etapaAnterior} disabled={loading}><ChevronLeft className="mr-2 h-4 w-4" /> Voltar</Button>
+              )}
+              {etapaAtual < 3 ? (
+                <Button type="button" onClick={proximaEtapa} disabled={loading} className="ml-auto">Próximo <ChevronRight className="ml-2 h-4 w-4" /></Button>
+              ) : (
+                <Button type="submit" className="ml-auto" disabled={loading}><PlayCircle className="mr-2 h-4 w-4" /> Iniciar Simulação</Button>
+              )}
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
