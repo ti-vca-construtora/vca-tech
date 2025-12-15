@@ -278,33 +278,40 @@ export function SimuladorForm() {
       } else {
         // Resultado imediato
         const resultadoCompleto = data.result ?? data;
-        const resultados = resultadoCompleto.resultados ?? null;
+        // Use os dados retornados pela API, se existirem
+        const dadosSimulacaoAPI = resultadoCompleto.dadosSimulacao ?? resultadoCompleto.dados ?? null;
+        const resultadosAPI = resultadoCompleto.resultados ?? data.resultados ?? null;
         const pdfBase64 = resultadoCompleto.pdfBase64 ?? null;
 
         setStatus("Simulação concluída!");
         setLoading(false);
 
-        // Salvar dados da simulação (entrada)
-        const dadosParaSalvar: DadosSimulacao = {
-          nomeCliente,
-          valorImovel,
-          nomeEmpreendimento,
-          unidade,
-          origemRecurso,
-          cidade,
-          valorAvaliacao,
-          rendaFamiliar,
-          quantidadeParticipantes,
-          participantes,
-          possuiTresAnosFGTS,
-          jaBeneficiadoSubsidio,
-          sistemaAmortizacao,
-          possuiDependentes,
-        };
-        sessionStorage.setItem("dadosSimulacao", JSON.stringify(dadosParaSalvar));
+        // Salvar dados exatamente como vieram da API, se existirem
+        if (dadosSimulacaoAPI) {
+          sessionStorage.setItem("dadosSimulacao", JSON.stringify(dadosSimulacaoAPI));
+        } else {
+          // fallback para dados do formulário
+          const dadosParaSalvar: DadosSimulacao = {
+            nomeCliente,
+            valorImovel,
+            nomeEmpreendimento,
+            unidade,
+            origemRecurso,
+            cidade,
+            valorAvaliacao,
+            rendaFamiliar,
+            quantidadeParticipantes,
+            participantes,
+            possuiTresAnosFGTS,
+            jaBeneficiadoSubsidio,
+            sistemaAmortizacao,
+            possuiDependentes,
+          };
+          sessionStorage.setItem("dadosSimulacao", JSON.stringify(dadosParaSalvar));
+        }
 
-        if (resultados) {
-          sessionStorage.setItem("resultadosSimulacao", JSON.stringify(resultados));
+        if (resultadosAPI) {
+          sessionStorage.setItem("resultadosSimulacao", JSON.stringify(resultadosAPI));
         }
 
         if (pdfBase64) {
@@ -319,8 +326,8 @@ export function SimuladorForm() {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            const nomeArquivo = nomeCliente 
-              ? `simulacao-${nomeCliente.replace(/\s+/g, '-')}.pdf`
+            const nomeArquivo = (dadosSimulacaoAPI?.nomeCliente || nomeCliente)
+              ? `simulacao-${(dadosSimulacaoAPI?.nomeCliente || nomeCliente).replace(/\s+/g, '-')}.pdf`
               : `simulacao-${Date.now()}.pdf`;
             a.download = nomeArquivo;
             document.body.appendChild(a);
@@ -436,11 +443,12 @@ export function SimuladorForm() {
           console.log('💾 Dados salvos no sessionStorage')
           
           // Capturar resultados
+          // Salvar resultados exatamente como vieram da API
           if (data.result?.resultados) {
             sessionStorage.setItem("resultadosSimulacao", JSON.stringify(data.result.resultados));
           } else if (data.resultados) {
             sessionStorage.setItem("resultadosSimulacao", JSON.stringify(data.resultados));
-}
+          }
 
           // Download automático do PDF
           if (data.result?.pdfBase64) {

@@ -93,8 +93,7 @@ export function ResultadosSimulacao() {
 
   const handleDownloadPDF = async () => {
     if (!dadosSimulacao || !resultados) return;
-    
-    // PDF será gerado pelo Puppeteer no backend
+
     try {
       const response = await fetch('/api/simulador-caixa/pdf', {
         method: 'POST',
@@ -103,15 +102,51 @@ export function ResultadosSimulacao() {
       });
 
       if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `simulacao-${dadosSimulacao.nomeCliente.replace(/\s+/g, '-')}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        // Espera-se que a resposta seja um JSON com o campo 'pdf' em base64 e possivelmente novos resultados
+        const data = await response.json();
+
+        // Atualiza resultados se vierem atualizados na resposta
+        if (data.resultados) {
+          setResultados(data.resultados);
+          sessionStorage.setItem('resultadosSimulacao', JSON.stringify(data.resultados));
+        }
+
+        if (data.dadosSimulacao) {
+          setDadosSimulacao(data.dadosSimulacao);
+          sessionStorage.setItem('dadosSimulacao', JSON.stringify(data.dadosSimulacao));
+        }
+
+        if (data.pdf) {
+          // Converter base64 para Blob
+          const byteCharacters = atob(data.pdf);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: 'application/pdf' });
+
+          // Baixar o arquivo
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `simulacao-${(data.dadosSimulacao?.nomeCliente || dadosSimulacao.nomeCliente).replace(/\s+/g, '-')}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        } else {
+          // fallback: se não vier base64, tenta baixar como blob
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `simulacao-${dadosSimulacao.nomeCliente.replace(/\s+/g, '-')}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        }
       }
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
