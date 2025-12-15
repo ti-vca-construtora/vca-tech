@@ -1,5 +1,9 @@
 const { Worker, Queue } = require("bullmq");
-const { chromium } = require("playwright");
+const { chromium } = require("playwright-extra");
+const stealth = require("puppeteer-extra-plugin-stealth")();
+
+// Aplicar plugin stealth para evitar detecção de bot
+chromium.use(stealth);
 
 // Configuração do Redis
 const redisConnection = {
