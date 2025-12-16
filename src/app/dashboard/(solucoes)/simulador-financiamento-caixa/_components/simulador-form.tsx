@@ -210,6 +210,7 @@ export function SimuladorForm() {
         possuiTresAnosFGTS,
         jaBeneficiadoSubsidio,
         possuiDependentes,
+        quantidadeParticipantes,
         sistemaAmortizacao,
         participantes: participantesAjustados,
       };
