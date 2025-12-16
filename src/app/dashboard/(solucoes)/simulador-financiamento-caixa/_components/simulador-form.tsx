@@ -220,7 +220,11 @@ export function SimuladorForm() {
 
       const response = await fetch(API_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          // IMPORTANTE: Header para Ngrok liberar acesso
+          "ngrok-skip-browser-warning": "true" 
+        },
         body: JSON.stringify(payload),
       });
 
@@ -228,8 +232,7 @@ export function SimuladorForm() {
       try {
         data = await response.json();
       } catch (err) {
-        const text = await response.text();
-        throw new Error(text || "Erro desconhecido ao conectar ao endpoint");
+        throw new Error("Erro de conexão ou resposta inválida da API (possível bloqueio CORS ou Ngrok).");
       }
 
       if (!response.ok) {
@@ -250,22 +253,12 @@ export function SimuladorForm() {
         setStatus("Simulação concluída!");
         setLoading(false);
 
-        // EXTRAÇÃO INTELIGENTE DOS DADOS
-        // O route.ts normalmente retorna { status: 'completed', result: { ...dadosDoWorker } }
-        // Se a API retornar o objeto direto, data será o workerData.
-        
         const workerData = data.result || data;
         
-        // --- 1. Extração dos Resultados ---
-        // Verifica se 'resultados' existe OU se o objeto workerData JÁ É o resultado (flattened)
         let resultadosAPI = null;
-
         if (workerData.resultados && Object.keys(workerData.resultados).length > 0) {
-            // Caso ideal: aninhado
             resultadosAPI = workerData.resultados;
         } else if (workerData.valorFinanciado || workerData.tipoFinanciamento) {
-            // Caso flattened: o objeto workerData já contém as chaves
-            console.log('⚠️ Detectada estrutura plana (flat) de resultados.');
             resultadosAPI = workerData;
         }
 
@@ -273,7 +266,7 @@ export function SimuladorForm() {
           console.error('❌ ERRO CRÍTICO: Não foi possível encontrar os resultados no objeto:', workerData);
           toast({
              title: "Erro nos resultados",
-             description: "A simulação ocorreu, mas a estrutura de resposta é inválida. Verifique o console.",
+             description: "A simulação ocorreu, mas a estrutura de resposta é inválida.",
              variant: "destructive"
           });
           return;
@@ -282,16 +275,12 @@ export function SimuladorForm() {
         sessionStorage.setItem("resultadosSimulacao", JSON.stringify(resultadosAPI));
         console.log('💾 resultadosSimulacao salvos com sucesso:', resultadosAPI);
 
-
-        // --- 2. Extração dos Dados da Simulação ---
         const dadosRetornados = workerData.dados || workerData.dadosSimulacao;
-        
         let dadosParaSalvar: DadosSimulacao;
         
         if (dadosRetornados) {
             dadosParaSalvar = dadosRetornados;
         } else {
-            // Fallback usando estado local
              dadosParaSalvar = {
                 nomeCliente,
                 valorImovel,
@@ -310,16 +299,12 @@ export function SimuladorForm() {
             };
         }
         
-        // Injeção forçada de dados do imóvel que o worker pode não retornar
         dadosParaSalvar.nomeEmpreendimento = nomeEmpreendimento;
         dadosParaSalvar.unidade = unidade;
 
         sessionStorage.setItem("dadosSimulacao", JSON.stringify(dadosParaSalvar));
         console.log('💾 dadosSimulacao salvos:', dadosParaSalvar);
 
-
-        // --- 3. Extração do PDF ---
-        // Verifica pdfBase64 (padrão) ou apenas pdf (visto nos logs)
         const pdfBase64 = workerData.pdfBase64 || workerData.pdf;
         
         if (pdfBase64) {
@@ -358,8 +343,8 @@ export function SimuladorForm() {
     } catch (error) {
       console.error("Erro no handleSubmit:", error);
       toast({
-        title: "Erro",
-        description: error instanceof Error ? error.message : "Erro ao iniciar simulação",
+        title: "Erro de Conexão",
+        description: error instanceof Error ? error.message : "Erro ao conectar com a API de simulação.",
         variant: "destructive",
       });
       setLoading(false);
@@ -370,6 +355,11 @@ export function SimuladorForm() {
     let tentativas = 0;
     const maxTentativas = 150; 
     
+    let API_URL = process.env.NEXT_PUBLIC_CAIXA_URL ?? "/api/simulador-caixa";
+    if (API_URL && !API_URL.endsWith("/api/simulador-caixa")) {
+        API_URL = API_URL.replace(/\/?$/, "/api/simulador-caixa");
+    }
+
     const interval = setInterval(async () => {
       try {
         tentativas++;
@@ -385,7 +375,9 @@ export function SimuladorForm() {
           return;
         }
         
-        const response = await fetch(`/api/simulador-caixa?jobId=${id}`);
+        const response = await fetch(`${API_URL}?jobId=${id}`, {
+             headers: { "ngrok-skip-browser-warning": "true" }
+        });
         const data = await response.json();
 
         if (data.progress !== undefined) {
@@ -402,8 +394,6 @@ export function SimuladorForm() {
           
           const resultado = data.result;
           
-          // Lógica de salvamento idêntica ao Sync
-          // 1. Dados
           const dadosFinal = {
              ...(resultado.dados || {}),
              nomeEmpreendimento,
@@ -411,7 +401,6 @@ export function SimuladorForm() {
           };
           sessionStorage.setItem("dadosSimulacao", JSON.stringify(dadosFinal));
 
-          // 2. Resultados (Verificação Híbrida)
           let resultadosFinal = null;
           if (resultado.resultados && Object.keys(resultado.resultados).length > 0) {
              resultadosFinal = resultado.resultados;
@@ -425,7 +414,6 @@ export function SimuladorForm() {
              console.error("❌ Erro Polling: Resultados vazios", resultado);
           }
 
-          // 3. PDF
           const pdfStr = resultado.pdfBase64 || resultado.pdf;
           if (pdfStr) {
              try {
