@@ -313,7 +313,7 @@ async function getBrowserInstance(): Promise<Browser> {
   const browser = await puppeteer.launch({
     args: chromium.args,
     executablePath,
-    headless: chromium.headless,
+    headless: !!chromium.headless,
   });
 
   if (process.env.NODE_ENV === 'development') {
