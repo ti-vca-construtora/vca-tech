@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import puppeteer from 'puppeteer';
+import puppeteer, { Browser } from 'puppeteer-core';
+import chromium from '@sparticuz/chromium';
 import { LOGO_BASE64 } from '@/util/logo-base64';
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -44,11 +45,16 @@ interface LinhaPlano {
   data: string;
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const { dadosSimulacao, resultados, linhasPlano, prazoEntrega, nomeUsuario } = await request.json();
+interface RequestBody {
+  dadosSimulacao: DadosSimulacao;
+  resultados: Resultados;
+  linhasPlano: LinhaPlano[];
+  prazoEntrega?: string;
+  nomeUsuario?: string;
+}
 
-    const logoBase64 = LOGO_BASE64;
+function getHtmlContent({ dadosSimulacao, resultados, linhasPlano, prazoEntrega, nomeUsuario }: RequestBody): string {
+  const logoBase64 = LOGO_BASE64;
 
     // Calcular entrada
     const calcularEntrada = () => {
@@ -574,37 +580,63 @@ export async function POST(request: NextRequest) {
 </html>
     `;
 
-    // Gerar PDF com Puppeteer
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+  return htmlContent;
+}
 
+let browserInstance: Browser | null = null;
+
+async function getBrowserInstance(): Promise<Browser> {
+  if (process.env.NODE_ENV === 'development' && browserInstance) {
+    return browserInstance;
+  }
+
+  const executablePath = await chromium.executablePath();
+
+  const browser = await puppeteer.launch({
+    args: chromium.args,
+    executablePath,
+    headless: chromium.headless,
+  });
+
+  if (process.env.NODE_ENV === 'development') {
+    browserInstance = browser;
+  }
+
+  return browser;
+}
+
+export async function POST(request: NextRequest) {
+  let browser: Browser | null = null;
+  try {
+    const body: RequestBody = await request.json();
+    const { dadosSimulacao } = body;
+
+    const htmlContent = getHtmlContent(body);
+
+    browser = await getBrowserInstance();
     const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+    await page.setContent(htmlContent, { waitUntil: 'domcontentloaded' });
 
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '20px',
-        right: '20px',
-        bottom: '20px',
-        left: '20px',
-      },
-    });
+    const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
 
-    await browser.close();
+    await page.close();
+    if (process.env.NODE_ENV !== 'development') {
+      await browser.close();
+    }
 
-    // Retornar PDF
-    return new NextResponse(Buffer.from(pdfBuffer), {
+    const filename = `plano-pagamento-${dadosSimulacao.nomeCliente.replace(/\s+/g, '-')}.pdf`;
+    return new NextResponse(pdfBuffer, {
+      status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="plano-pagamento-${dadosSimulacao.nomeCliente.replace(/\s+/g, '-')}.pdf"`,
+        'Content-Disposition': `attachment; filename="${filename}"`,
       },
     });
   } catch (error) {
     console.error('Erro ao gerar PDF do plano:', error);
+    if (browser && process.env.NODE_ENV !== 'development') {
+      await browser.close();
+    }
     return NextResponse.json(
       { error: 'Erro ao gerar PDF do plano de pagamento' },
       { status: 500 }

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import puppeteer from 'puppeteer';
+import puppeteer, { Browser } from 'puppeteer-core';
+import chromium from '@sparticuz/chromium';
 import { LOGO_BASE64 } from '@/util/logo-base64';
+
 
 interface Participante {
   pactuacao: number;
@@ -33,10 +35,14 @@ interface Resultados {
   prazo: string;
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const { dadosSimulacao, resultados } = await request.json();
-
+function getHtmlContent(dadosSimulacao: DadosSimulacao, resultados: Resultados): string {
+  const entrada = calcularEntrada(dadosSimulacao, resultados);
+  const participantesHtml = dadosSimulacao.participantes.map((p: Participante, i: number) => `
+    <div class="participant-item">
+      <span><strong>${i === 0 ? 'Proponente' : `Participante ${i + 1}`}</strong>: ${p.pactuacao}% de Pactuação</span>
+      <span>${new Date(p.dataNascimento).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
+    </div>
+  `).join('');
     // Logo VCA em base64
     const logoBase64 = LOGO_BASE64;
 
@@ -208,12 +214,7 @@ export async function POST(request: NextRequest) {
 
     <div class="participants">
       <div class="field-label" style="margin-bottom: 10px;">Participantes (${dadosSimulacao.quantidadeParticipantes})</div>
-      ${dadosSimulacao.participantes.map((p: Participante, i: number) => `
-        <div class="participant-item">
-          <span><strong>${i === 0 ? 'Participante 1' : `Participante ${i + 1}`}:</strong> ${p.pactuacao}% de Pactuação</span>
-          <span>${new Date(p.dataNascimento).toLocaleDateString('pt-BR')}</span>
-        </div>
-      `).join('')}
+      ${participantesHtml}
     </div>
 
     <div style="margin-top: 15px;">
@@ -258,7 +259,7 @@ export async function POST(request: NextRequest) {
       </div>
       <div class="big-value" style="background: #e3f2fd;">
         <div class="label">Entrada</div>
-        <div class="value" style="color: #1976d2;">${calcularEntrada(dadosSimulacao, resultados)}</div>
+        <div class="value" style="color: #1976d2;">${entrada}</div>
       </div>
       <div class="big-value warning">
         <div class="label">Prestação Financiamento</div>
@@ -297,41 +298,62 @@ export async function POST(request: NextRequest) {
 </html>
     `;
 
-    // Gerar PDF com Puppeteer
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+    return htmlContent;
+}
 
+let browserInstance: Browser | null = null;
+
+async function getBrowserInstance(): Promise<Browser> {
+  if (process.env.NODE_ENV === 'development' && browserInstance) {
+    return browserInstance;
+  }
+
+  const executablePath = await chromium.executablePath();
+
+  const browser = await puppeteer.launch({
+    args: chromium.args,
+    executablePath,
+    headless: chromium.headless,
+  });
+
+  if (process.env.NODE_ENV === 'development') {
+    browserInstance = browser;
+  }
+
+  return browser;
+}
+
+export async function POST(request: NextRequest) {
+  let browser: Browser | null = null;
+  try {
+    const { dadosSimulacao, resultados } = (await request.json()) as { dadosSimulacao: DadosSimulacao; resultados: Resultados; };
+
+    const htmlContent = getHtmlContent(dadosSimulacao, resultados);
+
+    browser = await getBrowserInstance();
     const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+    await page.setContent(htmlContent, { waitUntil: 'domcontentloaded' });
 
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '20px',
-        right: '20px',
-        bottom: '20px',
-        left: '20px',
-      },
-    });
+    const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
 
-    await browser.close();
+    await page.close();
+    if (process.env.NODE_ENV !== 'development') {
+      await browser.close();
+    }
 
-    // Retornar PDF com headers CORS
-    return new NextResponse(Buffer.from(pdfBuffer), {
+    const filename = `simulacao-${dadosSimulacao.nomeCliente.replace(/\s+/g, '-')}.pdf`;
+    return new NextResponse(pdfBuffer, {
+      status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="simulacao-${dadosSimulacao.nomeCliente.replace(/\s+/g, '-')}.pdf"`,
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, ngrok-skip-browser-warning',
-        'Access-Control-Max-Age': '86400',
+        'Content-Disposition': `attachment; filename="${filename}"`,
       },
     });
   } catch (error) {
     console.error('Erro ao gerar PDF:', error);
+    if (browser && process.env.NODE_ENV !== 'development') {
+      await browser.close();
+    }
     return NextResponse.json(
       { error: 'Erro ao gerar PDF' },
       { status: 500 }
@@ -346,7 +368,7 @@ function calcularEntrada(dadosSimulacao: DadosSimulacao, resultados: Resultados)
   const valorFinanciadoNum = parseFloat(
     resultados.valorFinanciado.replace(/\D/g, '')
   ) / 100;
-  const subsidioNum = parseFloat(
+  const subsidioNum = parseFloat( // "R$ 1.234,56" -> 1234.56
     resultados.subsidio.replace(/[R$\s.]/g, '').replace(',', '.')
   );
 
