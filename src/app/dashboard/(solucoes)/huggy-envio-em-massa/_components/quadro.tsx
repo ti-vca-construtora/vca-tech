@@ -73,6 +73,7 @@ const Quadro = () => {
   const [showInvalidModal, setShowInvalidModal] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [currentBatch, setCurrentBatch] = useState(0);
 
   const handleCreateUser = (data: UserFormType) => {
     const normalizedPhone = normalizePhone(data.telefone);
@@ -225,21 +226,47 @@ const Quadro = () => {
     setFile(undefined);
   };
 
-  const handleSend = async () => {
+  const startBatchSend = async () => {
+    setIsProcessing(true);
+    setProgress(0);
+    setStatistics([]);
+    setCurrentBatch(1);
+    await handleSend(0); // Inicia o processamento com o primeiro lote (índice 0)
+  };
+
+  const handleSend = async (batchIndex: number) => {
+    const BATCH_SIZE = 50;
+    const start = batchIndex * BATCH_SIZE;
+    const end = start + BATCH_SIZE;
+    const batchUsers = users.slice(start, end);
+
+    if (batchUsers.length === 0) {
+      setStatus("Processo finalizado!");
+      setIsProcessing(false);
+      setCurrentBatch(0);
+      return;
+    }
+
+    const totalBatches = Math.ceil(users.length / BATCH_SIZE);
+    setStatus(
+      `Processando lote ${batchIndex + 1} de ${totalBatches}... (${
+        batchUsers.length
+      } usuários)`
+    );
+
     const existingUsers: (GetContactType & { id: string })[] = [];
     const unexistingUsers: User[] = [];
     const statisticsArray: StatisticsType[] = [];
 
     try {
-      setIsProcessing(true);
-      setProgress(0);
-      setStatistics([]);
       setStatisticsStatus("Gerando estatísticas...");
 
-      setStatus("Verificando a existência dos usuários...");
+      setStatus(
+        `Lote ${batchIndex + 1}/${totalBatches}: Verificando usuários...`
+      );
 
       await Promise.all(
-        users.map(async (user, index) => {
+        batchUsers.map(async (user, index) => {
           const [userData] = await getContact(user.telefone);
 
           if (userData) {
@@ -254,9 +281,9 @@ const Quadro = () => {
               flowStatus: "",
             });
           } else {
-            unexistingUsers.push(users[index]);
+            unexistingUsers.push(batchUsers[index]);
             statisticsArray.push({
-              ...users[index],
+              ...batchUsers[index],
               email: undefined,
               exists: false,
               chatId: "",
@@ -268,11 +295,12 @@ const Quadro = () => {
       );
 
       // Calcular total de operações para o progresso
-      const totalOperations = unexistingUsers.length + (existingUsers.length * 2); // POST + PUT + PUT Flow
+      const totalOperations =
+        unexistingUsers.length + existingUsers.length * 2; // POST + PUT + PUT Flow
       let completedOperations = 0;
 
       if (unexistingUsers.length > 0) {
-        setStatus("Criando usuários inexistentes...");
+        setStatus(`Lote ${batchIndex + 1}/${totalBatches}: Criando usuários...`);
 
         // Criar usuários com delay de 500ms entre cada requisição
         for (let i = 0; i < unexistingUsers.length; i++) {
@@ -297,13 +325,15 @@ const Quadro = () => {
           
           // Aguardar 500ms antes do próximo POST (exceto no último)
           if (i < unexistingUsers.length - 1) {
-            await new Promise((resolve) => setTimeout(resolve, 500));
+            await new Promise((resolve) => setTimeout(resolve, 250));
           }
         }
       }
 
-      setStatus("Alterando campos necessários para envio de flow...");
-
+      setStatus(
+        `Lote ${batchIndex + 1}/${totalBatches}: Atualizando contatos...`
+      );
+      
       // Atualizar usuários existentes SEQUENCIALMENTE com delay de 500ms
       for (let i = 0; i < existingUsers.length; i++) {
         const user = existingUsers[i];
@@ -320,11 +350,11 @@ const Quadro = () => {
         
         // Aguardar 500ms antes do próximo PUT (exceto no último)
         if (i < existingUsers.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 250));
         }
       }
 
-      setStatus("Enviando flow...");
+      setStatus(`Lote ${batchIndex + 1}/${totalBatches}: Enviando flow...`);
 
       // Enviar flow SEQUENCIALMENTE com delay de 500ms
       for (let i = 0; i < existingUsers.length; i++) {
@@ -352,15 +382,22 @@ const Quadro = () => {
         
         // Aguardar 500ms antes do próximo flow (exceto no último)
         if (i < existingUsers.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 250));
         }
       }
 
       setStatisticsStatus("");
-      setStatistics(statisticsArray);
+      setStatistics((prev) => [...prev, ...statisticsArray]);
 
-      setStatus("Processo finalizado!");
-      setIsProcessing(false);
+      // Chama o próximo lote
+      const nextBatchIndex = batchIndex + 1;
+      if (nextBatchIndex * BATCH_SIZE < users.length) {
+        setCurrentBatch(nextBatchIndex + 1);
+        await handleSend(nextBatchIndex);
+      } else {
+        setStatus("Processo finalizado!");
+        setIsProcessing(false);
+      }
     } catch (error) {
       setStatus("Algo deu errado. Segue a mensagem de erro: " + error);
       setIsProcessing(false);
@@ -515,7 +552,7 @@ const Quadro = () => {
           <CardFooter className="flex items-center justify-center">
             <Button
               disabled={users.length === 0}
-              onClick={handleSend}
+              onClick={startBatchSend}
               className="w-fit"
             >
               Enviar
@@ -526,7 +563,11 @@ const Quadro = () => {
           {isProcessing ? (
             <div className="flex flex-col gap-3 w-full">
               <div className="flex items-center justify-center gap-2">
-                <p className="text-neutral-600 text-sm">{status}</p>
+                <p className="text-neutral-600 text-sm">
+                  {status}
+                  {currentBatch > 0 &&
+                    ` (Lote ${currentBatch}/${Math.ceil(users.length / 50)})`}
+                </p>
                 <BiLoader className="animate-spin" />
               </div>
               <div className="w-full">
