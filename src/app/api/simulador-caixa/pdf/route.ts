@@ -319,11 +319,15 @@ export async function POST(request: NextRequest) {
 
     await browser.close();
 
-    // Retornar PDF
+    // Retornar PDF com headers CORS
     return new NextResponse(Buffer.from(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="simulacao-${dadosSimulacao.nomeCliente.replace(/\s+/g, '-')}.pdf"`,
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, ngrok-skip-browser-warning',
+        'Access-Control-Max-Age': '86400',
       },
     });
   } catch (error) {

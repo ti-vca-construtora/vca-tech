@@ -194,8 +194,13 @@ export function SimuladorForm() {
 
     try {
       let API_URL = process.env.NEXT_PUBLIC_CAIXA_URL ?? "/api/simulador-caixa";
-      if (API_URL && !API_URL.endsWith("/api/simulador-caixa")) {
-        API_URL = API_URL.replace(/\/?$/, "/api/simulador-caixa");
+      // Remove barra final se houver para evitar duplicidade
+      if (API_URL.endsWith("/")) {
+        API_URL = API_URL.slice(0, -1);
+      }
+      // Se não terminar com /api/simulador-caixa, adiciona
+      if (!API_URL.endsWith("/api/simulador-caixa")) {
+        API_URL = `${API_URL}/api/simulador-caixa`;
       }
 
       const payload = {
@@ -216,13 +221,13 @@ export function SimuladorForm() {
         })),
       };
 
-      console.log('📤 Enviando payload para API:', payload);
+      console.log('📤 Enviando payload para API:', API_URL);
 
       const response = await fetch(API_URL, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          // IMPORTANTE: Header para Ngrok liberar acesso
+          // Header obrigatório para Ngrok
           "ngrok-skip-browser-warning": "true" 
         },
         body: JSON.stringify(payload),
@@ -356,8 +361,11 @@ export function SimuladorForm() {
     const maxTentativas = 150; 
     
     let API_URL = process.env.NEXT_PUBLIC_CAIXA_URL ?? "/api/simulador-caixa";
-    if (API_URL && !API_URL.endsWith("/api/simulador-caixa")) {
-        API_URL = API_URL.replace(/\/?$/, "/api/simulador-caixa");
+    if (API_URL.endsWith("/")) {
+        API_URL = API_URL.slice(0, -1);
+    }
+    if (!API_URL.endsWith("/api/simulador-caixa")) {
+        API_URL = `${API_URL}/api/simulador-caixa`;
     }
 
     const interval = setInterval(async () => {
