@@ -264,7 +264,11 @@ export function SimuladorForm() {
         const incremento = (intervaloAtualizacao / duracaoTotalMs) * 100;
 
         clientProgressIntervalRef.current = setInterval(() => {
-          setProgresso(prev => Math.min(prev + incremento, 95)); // Avança até 95%
+          setProgresso(prev => {
+            const novoProgresso = Math.min(prev + incremento, 95);
+            setLoadingMessage(getMessageFromProgress(novoProgresso)); // Atualiza a mensagem junto com o progresso
+            return novoProgresso;
+          });
         }, intervaloAtualizacao);
         pollJobStatus(data.jobId);
         toast({
@@ -413,7 +417,7 @@ export function SimuladorForm() {
         tentativas++;
         // Se o progresso do cliente já atingiu 90%, não precisa mais atualizar a mensagem ilusória
         if (tentativas > maxTentativas) {
-          clearInterval(pollJobIntervalRef.current!);
+          if (pollJobIntervalRef.current) clearInterval(pollJobIntervalRef.current);
           setLoading(false);
           setErro("A simulação demorou mais que o esperado (tempo limite excedido).");
           toast({
@@ -423,22 +427,23 @@ export function SimuladorForm() {
           });
           return;
         }
-        
+
         const response = await fetch(`/api/simulador-caixa?jobId=${id}`);
         const data = await response.json();
 
-        if (data.progress !== undefined) {
+        // Se o backend enviar um progresso, ele assume o controle
+        if (data.progress !== undefined && data.progress > progresso) {
+          if (clientProgressIntervalRef.current) {
+            clearInterval(clientProgressIntervalRef.current); // Para o progresso ilusório
+            clientProgressIntervalRef.current = null;
+          }
           setProgresso(data.progress);
-          setLoadingMessage(getMessageFromProgress(data.progress)); // Usa o progresso real do backend
-        } else if (progresso < 90) { // Apenas atualiza a mensagem se o progresso ilusório ainda está ativo
-          // Se não houver progresso do backend, continua com a mensagem ilusória
-          setLoadingMessage(getMessageFromProgress(progresso));
+          setLoadingMessage(getMessageFromProgress(data.progress));
         }
-
         const statusNormalizado = data.status?.toLowerCase();
 
         if (statusNormalizado === "completed") {
-          clearInterval(pollJobIntervalRef.current!);
+          if (pollJobIntervalRef.current) clearInterval(pollJobIntervalRef.current);
           // Limpa o intervalo de progresso do cliente
           if (clientProgressIntervalRef.current) {
             clearInterval(clientProgressIntervalRef.current);
@@ -501,7 +506,7 @@ export function SimuladorForm() {
           }, 1000);
 
         } else if (statusNormalizado === "failed") {
-          clearInterval(pollJobIntervalRef.current!);
+          if (pollJobIntervalRef.current) clearInterval(pollJobIntervalRef.current);
           // Limpa o intervalo de progresso do cliente
           if (clientProgressIntervalRef.current) {
             clearInterval(clientProgressIntervalRef.current);
@@ -512,7 +517,7 @@ export function SimuladorForm() {
         }
       } catch (error) {
         console.error("Erro no polling:", error);
-        clearInterval(pollJobIntervalRef.current!);
+        if (pollJobIntervalRef.current) clearInterval(pollJobIntervalRef.current);
         // Limpa o intervalo de progresso do cliente
         if (clientProgressIntervalRef.current) {
           clearInterval(clientProgressIntervalRef.current);
