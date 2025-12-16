@@ -172,12 +172,6 @@ export function ResultadosSimulacao() {
         </div>
       </div>
 
-      {/* Debug visual dos dados carregados */}
-      <details className="mb-4">
-        <summary className="cursor-pointer text-xs text-gray-400">Debug sessionStorage</summary>
-        <pre className="text-xs text-left bg-gray-200 p-2 rounded">dadosSimulacao: {JSON.stringify(dadosSimulacao, null, 2)}
-    resultados: {JSON.stringify(resultados, null, 2)}</pre>
-      </details>
       {/* Grid Layout: Cliente (esquerda - 1/3) e Simulação (direita - 2/3) */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
         {/* Card do Cliente - Menor, à esquerda */}

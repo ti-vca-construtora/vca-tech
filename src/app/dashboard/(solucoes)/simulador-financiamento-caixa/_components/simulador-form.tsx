@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -45,8 +45,8 @@ export function SimuladorForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [jobId, setJobId] = useState<string | null>(null);
-  const [status, setStatus] = useState<string>("");
+  const [jobId, setJobId] = useState<string | null>(null); // Este estado é útil para depuração e futuras funcionalidades
+  // const [status, setStatus] = useState<string>(""); // Removido, pois loadingMessage é mais descritivo
   const [loadingMessage, setLoadingMessage] = useState<string>("Iniciando simulação...");
   const [progresso, setProgresso] = useState(0);
   const [erro, setErro] = useState<string | null>(null);
@@ -54,6 +54,9 @@ export function SimuladorForm() {
 
   // Form state - Etapa 1: Dados do Cliente
   const [nomeCliente, setNomeCliente] = useState("");
+
+  // New state for client-side progress interval
+  const clientProgressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [dataNascimentoCliente, setDataNascimentoCliente] = useState("");
   const [cidade, setCidade] = useState("Fortaleza");
   const [rendaFamiliar, setRendaFamiliar] = useState("");
@@ -74,6 +77,17 @@ export function SimuladorForm() {
   const [participantes, setParticipantes] = useState<Participante[]>([
     { pactuacao: 100, dataNascimento: "" },
   ]);
+
+  // Ref para o intervalo de polling do job
+  const pollJobIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Limpa os intervalos ao desmontar o componente
+  useEffect(() => {
+    return () => {
+      if (clientProgressIntervalRef.current) clearInterval(clientProgressIntervalRef.current);
+      if (pollJobIntervalRef.current) clearInterval(pollJobIntervalRef.current);
+    };
+  }, []);
 
   const getMessageFromProgress = (progress: number): string => {
     if (progress <= 10) return "🚀 Iniciando automação...";
@@ -182,7 +196,7 @@ export function SimuladorForm() {
     }
 
     setLoading(true);
-    setStatus("Iniciando simulação...");
+    // setStatus("Iniciando simulação..."); // Removido
     setProgresso(0);
     setErro(null);
     setLoadingMessage("🚀 Iniciando automação...");
@@ -192,7 +206,7 @@ export function SimuladorForm() {
     const participantesAjustados = [...participantes];
     if (participantesAjustados.length > 0) {
       participantesAjustados[0].dataNascimento = dataNascimentoCliente;
-    }
+    } // FIM CORREÇÃO
 
     try {
       let API_URL = process.env.NEXT_PUBLIC_CAIXA_URL ?? "/api/simulador-caixa";
@@ -210,7 +224,7 @@ export function SimuladorForm() {
         possuiTresAnosFGTS,
         jaBeneficiadoSubsidio,
         possuiDependentes,
-        quantidadeParticipantes,
+        quantidadeParticipantes, // Mantido, pois o worker espera este campo
         sistemaAmortizacao,
         participantes: participantesAjustados,
       };
@@ -232,22 +246,36 @@ export function SimuladorForm() {
       }
 
       if (!response.ok) {
-        throw new Error(data.error || "Erro ao iniciar simulação");
+        // CORREÇÃO: Define o estado de erro para que o modal seja exibido
+        setErro(data.error || "Erro ao iniciar simulação");
+        throw new Error(data.error || "Erro ao iniciar simulação"); // Ainda lança para o catch
       }
 
       console.log('📥 Resposta bruta da API:', data);
 
       if (data.jobId && data.status === "pending") {
         setJobId(data.jobId);
-        setStatus("Aguardando processamento...");
+        // setStatus("Aguardando processamento..."); // Removido
+        setLoadingMessage("Aguardando processamento...");
+
+        // Inicia a simulação de progresso no cliente
+        clientProgressIntervalRef.current = setInterval(() => {
+          setProgresso(prev => Math.min(prev + 1, 90)); // Incrementa até 90%
+        }, 2000); // A cada 2 segundos
         pollJobStatus(data.jobId);
         toast({
           title: "Simulação iniciada",
           description: `Job ID: ${data.jobId}`,
         });
       } else {
-        setStatus("Simulação concluída!");
+        // Limpa o intervalo de progresso do cliente se for uma resposta síncrona
+        if (clientProgressIntervalRef.current) {
+          clearInterval(clientProgressIntervalRef.current);
+          clientProgressIntervalRef.current = null;
+        }
         setLoading(false);
+        setProgresso(100); // Garante que o progresso seja 100% para jobs síncronos concluídos
+        setLoadingMessage("✅ Simulação concluída!");
 
         // EXTRAÇÃO INTELIGENTE DOS DADOS
         // O route.ts normalmente retorna { status: 'completed', result: { ...dadosDoWorker } }
@@ -301,7 +329,7 @@ export function SimuladorForm() {
                 valorAvaliacao,
                 rendaFamiliar,
                 quantidadeParticipantes,
-                participantes: participantesAjustados, // Salva a versão corrigida
+                participantes: participantesAjustados,
                 possuiTresAnosFGTS,
                 jaBeneficiadoSubsidio,
                 sistemaAmortizacao,
@@ -361,21 +389,29 @@ export function SimuladorForm() {
         description: error instanceof Error ? error.message : "Erro ao iniciar simulação",
         variant: "destructive",
       });
+      // CORREÇÃO: Define o estado de erro para que o modal seja exibido
+      setErro(error instanceof Error ? error.message : "Erro ao iniciar simulação");
       setLoading(false);
     }
   };
 
   const pollJobStatus = async (id: string) => {
     let tentativas = 0;
-    const maxTentativas = 150; 
+    const maxTentativas = 150; // 150 * 2 segundos = 300 segundos = 5 minutos
+
+    // Limpa qualquer intervalo de polling existente antes de iniciar um novo
+    if (pollJobIntervalRef.current) {
+      clearInterval(pollJobIntervalRef.current);
+    }
     
-    const interval = setInterval(async () => {
+    pollJobIntervalRef.current = setInterval(async () => {
       try {
         tentativas++;
+        // Se o progresso do cliente já atingiu 90%, não precisa mais atualizar a mensagem ilusória
         if (tentativas > maxTentativas) {
-          clearInterval(interval);
+          clearInterval(pollJobIntervalRef.current!);
           setLoading(false);
-          setStatus("Tempo limite excedido");
+          setErro("A simulação demorou mais que o esperado (tempo limite excedido).");
           toast({
             title: "Timeout",
             description: "A simulação demorou mais de 5 minutos.",
@@ -389,14 +425,22 @@ export function SimuladorForm() {
 
         if (data.progress !== undefined) {
           setProgresso(data.progress);
-          setLoadingMessage(getMessageFromProgress(data.progress));
+          setLoadingMessage(getMessageFromProgress(data.progress)); // Usa o progresso real do backend
+        } else if (progresso < 90) { // Apenas atualiza a mensagem se o progresso ilusório ainda está ativo
+          // Se não houver progresso do backend, continua com a mensagem ilusória
+          setLoadingMessage(getMessageFromProgress(progresso));
         }
 
         const statusNormalizado = data.status?.toLowerCase();
 
         if (statusNormalizado === "completed") {
-          clearInterval(interval);
-          setStatus("Simulação concluída!");
+          clearInterval(pollJobIntervalRef.current!);
+          // Limpa o intervalo de progresso do cliente
+          if (clientProgressIntervalRef.current) {
+            clearInterval(clientProgressIntervalRef.current);
+            clientProgressIntervalRef.current = null;
+          }
+          // setStatus("Simulação concluída!"); // Removido
           setLoading(false);
           
           const resultado = data.result;
@@ -406,7 +450,8 @@ export function SimuladorForm() {
           const dadosFinal = {
              ...(resultado.dados || {}),
              nomeEmpreendimento,
-             unidade
+             unidade,
+             quantidadeParticipantes: resultado.dados?.quantidadeParticipantes || participantes.length // Garante que a quantidade de participantes esteja presente
           };
           sessionStorage.setItem("dadosSimulacao", JSON.stringify(dadosFinal));
 
@@ -452,12 +497,25 @@ export function SimuladorForm() {
           }, 1000);
 
         } else if (statusNormalizado === "failed") {
-          clearInterval(interval);
+          clearInterval(pollJobIntervalRef.current!);
+          // Limpa o intervalo de progresso do cliente
+          if (clientProgressIntervalRef.current) {
+            clearInterval(clientProgressIntervalRef.current);
+            clientProgressIntervalRef.current = null;
+          }
           setLoading(false);
-          setErro(data.error || "Erro desconhecido");
+          setErro(data.error || "Erro desconhecido durante o processamento."); // Define o erro para o modal
         }
       } catch (error) {
         console.error("Erro no polling:", error);
+        clearInterval(pollJobIntervalRef.current!);
+        // Limpa o intervalo de progresso do cliente
+        if (clientProgressIntervalRef.current) {
+          clearInterval(clientProgressIntervalRef.current);
+          clientProgressIntervalRef.current = null;
+        }
+        setLoading(false);
+        setErro("Erro na comunicação com o servidor durante o polling."); // Define o erro para o modal
       }
     }, 2000);
   };
@@ -590,6 +648,9 @@ export function SimuladorForm() {
               <Loader2 className="h-16 w-16 animate-spin text-primary" />
               <div className="text-center space-y-4 w-full px-4">
                 <h3 className="text-lg font-semibold">{loadingMessage}</h3>
+                <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                  <div className="bg-primary h-2.5 rounded-full" style={{ width: `${progresso}%` }}></div>
+                </div>
                 <p className="text-sm text-muted-foreground">Por favor, aguarde enquanto processamos sua simulação...</p>
               </div>
             </div>
