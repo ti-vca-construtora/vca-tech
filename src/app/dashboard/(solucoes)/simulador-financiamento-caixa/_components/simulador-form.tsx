@@ -186,11 +186,13 @@ export function SimuladorForm() {
     setProgresso(0);
     setErro(null);
     setLoadingMessage("🚀 Iniciando automação...");
-
-    const participantesAjustados = participantes.map((p, i) => ({
-      ...p,
-      dataNascimento: i === 0 ? dataNascimentoCliente : p.dataNascimento,
-    }));
+    
+    // CORREÇÃO: Garante que a data do cliente principal está no primeiro participante
+    // antes de enviar para a API e salvar no sessionStorage.
+    const participantesAjustados = [...participantes];
+    if (participantesAjustados.length > 0) {
+      participantesAjustados[0].dataNascimento = dataNascimentoCliente;
+    }
 
     try {
       let API_URL = process.env.NEXT_PUBLIC_CAIXA_URL ?? "/api/simulador-caixa";
@@ -208,12 +210,8 @@ export function SimuladorForm() {
         possuiTresAnosFGTS,
         jaBeneficiadoSubsidio,
         possuiDependentes,
-        quantidadeParticipantes,
         sistemaAmortizacao,
-        participantes: participantesAjustados.map((p, i) => ({
-          dataNascimento: i === 0 ? dataNascimentoCliente : p.dataNascimento,
-          pactuacao: p.pactuacao,
-        })),
+        participantes: participantesAjustados,
       };
 
       console.log('📤 Enviando payload para API:', payload);
@@ -302,7 +300,7 @@ export function SimuladorForm() {
                 valorAvaliacao,
                 rendaFamiliar,
                 quantidadeParticipantes,
-                participantes,
+                participantes: participantesAjustados, // Salva a versão corrigida
                 possuiTresAnosFGTS,
                 jaBeneficiadoSubsidio,
                 sistemaAmortizacao,

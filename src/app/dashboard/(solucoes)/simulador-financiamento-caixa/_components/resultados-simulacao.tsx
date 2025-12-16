@@ -92,6 +92,17 @@ export function ResultadosSimulacao() {
     }).format(numero);
   };
 
+  const formatarDataNascimento = (dataStr: string) => {
+    // A data pode estar vindo como '2000-01-20T03:00:00.000Z' ou '2000-01-20'
+    // O T03:00... pode causar o "dia anterior" por conta do fuso horário.
+    // Esta função garante que estamos pegando a data correta, ignorando o fuso.
+    const data = new Date(dataStr);
+    // Adiciona o offset do fuso horário para neutralizar o efeito e pegar a data local correta.
+    const dataAjustada = new Date(data.valueOf() + data.getTimezoneOffset() * 60 * 1000);
+    
+    return dataAjustada.toLocaleDateString("pt-BR", { timeZone: 'UTC' });
+  };
+
   const handleDownloadPDF = async () => {
     if (!dadosSimulacao || !resultados) return;
     
@@ -206,7 +217,7 @@ export function ResultadosSimulacao() {
                       {i === 0 ? 'Participante 1' : `Participante ${i + 1}`}: {p.pactuacao}%
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      {new Date(p.dataNascimento).toLocaleDateString("pt-BR", { timeZone: 'UTC' })}
+                      {formatarDataNascimento(p.dataNascimento)}
                     </span>
                   </div>
                 ))}
