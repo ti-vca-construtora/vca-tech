@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Tabela from "./tabela";
 import { User } from "@/types/huggy-user";
 import * as z from "zod";
@@ -12,7 +12,7 @@ import {
   putContactFlow,
   GetContactType,
 } from "@/services/huggy";
-import EstatisticasTabela, { StatisticsType } from "./estatisticas-tabela";
+import EstatisticasTabela, { type StatisticsType } from "./estatisticas-tabela";
 import { BiLoader } from "react-icons/bi";
 import Variaveis from "./variaveis";
 import {
@@ -42,6 +42,11 @@ const UserSchema = z.object({
 
 type UserFormType = z.infer<typeof UserSchema>;
 
+type BatchStatus = "pending" | "processing" | "completed";
+interface BatchInfo {
+  users: User[];
+  status: BatchStatus;
+}
 const Quadro = () => {
   const {
     register,
@@ -74,6 +79,22 @@ const Quadro = () => {
   const [progress, setProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentBatch, setCurrentBatch] = useState(0);
+  const [batchInfo, setBatchInfo] = useState<BatchInfo[]>([]);
+
+  const BATCH_SIZE = 50;
+
+  useEffect(() => {
+    if (users.length > 0) {
+      const newBatches: BatchInfo[] = [];
+      for (let i = 0; i < users.length; i += BATCH_SIZE) {
+        const chunk = users.slice(i, i + BATCH_SIZE);
+        newBatches.push({ users: chunk, status: "pending" });
+      }
+      setBatchInfo(newBatches);
+    } else {
+      setBatchInfo([]);
+    }
+  }, [users]);
 
   const handleCreateUser = (data: UserFormType) => {
     const normalizedPhone = normalizePhone(data.telefone);
@@ -231,11 +252,18 @@ const Quadro = () => {
     setProgress(0);
     setStatistics([]);
     setCurrentBatch(1);
+
+    // Atualiza o status visual do primeiro lote para 'processing'
+    setBatchInfo((prev) =>
+      prev.map((batch, index) =>
+        index === 0 ? { ...batch, status: "processing" } : batch
+      )
+    );
+
     await handleSend(0); // Inicia o processamento com o primeiro lote (índice 0)
   };
 
   const handleSend = async (batchIndex: number) => {
-    const BATCH_SIZE = 50;
     const start = batchIndex * BATCH_SIZE;
     const end = start + BATCH_SIZE;
     const batchUsers = users.slice(start, end);
@@ -244,6 +272,12 @@ const Quadro = () => {
       setStatus("Processo finalizado!");
       setIsProcessing(false);
       setCurrentBatch(0);
+      // Garante que todos os lotes sejam marcados como concluídos no final
+      setBatchInfo((prev) =>
+        prev.map((batch) =>
+          batch.status !== "completed" ? { ...batch, status: "completed" } : batch
+        )
+      );
       return;
     }
 
@@ -392,6 +426,15 @@ const Quadro = () => {
       // Chama o próximo lote
       const nextBatchIndex = batchIndex + 1;
       if (nextBatchIndex * BATCH_SIZE < users.length) {
+        // Atualiza o status visual do lote concluído e do próximo
+        setBatchInfo((prev) =>
+          prev.map((batch, index) => {
+            if (index === batchIndex) return { ...batch, status: "completed" };
+            if (index === nextBatchIndex)
+              return { ...batch, status: "processing" };
+            return batch;
+          })
+        );
         setCurrentBatch(nextBatchIndex + 1);
         await handleSend(nextBatchIndex);
       } else {
@@ -523,6 +566,40 @@ const Quadro = () => {
             <Tabela setUsers={setUsers} users={users} />
           </CardContent>
         </Card>
+        {batchInfo.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Lotes para Envio</CardTitle>
+              <CardDescription>
+                Sua lista foi dividida em {batchInfo.length} lote(s). O envio
+                será feito em sequência.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {batchInfo.map((batch, index) => {
+                const borderColor =
+                  batch.status === "completed"
+                    ? "border-green-500"
+                    : batch.status === "processing"
+                    ? "border-yellow-400"
+                    : "border-neutral-200";
+                return (
+                  <div
+                    key={index}
+                    className={`p-4 rounded-lg border-2 shadow-sm flex flex-col items-center justify-center ${borderColor}`}
+                  >
+                    <p className="font-bold text-lg text-neutral-700">
+                      Lote {index + 1}
+                    </p>
+                    <p className="text-sm text-neutral-500">
+                      {batch.users.length} contatos
+                    </p>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        )}
         <Card className="flex flex-col">
           <CardHeader>
             <CardTitle>Parâmetros do Envio:</CardTitle>
