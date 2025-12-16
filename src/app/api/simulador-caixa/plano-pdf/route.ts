@@ -404,7 +404,7 @@ function getHtmlContent({ dadosSimulacao, resultados, linhasPlano, prazoEntrega,
         ${dadosSimulacao.participantes.map((p: Participante, i: number) => `
           <div class="participant-item">
             <span><strong>${i === 0 ? 'Principal' : `Participante ${i + 1}`}:</strong> ${p.pactuacao}% de Pactuação</span>
-            <span>${new Date(p.dataNascimento).toLocaleDateString('pt-BR')}</span>
+            <span>${new Date(p.dataNascimento).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
           </div>
         `).join('')}
       </div>

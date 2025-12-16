@@ -206,7 +206,7 @@ export function ResultadosSimulacao() {
                       {i === 0 ? 'Participante 1' : `Participante ${i + 1}`}: {p.pactuacao}%
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      {new Date(p.dataNascimento).toLocaleDateString("pt-BR")}
+                      {new Date(p.dataNascimento).toLocaleDateString("pt-BR", { timeZone: 'UTC' })}
                     </span>
                   </div>
                 ))}
