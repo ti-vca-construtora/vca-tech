@@ -194,11 +194,7 @@ export function SimuladorForm() {
 
     try {
       let API_URL = process.env.NEXT_PUBLIC_CAIXA_URL ?? "/api/simulador-caixa";
-      // Remove barra final se houver para evitar duplicidade
-      if (API_URL.endsWith("/")) {
-        API_URL = API_URL.slice(0, -1);
-      }
-      // Se não terminar com /api/simulador-caixa, adiciona
+      API_URL = API_URL.replace(/\/+$/, ""); // Remove barras finais
       if (!API_URL.endsWith("/api/simulador-caixa")) {
         API_URL = `${API_URL}/api/simulador-caixa`;
       }
@@ -222,29 +218,42 @@ export function SimuladorForm() {
       };
 
       console.log('📤 Enviando payload para API:', API_URL);
+      console.log('📦 Payload:', payload);
 
       const response = await fetch(API_URL, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          // Header obrigatório para Ngrok
-          "ngrok-skip-browser-warning": "true" 
+          "ngrok-skip-browser-warning": "true",
+          // Headers adicionais que podem ajudar com CORS
+          "Accept": "application/json",
         },
+        // IMPORTANTE: modo CORS explícito
+        mode: "cors",
+        // Credentials se necessário (comentado por padrão)
+        // credentials: "include",
         body: JSON.stringify(payload),
       });
+
+      console.log('📡 Status da resposta:', response.status);
+      console.log('📋 Headers da resposta:', Object.fromEntries(response.headers.entries()));
+
+      // Verificar se a resposta é OK antes de tentar parsear JSON
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Erro HTTP:', response.status, errorText);
+        throw new Error(`Erro HTTP ${response.status}: ${errorText || 'Erro ao iniciar simulação'}`);
+      }
 
       let data;
       try {
         data = await response.json();
-      } catch (err) {
-        throw new Error("Erro de conexão ou resposta inválida da API (possível bloqueio CORS ou Ngrok).");
+      } catch (parseError) {
+        console.error('❌ Erro ao parsear JSON:', parseError);
+        throw new Error("Resposta inválida da API. Verifique se o servidor está retornando JSON válido.");
       }
 
-      if (!response.ok) {
-        throw new Error(data.error || "Erro ao iniciar simulação");
-      }
-
-      console.log('📥 Resposta bruta da API:', data);
+      console.log('📥 Resposta da API:', data);
 
       if (data.jobId && data.status === "pending") {
         setJobId(data.jobId);
@@ -346,13 +355,23 @@ export function SimuladorForm() {
         }, 800);
       }
     } catch (error) {
-      console.error("Erro no handleSubmit:", error);
+      console.error("❌ Erro no handleSubmit:", error);
+      
+      let errorMessage = "Erro ao conectar com a API de simulação.";
+      
+      if (error instanceof TypeError && error.message === "Failed to fetch") {
+        errorMessage = "Erro de CORS ou conexão bloqueada. Verifique se o backend está rodando e configurado corretamente.";
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Erro de Conexão",
-        description: error instanceof Error ? error.message : "Erro ao conectar com a API de simulação.",
+        description: errorMessage,
         variant: "destructive",
       });
       setLoading(false);
+      setErro(errorMessage);
     }
   };
 
@@ -361,9 +380,7 @@ export function SimuladorForm() {
     const maxTentativas = 150; 
     
     let API_URL = process.env.NEXT_PUBLIC_CAIXA_URL ?? "/api/simulador-caixa";
-    if (API_URL.endsWith("/")) {
-        API_URL = API_URL.slice(0, -1);
-    }
+    API_URL = API_URL.replace(/\/+$/, "");
     if (!API_URL.endsWith("/api/simulador-caixa")) {
         API_URL = `${API_URL}/api/simulador-caixa`;
     }
@@ -384,8 +401,18 @@ export function SimuladorForm() {
         }
         
         const response = await fetch(`${API_URL}?jobId=${id}`, {
-             headers: { "ngrok-skip-browser-warning": "true" }
+          headers: { 
+            "ngrok-skip-browser-warning": "true",
+            "Accept": "application/json",
+          },
+          mode: "cors",
         });
+
+        if (!response.ok) {
+          console.error('❌ Erro no polling:', response.status);
+          return;
+        }
+
         const data = await response.json();
 
         if (data.progress !== undefined) {
@@ -454,7 +481,7 @@ export function SimuladorForm() {
           setErro(data.error || "Erro desconhecido");
         }
       } catch (error) {
-        console.error("Erro no polling:", error);
+        console.error("❌ Erro no polling:", error);
       }
     }, 2000);
   };

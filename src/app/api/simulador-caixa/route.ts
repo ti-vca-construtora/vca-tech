@@ -1,23 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Queue } from 'bullmq'
 
+// Headers CORS completos (incluindo ngrok)
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, ngrok-skip-browser-warning',
+  'Access-Control-Max-Age': '86400', // Cache do preflight por 24h
+}
+
 // Resposta explícita para o Preflight do navegador
 export async function OPTIONS() {
-  return new NextResponse(null, {
+  return new NextResponse(null, { 
     status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, ngrok-skip-browser-warning',
-    },
+    headers: corsHeaders
   })
 }
 
 // Função utilitária para aplicar headers CORS em todas as respostas
 function withCORS(response: NextResponse) {
-  response.headers.set('Access-Control-Allow-Origin', '*')
-  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, ngrok-skip-browser-warning')
+  Object.entries(corsHeaders).forEach(([key, value]) => {
+    response.headers.set(key, value)
+  })
   return response
 }
 
