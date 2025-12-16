@@ -13,6 +13,14 @@ export async function OPTIONS() {
   })
 }
 
+// Função utilitária para aplicar headers CORS em todas as respostas
+function withCORS(response: NextResponse) {
+  response.headers.set('Access-Control-Allow-Origin', '*')
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, ngrok-skip-browser-warning')
+  return response
+}
+
 const redisConnection = {
   url: process.env.REDIS_URL,
   maxRetriesPerRequest: null,
@@ -41,16 +49,16 @@ export async function POST(request: NextRequest) {
     try {
       dados = await request.json()
     } catch (e) {
-      return NextResponse.json({ error: 'Payload inválido' }, { status: 400 })
+      return withCORS(NextResponse.json({ error: 'Payload inválido' }, { status: 400 }))
     }
 
     // Validação básica
     if (!dados.origemRecurso || !dados.cidade || !dados.valorAvaliacao) {
-      return NextResponse.json({ error: 'Dados incompletos' }, { status: 400 })
+      return withCORS(NextResponse.json({ error: 'Dados incompletos' }, { status: 400 }))
     }
 
     if (!simuladorQueue) {
-      return NextResponse.json({ error: 'Serviço de fila (Redis) indisponível' }, { status: 503 })
+      return withCORS(NextResponse.json({ error: 'Serviço de fila (Redis) indisponível' }, { status: 503 }))
     }
 
     // Adicionar job à fila
@@ -72,7 +80,7 @@ export async function POST(request: NextRequest) {
       
       console.log(`[API] Job ${job.id} concluído com sucesso.`);
       
-      return NextResponse.json({ status: 'completed', result })
+      return withCORS(NextResponse.json({ status: 'completed', result }))
     } catch (err) {
       console.error(`[API] Erro esperando job ${job.id}:`, err);
       
@@ -83,23 +91,23 @@ export async function POST(request: NextRequest) {
 
       // Se der timeout, retorna o ID para o front fazer polling
       if (errorMessage.includes('timed out')) {
-        return NextResponse.json({ 
-            status: 'pending', 
-            jobId: job.id, 
-            message: 'Processamento longo, mudando para modo assíncrono.' 
-        }, { status: 200 });
+        return withCORS(NextResponse.json({ 
+          status: 'pending', 
+          jobId: job.id, 
+          message: 'Processamento longo, mudando para modo assíncrono.' 
+        }, { status: 200 }))
       }
 
-      return NextResponse.json({ status: 'failed', error: errorMessage }, { status: 500 })
+      return withCORS(NextResponse.json({ status: 'failed', error: errorMessage }, { status: 500 }))
     } finally {
       await events.close()
     }
   } catch (error) {
     console.error('Erro ao processar requisição POST:', error)
-    return NextResponse.json(
+    return withCORS(NextResponse.json(
       { error: 'Erro interno ao processar requisição' },
       { status: 500 }
-    )
+    ))
   }
 }
 
@@ -109,18 +117,18 @@ export async function GET(request: NextRequest) {
     const jobId = searchParams.get('jobId')
 
     if (!jobId) {
-      return NextResponse.json({ error: 'jobId não fornecido' }, { status: 400 })
+      return withCORS(NextResponse.json({ error: 'jobId não fornecido' }, { status: 400 }))
     }
 
     if (!simuladorQueue) {
-      return NextResponse.json({ error: 'Redis não conectado' }, { status: 503 })
+      return withCORS(NextResponse.json({ error: 'Redis não conectado' }, { status: 503 }))
     }
 
     // Buscar job
     const job = await simuladorQueue.getJob(jobId)
 
     if (!job) {
-      return NextResponse.json({ status: 'not_found', error: 'Job não encontrado' }, { status: 404 })
+      return withCORS(NextResponse.json({ status: 'not_found', error: 'Job não encontrado' }, { status: 404 }))
     }
 
     const state = await job.getState()
@@ -130,25 +138,25 @@ export async function GET(request: NextRequest) {
 
     if (state === 'completed') {
       const result = job.returnvalue
-      return NextResponse.json({ status: 'completed', progress: 100, result })
+      return withCORS(NextResponse.json({ status: 'completed', progress: 100, result }))
     }
 
     if (state === 'failed') {
-      return NextResponse.json({ 
+      return withCORS(NextResponse.json({ 
         status: 'failed', 
         error: job.failedReason || 'Erro desconhecido',
         progress 
-      })
+      }))
     }
 
     if (state === 'active') {
-      return NextResponse.json({ status: 'processing', progress: progress || 0 })
+      return withCORS(NextResponse.json({ status: 'processing', progress: progress || 0 }))
     }
 
-    return NextResponse.json({ status: 'pending', progress: 0 })
+    return withCORS(NextResponse.json({ status: 'pending', progress: 0 }))
 
   } catch (error) {
     console.error('Erro ao verificar status GET:', error)
-    return NextResponse.json({ error: 'Erro ao verificar status' }, { status: 500 })
+    return withCORS(NextResponse.json({ error: 'Erro ao verificar status' }, { status: 500 }))
   }
 }
