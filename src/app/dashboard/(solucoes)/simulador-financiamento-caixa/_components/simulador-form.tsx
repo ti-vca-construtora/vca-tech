@@ -200,7 +200,20 @@ export function SimuladorForm() {
     setProgresso(0);
     setErro(null);
     setLoadingMessage("🚀 Iniciando automação...");
-    
+
+    // --- Inicia a simulação de progresso "ilusório" no cliente IMEDIATAMENTE ---
+    const duracaoTotalMs = 50000; // 50 segundos
+    const intervaloAtualizacao = 500; // Atualiza a cada 0.5 segundos
+    const incremento = (intervaloAtualizacao / duracaoTotalMs) * 100;
+
+    clientProgressIntervalRef.current = setInterval(() => {
+      setProgresso(prev => {
+        const novoProgresso = Math.min(prev + incremento, 95);
+        setLoadingMessage(getMessageFromProgress(novoProgresso));
+        return novoProgresso;
+      });
+    }, intervaloAtualizacao);
+
     // CORREÇÃO: Garante que a data do cliente principal está no primeiro participante
     // antes de enviar para a API e salvar no sessionStorage.
     const participantesAjustados = [...participantes];
@@ -257,19 +270,6 @@ export function SimuladorForm() {
         // setJobId(data.jobId); // Removido
         // setStatus("Aguardando processamento..."); // Removido
         setLoadingMessage("Aguardando processamento...");
-
-        // --- Inicia a simulação de progresso "ilusório" no cliente ---
-        const duracaoTotalMs = 50000; // 50 segundos
-        const intervaloAtualizacao = 500; // Atualiza a cada 0.5 segundos
-        const incremento = (intervaloAtualizacao / duracaoTotalMs) * 100;
-
-        clientProgressIntervalRef.current = setInterval(() => {
-          setProgresso(prev => {
-            const novoProgresso = Math.min(prev + incremento, 95);
-            setLoadingMessage(getMessageFromProgress(novoProgresso)); // Atualiza a mensagem junto com o progresso
-            return novoProgresso;
-          });
-        }, intervaloAtualizacao);
         pollJobStatus(data.jobId);
         toast({
           title: "Simulação iniciada",
