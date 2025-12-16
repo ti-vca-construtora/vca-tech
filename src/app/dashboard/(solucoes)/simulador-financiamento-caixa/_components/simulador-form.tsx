@@ -58,7 +58,7 @@ export function SimuladorForm() {
   // New state for client-side progress interval
   const clientProgressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [dataNascimentoCliente, setDataNascimentoCliente] = useState("");
-  const [cidade, setCidade] = useState("Fortaleza");
+  const [cidade, setCidade] = useState("Vitória da Conquista");
   const [rendaFamiliar, setRendaFamiliar] = useState("");
   const [possuiTresAnosFGTS, setPossuiTresAnosFGTS] = useState(false);
   const [jaBeneficiadoSubsidio, setJaBeneficiadoSubsidio] = useState(false);
@@ -533,7 +533,7 @@ export function SimuladorForm() {
     <div className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="nomeCliente">Nome do Cliente *</Label>
-        <Input id="nomeCliente" value={nomeCliente} onChange={(e) => setNomeCliente(e.target.value)} required />
+        <Input id="nomeCliente" value={nomeCliente} onChange={(e) => setNomeCliente(e.target.value)} placeholder="Ex: João da Silva" required />
       </div>
       <div className="space-y-2">
         <Label htmlFor="dataNascimento">Data de Nascimento *</Label>
@@ -541,11 +541,11 @@ export function SimuladorForm() {
       </div>
       <div className="space-y-2">
         <Label htmlFor="cidade">Cidade *</Label>
-        <Input id="cidade" value={cidade} onChange={(e) => setCidade(e.target.value)} required />
+        <Input id="cidade" value={cidade} onChange={(e) => setCidade(e.target.value)} placeholder="Ex: Vitória da Conquista" required />
       </div>
       <div className="space-y-2">
         <Label htmlFor="rendaFamiliar">Renda Familiar *</Label>
-        <Input id="rendaFamiliar" value={rendaFamiliar} onChange={(e) => setRendaFamiliar(formatCurrency(e.target.value))} required />
+        <Input id="rendaFamiliar" value={rendaFamiliar} onChange={(e) => setRendaFamiliar(formatCurrency(e.target.value))} placeholder="R$ 5.000,00" required />
       </div>
       <div className="space-y-3">
         <Label>Condições Especiais</Label>
@@ -569,19 +569,19 @@ export function SimuladorForm() {
     <div className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="nomeEmpreendimento">Nome do Empreendimento *</Label>
-        <Input id="nomeEmpreendimento" value={nomeEmpreendimento} onChange={(e) => setNomeEmpreendimento(e.target.value)} required />
+        <Input id="nomeEmpreendimento" value={nomeEmpreendimento} onChange={(e) => setNomeEmpreendimento(e.target.value)} placeholder="Ex: Residencial das Flores" required />
       </div>
       <div className="space-y-2">
         <Label htmlFor="unidade">Unidade *</Label>
-        <Input id="unidade" value={unidade} onChange={(e) => setUnidade(e.target.value)} required />
+        <Input id="unidade" value={unidade} onChange={(e) => setUnidade(e.target.value)} placeholder="Ex: Apartamento 101" required />
       </div>
       <div className="space-y-2">
         <Label htmlFor="valorAvaliacao">Valor de Avaliação *</Label>
-        <Input id="valorAvaliacao" value={valorAvaliacao} onChange={(e) => setValorAvaliacao(formatCurrency(e.target.value))} required />
+        <Input id="valorAvaliacao" value={valorAvaliacao} onChange={(e) => setValorAvaliacao(formatCurrency(e.target.value))} placeholder="R$ 200.000,00" required />
       </div>
       <div className="space-y-2">
         <Label htmlFor="valorImovel">Valor do Imóvel *</Label>
-        <Input id="valorImovel" value={valorImovel} onChange={(e) => setValorImovel(formatCurrency(e.target.value))} required />
+        <Input id="valorImovel" value={valorImovel} onChange={(e) => setValorImovel(formatCurrency(e.target.value))} placeholder="R$ 200.000,00" required />
       </div>
       <div className="space-y-2">
         <Label htmlFor="origemRecurso">Origem de Recurso</Label>
@@ -625,7 +625,7 @@ export function SimuladorForm() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor={`pactuacao-${index}`}>% de Pactuação</Label>
-                  <Input id={`pactuacao-${index}`} type="number" min="0" max="100" value={p.pactuacao} onChange={(e) => handleParticipanteChange(index, "pactuacao", Number(e.target.value))} />
+                  <Input id={`pactuacao-${index}`} type="number" min="0" max="100" value={p.pactuacao} onChange={(e) => handleParticipanteChange(index, "pactuacao", Number(e.target.value))} placeholder="Ex: 50" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor={`dataNascimento-${index}`}>Data de Nascimento</Label>
