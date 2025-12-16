@@ -45,7 +45,7 @@ export function SimuladorForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [jobId, setJobId] = useState<string | null>(null); // Este estado é útil para depuração e futuras funcionalidades
+  // const [jobId, setJobId] = useState<string | null>(null); // Removido pois não está sendo usado na UI
   // const [status, setStatus] = useState<string>(""); // Removido, pois loadingMessage é mais descritivo
   const [loadingMessage, setLoadingMessage] = useState<string>("Iniciando simulação...");
   const [progresso, setProgresso] = useState(0);
@@ -254,14 +254,18 @@ export function SimuladorForm() {
       console.log('📥 Resposta bruta da API:', data);
 
       if (data.jobId && data.status === "pending") {
-        setJobId(data.jobId);
+        // setJobId(data.jobId); // Removido
         // setStatus("Aguardando processamento..."); // Removido
         setLoadingMessage("Aguardando processamento...");
 
-        // Inicia a simulação de progresso no cliente
+        // --- Inicia a simulação de progresso "ilusório" no cliente ---
+        const duracaoTotalMs = 50000; // 50 segundos
+        const intervaloAtualizacao = 500; // Atualiza a cada 0.5 segundos
+        const incremento = (intervaloAtualizacao / duracaoTotalMs) * 100;
+
         clientProgressIntervalRef.current = setInterval(() => {
-          setProgresso(prev => Math.min(prev + 1, 90)); // Incrementa até 90%
-        }, 2000); // A cada 2 segundos
+          setProgresso(prev => Math.min(prev + incremento, 95)); // Avança até 95%
+        }, intervaloAtualizacao);
         pollJobStatus(data.jobId);
         toast({
           title: "Simulação iniciada",
