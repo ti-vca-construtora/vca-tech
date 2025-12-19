@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -13,11 +14,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Loader2, PlayCircle, ChevronRight, ChevronLeft, User, Home, UserPen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
+import { ChevronLeft, ChevronRight, Home, Loader2, PlayCircle, User, UserPen } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 interface Participante {
   pactuacao: number;
@@ -250,18 +250,22 @@ export function SimuladorForm() {
         body: JSON.stringify(payload),
       });
 
+      // Lê o body apenas uma vez
       let data;
+      let responseText;
       try {
-        data = await response.json();
+        // Tenta ler como JSON
+        data = await response.clone().json();
       } catch (err) {
-        const text = await response.text();
-        throw new Error(text || "Erro desconhecido ao conectar ao endpoint");
+        // Se falhar, lê como texto
+        responseText = await response.text();
+        throw new Error(responseText || "Erro desconhecido ao conectar ao endpoint");
       }
 
       if (!response.ok) {
         // CORREÇÃO: Define o estado de erro para que o modal seja exibido
-        setErro(data.error || "Erro ao iniciar simulação");
-        throw new Error(data.error || "Erro ao iniciar simulação"); // Ainda lança para o catch
+        setErro(data?.error || responseText || "Erro ao iniciar simulação");
+        throw new Error(data?.error || responseText || "Erro ao iniciar simulação"); // Ainda lança para o catch
       }
 
       console.log('📥 Resposta bruta da API:', data);
