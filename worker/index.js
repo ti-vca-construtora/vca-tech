@@ -1,4 +1,4 @@
-const { Worker, Queue } = require('bullmq')
+const { Worker, Queue, QueueEvents } = require('bullmq')
 const { chromium } = require('playwright-extra')
 const stealth = require('puppeteer-extra-plugin-stealth')()
 
@@ -11,31 +11,175 @@ const redisConnection = {
   maxRetriesPerRequest: null, // Importante para BullMQ
 }
 
+const queueEvents = new QueueEvents('simulador-caixa', {
+  connection: redisConnection,
+})
+
 const http = require('http')
 
 // O Railway injeta a porta automaticamente na variável process.env.PORT
 const port = process.env.PORT || 3000
 
-const server = http.createServer((req, res) => {
-  // Set CORS headers for all responses
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'Content-Type, Authorization, X-Requested-With'
-  )
-  res.setHeader('Access-Control-Allow-Credentials', 'true')
+const server = http.createServer(async (req, res) => {
+  const baseUrl = `http://${req.headers.host || 'localhost'}`
+  const parsedUrl = new URL(req.url || '/', baseUrl)
+  const pathname = parsedUrl.pathname
 
-  // Handle preflight OPTIONS request
+  // Log mínimo para depuração de roteamento
+  console.log(`[HTTP] ${req.method} ${req.url} -> ${pathname}`)
+
+  // --- CORS ---
+  // Allowlist por env (separado por vírgula) + fallback para o domínio de produção
+  const allowListFromEnv = (process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean)
+
+  const allowedOrigins = new Set([
+    'https://tech.vcaconstrutora.com.br',
+    ...allowListFromEnv,
+  ])
+
+  const requestOrigin = req.headers.origin
+  if (requestOrigin && allowedOrigins.has(requestOrigin)) {
+    res.setHeader('Access-Control-Allow-Origin', requestOrigin)
+    res.setHeader('Vary', 'Origin')
+    res.setHeader('Access-Control-Allow-Credentials', 'true')
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+
   if (req.method === 'OPTIONS') {
-    res.writeHead(204)
+    res.statusCode = 204
     res.end()
     return
   }
 
-  res.statusCode = 200
-  res.setHeader('Content-Type', 'text/plain')
-  res.end('Worker is active 🚀\n')
+  // Rota Health Check
+  if (req.method === 'GET' && (pathname === '/' || pathname === '/health')) {
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'text/plain')
+    res.end('Worker is active 🚀\n')
+    return
+  }
+
+  // Rota para adicionar job
+  if (
+    pathname === '/api/simulador-caixa' ||
+    pathname === '/api/simulador-caixa/'
+  ) {
+    if (req.method !== 'POST') {
+      res.statusCode = 405
+      res.setHeader('Content-Type', 'application/json')
+      res.end(
+        JSON.stringify({ error: 'Method Not Allowed', allowed: ['POST'] })
+      )
+      return
+    }
+
+    let body = ''
+    req.on('data', (chunk) => {
+      body += chunk.toString()
+    })
+    req.on('end', async () => {
+      try {
+        const dados = JSON.parse(body)
+
+        // Validação básica
+        if (!dados.origemRecurso || !dados.cidade || !dados.valorAvaliacao) {
+          res.statusCode = 400
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ error: 'Dados incompletos' }))
+          return
+        }
+
+        const job = await simuladorQueue.add(
+          'processar-simulacao',
+          { dados },
+          {
+            attempts: 1,
+            removeOnComplete: { age: 3600, count: 100 },
+            removeOnFail: { age: 7200 },
+          }
+        )
+
+        try {
+          // Aguardar o job terminar (timeout de 2 minutos)
+          await job.waitUntilFinished(queueEvents, 120000)
+
+          // O job.returnvalue pode não estar disponível imediatamente na instância do job local
+          const completedJob = await simuladorQueue.getJob(job.id)
+          const result = completedJob.returnvalue
+
+          res.statusCode = 200
+          res.setHeader('Content-Type', 'application/json')
+
+          // Retorna resultados + PDF em base64
+          const responseData = {
+            ...result.resultados,
+            pdf: result.pdfBase64,
+          }
+
+          res.end(JSON.stringify(responseData))
+        } catch (error) {
+          console.error('Erro ao aguardar job:', error)
+
+          // Tentar pegar o motivo da falha
+          const failedJob = await simuladorQueue.getJob(job.id)
+          const reason = failedJob ? failedJob.failedReason : error.message
+
+          res.statusCode = 500
+          res.setHeader('Content-Type', 'application/json')
+          res.end(
+            JSON.stringify({ error: 'Erro na simulação', details: reason })
+          )
+        }
+      } catch (error) {
+        console.error(error)
+        res.statusCode = 500
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify({ error: 'Erro ao processar requisição' }))
+      }
+    })
+    return
+  }
+
+  // Rota para consultar status
+  if (
+    req.method === 'GET' &&
+    pathname.startsWith('/api/simulador-caixa/status')
+  ) {
+    const jobId = parsedUrl.searchParams.get('jobId')
+
+    if (!jobId) {
+      res.statusCode = 400
+      res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify({ error: 'jobId required' }))
+      return
+    }
+
+    const job = await simuladorQueue.getJob(jobId)
+    if (!job) {
+      res.statusCode = 404
+      res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify({ error: 'Job not found' }))
+      return
+    }
+
+    const state = await job.getState()
+    const progress = job.progress
+    const result = job.returnvalue
+    const failedReason = job.failedReason
+
+    res.statusCode = 200
+    res.setHeader('Content-Type', 'application/json')
+    res.end(JSON.stringify({ status: state, progress, result, failedReason }))
+    return
+  }
+
+  res.statusCode = 404
+  res.setHeader('Content-Type', 'application/json')
+  res.end(JSON.stringify({ error: 'Not Found', path: pathname }))
 })
 
 server.listen(port, '0.0.0.0', () => {
@@ -153,21 +297,6 @@ async function processSimulacao(job) {
 
       if (status === 403) {
         console.error('❌ [ETAPA 1] BLOQUEADO: Servidor retornou 403 Forbidden')
-
-        // Tirar screenshot do erro 403
-        console.log('📸 [ETAPA 1] Tentando capturar screenshot do erro 403...')
-        try {
-          await page.screenshot({ path: '/tmp/error-403.png', fullPage: true })
-          console.log(
-            '✅ [ETAPA 1] Screenshot do erro 403 salvo em /tmp/error-403.png'
-          )
-        } catch (e) {
-          console.log(
-            '⚠️ [ETAPA 1] Não foi possível salvar screenshot do erro:',
-            e.message
-          )
-        }
-
         throw new Error(
           'Acesso bloqueado pelo servidor (403). O site pode estar detectando automação.'
         )
