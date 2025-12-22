@@ -70,7 +70,7 @@ export function SimuladorForm() {
   const [nomeEmpreendimento, setNomeEmpreendimento] = useState("");
   const [unidade, setUnidade] = useState("");
   const [origemRecurso, setOrigemRecurso] = useState<"FGTS" | "SBPE">("FGTS");
-  const [sistemaAmortizacao, setSistemaAmortizacao] = useState<"SAC" | "PRICE">("SAC");
+  const [sistemaAmortizacao, setSistemaAmortizacao] = useState<"PRICE" | "SAC">("PRICE");
 
   // Form state - Etapa 3: Configurações de Pactuação
   const [quantidadeParticipantes, setQuantidadeParticipantes] = useState(1);
@@ -596,9 +596,9 @@ export function SimuladorForm() {
       </div>
       <div className="space-y-2">
         <Label htmlFor="sistemaAmortizacao">Sistema de Amortização</Label>
-        <Select value={sistemaAmortizacao} onValueChange={(v: "SAC" | "PRICE") => setSistemaAmortizacao(v)}>
+        <Select value={sistemaAmortizacao} onValueChange={(v: "PRICE" | "SAC") => setSistemaAmortizacao(v)}>
           <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent><SelectItem value="SAC">SAC</SelectItem><SelectItem value="PRICE">PRICE</SelectItem></SelectContent>
+          <SelectContent><SelectItem value="PRICE">PRICE</SelectItem><SelectItem value="SAC">SAC</SelectItem></SelectContent>
         </Select>
       </div>
     </div>
