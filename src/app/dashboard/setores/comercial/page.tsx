@@ -12,7 +12,7 @@ const solucoesData: Solucoes[] = [
       "Efetua a simulação do Financiamento Bancário do cliente.",
     Icon: CiBank,
     href: "simulador-financiamento-caixa?title=Simulador de Financiamento CAIXA",
-    area: "controladoria",
+    area: "comercial",
     permission: "simulador-financiamento-caixa",
   },
 ];

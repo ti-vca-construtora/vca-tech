@@ -95,12 +95,6 @@ export function Dashboard({ children }: DashboardProps) {
                         >
                           Obras
                         </Link>
-                                                <Link
-                          href="/dashboard/setores/controladoria?title=Painel de Soluções - Controladoria"
-                          className="rounded-md px-2 py-1 text-sm hover:bg-muted"
-                        >
-                          Controladoria
-                        </Link>
                                                                         <Link
                           href="/dashboard/setores/comercial?title=Painel de Soluções - Comercial"
                           className="rounded-md px-2 py-1 text-sm hover:bg-muted"

@@ -23,6 +23,15 @@ const solucoesData: Solucoes[] = [
     area: "financeiro",
     permission: "gerador-pix",
   },
+    {
+    titulo: "Atualização de Valores Recebidos",
+    descricao:
+      "Efetua o cálculo de atualização de valores acumulados com índices.",
+    Icon: CiCalculator1,
+    href: "calculadora-correcao-pr?title=Atualização de Valores Recebidos",
+    area: "financeiro",
+    permission: "calculadora-correcao-pr",
+  },
 ];
 
 const Financeiro = () => {

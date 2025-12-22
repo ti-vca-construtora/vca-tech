@@ -41,10 +41,6 @@ const data = {
           title: "Obras",
           url: "/dashboard/setores/obras?title=Painel de Soluções - Obras",
         },
-        {
-          title: "Controladoria",
-          url: "/dashboard/setores/controladoria?title=Painel de Soluções - Controladoria",
-        },
                 {
           title: "Comercial",
           url: "/dashboard/setores/comercial?title=Painel de Soluções - Comercial",

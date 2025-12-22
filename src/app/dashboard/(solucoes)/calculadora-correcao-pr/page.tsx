@@ -56,7 +56,7 @@ export default function CalculadoraCorrecaoPR() {
   }, [currentView]);
 
   return (
-    <RouteGuard requiredArea="controladoria" requiredPermission="avp">
+    <RouteGuard requiredArea="financeiro" requiredPermission="calculadora-correcao-pr">
       <div className="w-full h-full flex flex-col p-6 gap-6">
         {currentView === "menu" ? (
           <>

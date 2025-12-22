@@ -5,8 +5,8 @@ import {
   MdConstruction,
   MdHowToReg,
   MdOutlineRealEstateAgent,
-  MdAccountBalance,
 } from "react-icons/md";
+import { FaRegHandshake } from "react-icons/fa";
 // import { BsPeopleFill } from 'react-icons/bs'
 // import { GoLaw } from 'react-icons/go'
 
@@ -37,11 +37,16 @@ const setoresData: Setor[] = [
     href: "/dashboard/setores/obras?title=Painel de Soluções - Obras",
     Icon: MdConstruction,
   },
-  {
-    title: "Controladoria",
-    href: "/dashboard/setores/controladoria?title=Painel de Soluções - Controladoria",
-    Icon: MdAccountBalance,
+    {
+    title: "Comercial",
+    href: "/dashboard/setores/comercial?title=Painel de Soluções - Comercial",
+    Icon: FaRegHandshake,
   },
+  // {
+  //   title: "Controladoria",
+  //   href: "/dashboard/setores/controladoria?title=Painel de Soluções - Controladoria",
+  //   Icon: MdAccountBalance,
+  // },
   // {
   //   title: 'Jurídico',
   //   href: '/app/relacionamento',
