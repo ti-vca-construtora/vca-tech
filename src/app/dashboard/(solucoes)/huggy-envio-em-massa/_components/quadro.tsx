@@ -329,8 +329,7 @@ const Quadro = () => {
       );
 
       // Calcular total de operações para o progresso
-      const totalOperations =
-        unexistingUsers.length + existingUsers.length * 2; // POST + PUT + PUT Flow
+      const totalOperations = unexistingUsers.length + batchUsers.length * 2;
       let completedOperations = 0;
 
       if (unexistingUsers.length > 0) {
@@ -440,6 +439,12 @@ const Quadro = () => {
       } else {
         setStatus("Processo finalizado!");
         setIsProcessing(false);
+        // Marca o último lote como concluído
+        setBatchInfo((prev) =>
+          prev.map((batch, index) =>
+            index === batchIndex ? { ...batch, status: "completed" } : batch
+          )
+        );
       }
     } catch (error) {
       setStatus("Algo deu errado. Segue a mensagem de erro: " + error);
