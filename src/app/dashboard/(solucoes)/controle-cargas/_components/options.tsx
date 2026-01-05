@@ -1,6 +1,7 @@
 "use client";
 
 import { Solucoes, SolucoesCard } from "@/components/solucoes-card";
+import { BiRfid } from "react-icons/bi";
 import { FaLaptopCode } from "react-icons/fa";
 import { HiUsers } from "react-icons/hi2";
 import { LuScanQrCode } from "react-icons/lu";
@@ -14,6 +15,14 @@ const solucoesData: Solucoes[] = [
     href: "controle-cargas/dashboard?title=Dashboard de controle",
     area: "obras",
     permission: "dashboard-controle",
+  },
+  {
+    titulo: "Tipos de cartões",
+    descricao: "Permite cadastrar e editar tipos de cartões.",
+    Icon: BiRfid,
+    href: "controle-cargas/tipos-cartoes?title=Tipos de cartões",
+    area: "obras",
+    permission: "gerenciar-usuarios",
   },
   {
     titulo: "Validar comprovantes",

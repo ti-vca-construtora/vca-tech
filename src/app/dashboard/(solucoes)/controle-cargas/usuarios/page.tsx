@@ -17,6 +17,7 @@ type CardRow = {
   nome: string;
   cpf: string;
   status: boolean;
+  type: number | null;
   createdAt: string;
 };
 
@@ -26,8 +27,23 @@ type RawCard = {
   nome?: string | null;
   cpf?: string | null;
   status?: boolean | null;
+  type?: number | null;
   createdAt?: string | null;
   created_at?: string | null;
+};
+
+type TripType = {
+  id: number;
+  description: string;
+  number: number;
+  price: number;
+};
+
+type RawTripType = {
+  id?: number | null;
+  description?: string | null;
+  number?: number | null;
+  price?: number | null;
 };
 
 type UserGroup = {
@@ -41,6 +57,8 @@ const Usuarios = () => {
   const [groups, setGroups] = useState<UserGroup[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [tripTypes, setTripTypes] = useState<TripType[]>([]);
 
   const [filterNome, setFilterNome] = useState("");
   const [filterCpf, setFilterCpf] = useState("");
@@ -58,6 +76,10 @@ const Usuarios = () => {
   const [newCpf, setNewCpf] = useState("");
   const [newStatus, setNewStatus] = useState(true);
   const [newCardUid, setNewCardUid] = useState("");
+  const [newCardType, setNewCardType] = useState<string>("");
+
+  // add-card-to-existing-user type
+  const [addCardType, setAddCardType] = useState<string>("");
 
   // editing inputs
   const [nameInput, setNameInput] = useState("");
@@ -84,6 +106,7 @@ const Usuarios = () => {
           // normalize CPF to digits-only for consistent grouping and comparisons
           cpf: unformatCPF(String(r.cpf ?? "")),
           status: !!r.status,
+          type: (r.type ?? null) as number | null,
           createdAt: r.createdAt ?? r.created_at ?? "",
         }));
         setRows(parsed);
@@ -121,6 +144,42 @@ const Usuarios = () => {
     fetchRows();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const fetchTripTypes = async () => {
+    try {
+      const { data, error: supError } = await supabase
+        .from("trip_types")
+        .select("id, description, number, price")
+        .order("number", { ascending: true });
+
+      if (supError) {
+        setTripTypes([]);
+        return;
+      }
+
+      const raw = (data ?? []) as RawTripType[];
+      const parsed: TripType[] = raw.map((r, i) => ({
+        id: Number(r.id ?? i),
+        description: String(r.description ?? ""),
+        number: Number(r.number ?? 0),
+        price: Number(r.price ?? 0),
+      }));
+      setTripTypes(parsed);
+    } catch (err) {
+      setTripTypes([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchTripTypes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const getTypeLabel = (typeNumber?: number | null) => {
+    if (!typeNumber && typeNumber !== 0) return "";
+    const t = tripTypes.find((x) => x.number === typeNumber);
+    return t ? t.description : String(typeNumber);
+  };
 
   useEffect(() => {
     // group by CPF and pick a representative name
@@ -166,7 +225,7 @@ const Usuarios = () => {
       for (const r of editRecords) {
         await supabase
           .from("rfid_cards")
-          .update({ status: r.status })
+          .update({ status: r.status, type: r.type })
           .eq("uid", r.uid);
       }
       // update name and cpf for the group if changed
@@ -236,6 +295,14 @@ const Usuarios = () => {
   const confirmAddCardToUser = async () => {
     if (!editingCpf) return;
     if (!readUid) return;
+    if (tripTypes.length === 0) {
+      alert("Cadastre tipos de cartões primeiro");
+      return;
+    }
+    if (!addCardType) {
+      alert("Selecione o tipo do cartão");
+      return;
+    }
     // create new rfid_cards record for this user
     try {
       const cpfRaw = unformatCPF(editingCpf || "");
@@ -244,6 +311,7 @@ const Usuarios = () => {
         nome: editRecords[0]?.nome || "",
         cpf: cpfRaw,
         status: true,
+        type: Number(addCardType),
       });
       // optimistically append to editRecords so the UI shows the new card immediately
       setEditRecords((prev) => [
@@ -254,6 +322,7 @@ const Usuarios = () => {
           nome: editRecords[0]?.nome || "",
           cpf: cpfRaw,
           status: true,
+          type: Number(addCardType),
           createdAt: new Date().toISOString(),
         },
       ]);
@@ -271,18 +340,28 @@ const Usuarios = () => {
       alert("Preencha nome, cpf e aproxime um cartão");
       return;
     }
+    if (tripTypes.length === 0) {
+      alert("Cadastre tipos de cartões primeiro");
+      return;
+    }
+    if (!newCardType) {
+      alert("Selecione o tipo do cartão");
+      return;
+    }
     try {
       await supabase.from("rfid_cards").insert({
         uid: newCardUid,
         nome: newNome,
         cpf: unformatCPF(newCpf),
         status: newStatus,
+        type: Number(newCardType),
       });
       // reset form
       setNewNome("");
       setNewCpf("");
       setNewStatus(true);
       setNewCardUid("");
+      setNewCardType("");
       await fetchRows();
     } catch (err) {
       setError(String(err));
@@ -416,12 +495,26 @@ const Usuarios = () => {
               />
             </div>
             <div>
-              <button
-                className="bg-blue-600 text-white px-3 py-1 rounded"
-                onClick={() => openCardReader(false)}
-              >
-                Adicionar novo cartão
-              </button>
+              <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                <select
+                  className="border rounded px-2 py-1 bg-white"
+                  value={addCardType}
+                  onChange={(e) => setAddCardType(e.target.value)}
+                >
+                  <option value="">Selecione o tipo do novo cartão</option>
+                  {tripTypes.map((t) => (
+                    <option key={t.id} value={String(t.number)}>
+                      {t.number} - {t.description}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className="bg-blue-600 text-white px-3 py-1 rounded"
+                  onClick={() => openCardReader(false)}
+                >
+                  Adicionar novo cartão
+                </button>
+              </div>
             </div>
           </div>
 
@@ -454,6 +547,7 @@ const Usuarios = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="p-2 text-left">Cartão</th>
+                  <th className="p-2 text-left">Tipo</th>
                   <th className="p-2 text-left">Criado em</th>
                   <th className="p-2 text-left">Status</th>
                   <th className="p-2 text-left">Ações</th>
@@ -463,6 +557,29 @@ const Usuarios = () => {
                 {editRecords.map((r) => (
                   <tr key={r.uid} className="border-t">
                     <td className="p-2 break-all">{r.uid}</td>
+                    <td className="p-2">
+                      <select
+                        value={r.type === null || r.type === undefined ? "" : String(r.type)}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setEditRecords((prev) => {
+                            return prev.map((x) => {
+                              return x.uid === r.uid
+                                ? { ...x, type: v ? Number(v) : null }
+                                : x;
+                            });
+                          });
+                        }}
+                        className="border rounded px-2 py-1 bg-white"
+                      >
+                        <option value="">Sem tipo</option>
+                        {tripTypes.map((t) => (
+                          <option key={t.id} value={String(t.number)}>
+                            {t.number} - {t.description}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
                     <td className="p-2">{formatDateTime(r.createdAt)}</td>
                     <td className="p-2">
                       <select
@@ -493,7 +610,7 @@ const Usuarios = () => {
                 ))}
                 {editRecords.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="p-4 text-center text-gray-500">
+                    <td colSpan={5} className="p-4 text-center text-gray-500">
                       Nenhum cartão cadastrado para este usuário
                     </td>
                   </tr>
@@ -543,6 +660,21 @@ const Usuarios = () => {
               >
                 <option value="true">Ativo</option>
                 <option value="false">Inativo</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm">Tipo</label>
+              <select
+                className="border rounded px-2 py-1 bg-white"
+                value={newCardType}
+                onChange={(e) => setNewCardType(e.target.value)}
+              >
+                <option value="">Selecione</option>
+                {tripTypes.map((t) => (
+                  <option key={t.id} value={String(t.number)}>
+                    {t.number} - {t.description}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="flex items-center gap-2">

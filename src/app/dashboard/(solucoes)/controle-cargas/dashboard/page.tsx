@@ -21,15 +21,32 @@ type Submission = {
   nome: string | null;
   cpf: string | null;
   obra: string | null;
+  type: number | null;
   auth: string | null;
   data: string | null; // timestamp string
   base64: string | null;
+};
+
+type TripType = {
+  id: number;
+  description: string;
+  number: number;
+  price: number;
+};
+
+type RawTripType = {
+  id?: number | null;
+  description?: string | null;
+  number?: number | null;
+  price?: number | null;
 };
 
 const Dashboard = () => {
   const [rows, setRows] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [tripTypes, setTripTypes] = useState<TripType[]>([]);
 
   // filters
   const [nome, setNome] = useState("");
@@ -42,6 +59,37 @@ const Dashboard = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedAuth, setSelectedAuth] = useState<string | null>(null);
   const [obrasOptions, setObrasOptions] = useState<string[]>([]);
+
+  const getTypeLabel = (typeNumber?: number | null) => {
+    if (typeNumber === null || typeNumber === undefined) return "";
+    const t = tripTypes.find((x) => x.number === typeNumber);
+    return t ? t.description : String(typeNumber);
+  };
+
+  const fetchTripTypes = async () => {
+    try {
+      const { data, error: supError } = await supabase
+        .from("trip_types")
+        .select("id, description, number, price")
+        .order("number", { ascending: true });
+
+      if (supError) {
+        setTripTypes([]);
+        return;
+      }
+
+      const raw = (data ?? []) as RawTripType[];
+      const parsed: TripType[] = raw.map((r, i) => ({
+        id: Number(r.id ?? i),
+        description: String(r.description ?? ""),
+        number: Number(r.number ?? 0),
+        price: Number(r.price ?? 0),
+      }));
+      setTripTypes(parsed);
+    } catch (err) {
+      setTripTypes([]);
+    }
+  };
 
   const formatDate = (dateString?: string | null) => {
     if (!dateString) return "";
@@ -84,6 +132,7 @@ const Dashboard = () => {
           <td style="padding:6px;border:1px solid #ddd">${r.nome ?? ""}</td>
           <td style="padding:6px;border:1px solid #ddd">${r.cpf ?? ""}</td>
           <td style="padding:6px;border:1px solid #ddd">${r.obra ?? ""}</td>
+          <td style="padding:6px;border:1px solid #ddd">${getTypeLabel(r.type) ?? ""}</td>
           <td style="padding:6px;border:1px solid #ddd">${formatDate(r.data)}</td>
           <td style="padding:6px;border:1px solid #ddd">${r.auth ?? ""}</td>
         </tr>`,
@@ -107,6 +156,7 @@ const Dashboard = () => {
               <th style="padding:6px;border:1px solid #ddd">Nome</th>
               <th style="padding:6px;border:1px solid #ddd">CPF</th>
               <th style="padding:6px;border:1px solid #ddd">Obra</th>
+              <th style="padding:6px;border:1px solid #ddd">Tipo</th>
               <th style="padding:6px;border:1px solid #ddd">Data</th>
               <th style="padding:6px;border:1px solid #ddd">Auth</th>
             </tr>
@@ -226,6 +276,7 @@ const Dashboard = () => {
   useEffect(() => {
     // initial load
     fetchRows();
+    fetchTripTypes();
 
     // fetch unique obras
     const fetchObras = async () => {
@@ -355,6 +406,7 @@ const Dashboard = () => {
                 <th className="p-2 text-left">Nome</th>
                 <th className="p-2 text-left">CPF</th>
                 <th className="p-2 text-left">Obra</th>
+                <th className="p-2 text-left">Tipo</th>
                 <th className="p-2 text-left">Data/Hora</th>
                 <th className="p-2 text-left">Imagem</th>
                 <th className="p-2 text-left">Autenticador</th>
@@ -366,6 +418,7 @@ const Dashboard = () => {
                   <td className="p-2">{r.nome}</td>
                   <td className="p-2">{r.cpf}</td>
                   <td className="p-2">{r.obra}</td>
+                  <td className="p-2">{getTypeLabel(r.type) || <span className="text-gray-500">sem</span>}</td>
                   <td className="p-2">{formatDate(r.data)}</td>
                   <td className="p-2 text-center">
                     {r.base64 ? (
@@ -397,7 +450,7 @@ const Dashboard = () => {
               ))}
               {rows.length === 0 && !loading && (
                 <tr>
-                  <td colSpan={6} className="p-4 text-center text-gray-500">
+                  <td colSpan={7} className="p-4 text-center text-gray-500">
                     Nenhum registro encontrado
                   </td>
                 </tr>

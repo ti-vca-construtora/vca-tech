@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 const SUPABASE_PUBLISHABLE_KEY = process.env
@@ -17,9 +17,24 @@ type Submission = {
   nome: string | null;
   cpf: string | null;
   obra: string | null;
+  type: number | null;
   auth: string | null;
   data: string | null;
   base64: string | null;
+};
+
+type TripType = {
+  id: number;
+  description: string;
+  number: number;
+  price: number;
+};
+
+type RawTripType = {
+  id?: number | null;
+  description?: string | null;
+  number?: number | null;
+  price?: number | null;
 };
 
 const Validador = () => {
@@ -27,6 +42,44 @@ const Validador = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<Submission | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [tripTypes, setTripTypes] = useState<TripType[]>([]);
+
+  const getTypeLabel = (typeNumber?: number | null) => {
+    if (typeNumber === null || typeNumber === undefined) return "";
+    const t = tripTypes.find((x) => x.number === typeNumber);
+    return t ? t.description : String(typeNumber);
+  };
+
+  const fetchTripTypes = async () => {
+    try {
+      const { data, error: supError } = await supabase
+        .from("trip_types")
+        .select("id, description, number, price")
+        .order("number", { ascending: true });
+
+      if (supError) {
+        setTripTypes([]);
+        return;
+      }
+
+      const raw = (data ?? []) as RawTripType[];
+      const parsed: TripType[] = raw.map((r, i) => ({
+        id: Number(r.id ?? i),
+        description: String(r.description ?? ""),
+        number: Number(r.number ?? 0),
+        price: Number(r.price ?? 0),
+      }));
+      setTripTypes(parsed);
+    } catch (err) {
+      setTripTypes([]);
+    }
+  };
+
+  // load types once
+  useEffect(() => {
+    fetchTripTypes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleCheck = async (value?: string) => {
     // normalize scanner output: replace semicolons with hyphens
@@ -118,6 +171,14 @@ const Validador = () => {
             </div>
             <div>
               <span className="font-medium">Obra:</span> {result.obra}
+            </div>
+            <div>
+              <span className="font-medium">Tipo:</span>{" "}
+              {getTypeLabel(result.type) ? (
+                getTypeLabel(result.type)
+              ) : (
+                <span className="text-gray-500">sem</span>
+              )}
             </div>
             <div>
               <span className="font-medium">Data:</span> {result.data}
