@@ -5,7 +5,7 @@ import { ResultadosSimulacao } from "../_components/resultados-simulacao";
 
 export default function ResultadosSimulacaoPage() {
   return (
-    <RouteGuard requiredArea="comercial" requiredPermission="comercial">
+    <RouteGuard requiredArea="comercial" requiredPermission="simulador-caixa">
       <div className="w-full h-full flex flex-col gap-6 p-6">
         <ResultadosSimulacao />
       </div>
