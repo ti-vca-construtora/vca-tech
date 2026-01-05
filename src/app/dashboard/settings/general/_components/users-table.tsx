@@ -540,11 +540,11 @@ function ResetPasswordDialog({
   );
 }
 
-export function UsersTable() {
+export function UsersTable({ users: usersProp }: { users?: User[] }) {
   const { toast } = useToast();
   const { token } = useAuthStore();
-  const [users, setUsers] = useState<User[]>([]);
-  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [users, setUsers] = useState<User[]>(usersProp ?? []);
+  const [isLoadingData, setIsLoadingData] = useState(usersProp === undefined);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
@@ -557,6 +557,14 @@ export function UsersTable() {
   const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
+    if (usersProp === undefined) return;
+    setUsers(usersProp);
+    setIsLoadingData(false);
+  }, [usersProp]);
+
+  useEffect(() => {
+    if (usersProp !== undefined) return;
+
     const fetchUsers = async () => {
       try {
         const response = await fetch("https://api.suportevca.com.br/users?page=1&pageSize=1000", {
@@ -584,7 +592,7 @@ export function UsersTable() {
     };
 
     fetchUsers();
-  }, [toast, token]);
+  }, [toast, token, usersProp]);
 
   // Lógica de filtro e paginação
   const filteredUsers = users.filter((user) => {
