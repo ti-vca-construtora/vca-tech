@@ -56,15 +56,44 @@ const AREAS = [
   "obras",
 ];
 
-// Lista de permissões disponíveis, baseada nos `requiredPermission` dos `RouteGuard`.
-// Permissões baseadas nas soluções fornecidas
-const ALL_PERMISSIONS = [
-  "calculadora-correcao-pr",
-  "agendamento-vistorias",
-  "avp",
-  "controle-cargas",
-  "gerador-pix",
-];
+type AreaKey = (typeof AREAS)[number];
+
+const PERMISSIONS_BY_AREA: Record<AreaKey, string[]> = {
+  comercial: [
+    // Simulador CAIXA
+    "simulador-caixa",
+    // Aparece em cards/menus em alguns lugares
+    "comercial",
+  ],
+  financeiro: ["avp", "gerador-pix", "calculadora-correcao-pr"],
+  relacionamento: [
+    // Alguns trechos usam a área como permissão
+    "relacionamento",
+    // Card/menu do setor usa AVP também
+    "avp",
+  ],
+  entregas: [
+    "agendamento-vistorias",
+    // Permissões internas da solução (options.tsx)
+    // "gerenciar-empreendimentos",
+    // "disponibilizar-horarios",
+    // "disponibilizar-unidades",
+    // "agendamentos",
+    // "gerenciar-recusas",
+  ],
+  obras: [
+    "controle-cargas",
+    // Permissões internas da solução (options.tsx)
+    // "dashboard-controle",
+    // "validar-comprovantes",
+    // "gerenciar-usuarios",
+    // "gerenciar-equipamentos",
+  ],
+};
+
+const ALL_PERMISSIONS = Array.from(
+  new Set(Object.values(PERMISSIONS_BY_AREA).flat())
+).sort((a, b) => a.localeCompare(b));
 
 // Helper component for managing permissions
 function ManagePermissionsDialog({
@@ -88,12 +117,34 @@ function ManagePermissionsDialog({
   const [userPermissions, setUserPermissions] = useState<any[]>([]);
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(false);
 
+  const availablePermissions =
+    area && (PERMISSIONS_BY_AREA as Record<string, string[]>)[area]
+      ? (PERMISSIONS_BY_AREA as Record<string, string[]>)[area]
+      : ALL_PERMISSIONS;
+
+  useEffect(() => {
+    if (!area) return;
+    // Se trocar de área, remove seleções que não fazem parte daquela área.
+    setPermissions((prev) =>
+      prev.filter((p) => availablePermissions.includes(p))
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [area]);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (openArea && areaRef.current && !areaRef.current.contains(event.target as Node)) {
+      if (
+        openArea &&
+        areaRef.current &&
+        !areaRef.current.contains(event.target as Node)
+      ) {
         setOpenArea(false);
       }
-      if (openPermissions && permissionsRef.current && !permissionsRef.current.contains(event.target as Node)) {
+      if (
+        openPermissions &&
+        permissionsRef.current &&
+        !permissionsRef.current.contains(event.target as Node)
+      ) {
         setOpenPermissions(false);
       }
     }
@@ -107,11 +158,14 @@ function ManagePermissionsDialog({
     if (!user) return;
     setIsLoadingPermissions(true);
     try {
-      const response = await fetch(`https://api.suportevca.com.br/users/${user.id}`, {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `https://api.suportevca.com.br/users/${user.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       if (response.ok) {
         const data = await response.json();
         setUserPermissions(data.data?.permissions || []);
@@ -136,12 +190,15 @@ function ManagePermissionsDialog({
   const handleDeletePermission = async (id: string) => {
     if (!user) return;
     try {
-      const response = await fetch(`https://api.suportevca.com.br/permissions/${id}`, {
-        method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `https://api.suportevca.com.br/permissions/${id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Falha ao remover permissão.");
@@ -167,21 +224,25 @@ function ManagePermissionsDialog({
     setIsLoading(true);
 
     // Se nenhuma permissão for selecionada, usa a área como permissão
-    const permissionsToSend = permissions.length > 0 ? permissions : area ? [area] : [];
+    const permissionsToSend =
+      permissions.length > 0 ? permissions : area ? [area] : [];
 
     try {
-      const response = await fetch("https://api.suportevca.com.br/permissions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          area,
-          permissions: permissionsToSend,
-        }),
-      });
+      const response = await fetch(
+        "https://api.suportevca.com.br/permissions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            userId: user.id,
+            area,
+            permissions: permissionsToSend,
+          }),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -231,7 +292,9 @@ function ManagePermissionsDialog({
                 aria-haspopup="listbox"
                 aria-expanded={openArea}
               >
-                {area ? AREAS.find((a) => a.toLowerCase() === area) : "Selecione uma área..."}
+                {area
+                  ? AREAS.find((a) => a.toLowerCase() === area)
+                  : "Selecione uma área..."}
                 <ChevronsUpDown className="ml-2 h-4 w-4 text-gray-400" />
               </button>
               {openArea && (
@@ -245,15 +308,25 @@ function ManagePermissionsDialog({
                       key={a}
                       className={cn(
                         "cursor-pointer px-4 py-2 text-sm hover:bg-primary/10 transition flex items-center gap-2",
-                        area === a.toLowerCase() && "bg-primary/10 text-primary font-semibold"
+                        area === a.toLowerCase() &&
+                          "bg-primary/10 text-primary font-semibold"
                       )}
                       aria-selected={area === a.toLowerCase()}
                       onClick={() => {
-                        setArea(a.toLowerCase() === area ? "" : a.toLowerCase());
+                        setArea(
+                          a.toLowerCase() === area ? "" : a.toLowerCase()
+                        );
                         setOpenArea(false);
                       }}
                     >
-                      <Check className={cn("h-4 w-4", area === a.toLowerCase() ? "opacity-100 text-primary" : "opacity-0")}/>
+                      <Check
+                        className={cn(
+                          "h-4 w-4",
+                          area === a.toLowerCase()
+                            ? "opacity-100 text-primary"
+                            : "opacity-0"
+                        )}
+                      />
                       {a}
                     </li>
                   ))}
@@ -264,13 +337,17 @@ function ManagePermissionsDialog({
 
           {/* Permissões - Combobox minimalista multi-select, apenas soluções */}
           <div className="space-y-1" ref={permissionsRef}>
-            <Label className="text-sm font-medium text-gray-700">Permissões (Soluções)</Label>
+            <Label className="text-sm font-medium text-gray-700">
+              Permissões (Soluções)
+            </Label>
             <div className="relative">
               <button
                 type="button"
                 className={cn(
                   "w-full flex min-h-10 items-center justify-between rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-primary/40",
-                  permissions.length ? "font-semibold" : "text-gray-400 font-normal"
+                  permissions.length
+                    ? "font-semibold"
+                    : "text-gray-400 font-normal"
                 )}
                 onClick={() => setOpenPermissions((v) => !v)}
                 aria-haspopup="listbox"
@@ -289,9 +366,11 @@ function ManagePermissionsDialog({
                           aria-label={`Remover ${p}`}
                           className="ml-1 text-gray-400 hover:text-red-500 focus:outline-none"
                           tabIndex={-1}
-                          onClick={e => {
+                          onClick={(e) => {
                             e.stopPropagation();
-                            setPermissions((prev) => prev.filter((item) => item !== p));
+                            setPermissions((prev) =>
+                              prev.filter((item) => item !== p)
+                            );
                           }}
                         >
                           <X className="h-3 w-3" />
@@ -299,7 +378,9 @@ function ManagePermissionsDialog({
                       </span>
                     ))
                   ) : (
-                    <span className="text-gray-400">Selecione as soluções...</span>
+                    <span className="text-gray-400">
+                      Selecione as soluções...
+                    </span>
                   )}
                 </div>
                 <ChevronsUpDown className="ml-2 h-4 w-4 text-gray-400" />
@@ -310,12 +391,13 @@ function ManagePermissionsDialog({
                   tabIndex={-1}
                   role="listbox"
                 >
-                  {ALL_PERMISSIONS.map((p) => (
+                  {availablePermissions.map((p) => (
                     <li
                       key={p}
                       className={cn(
                         "cursor-pointer px-4 py-2 text-sm hover:bg-primary/10 transition flex items-center gap-2",
-                        permissions.includes(p) && "bg-primary/10 text-primary font-semibold"
+                        permissions.includes(p) &&
+                          "bg-primary/10 text-primary font-semibold"
                       )}
                       aria-selected={permissions.includes(p)}
                       onClick={() => {
@@ -326,7 +408,14 @@ function ManagePermissionsDialog({
                         );
                       }}
                     >
-                      <Check className={cn("h-4 w-4", permissions.includes(p) ? "opacity-100 text-primary" : "opacity-0")}/>
+                      <Check
+                        className={cn(
+                          "h-4 w-4",
+                          permissions.includes(p)
+                            ? "opacity-100 text-primary"
+                            : "opacity-0"
+                        )}
+                      />
                       {p}
                     </li>
                   ))}
@@ -337,7 +426,9 @@ function ManagePermissionsDialog({
 
           {/* Lista de Permissões Existentes */}
           <div className="pt-4 border-t">
-            <Label className="text-sm font-medium text-gray-700 mb-2 block">Permissões Atuais</Label>
+            <Label className="text-sm font-medium text-gray-700 mb-2 block">
+              Permissões Atuais
+            </Label>
             {isLoadingPermissions ? (
               <div className="flex justify-center py-4">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -345,12 +436,21 @@ function ManagePermissionsDialog({
             ) : userPermissions.length > 0 ? (
               <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
                 {userPermissions.map((perm: any) => (
-                  <div key={perm.id} className="flex items-center justify-between p-2 rounded-md border bg-gray-50">
+                  <div
+                    key={perm.id}
+                    className="flex items-center justify-between p-2 rounded-md border bg-gray-50"
+                  >
                     <div className="flex flex-col gap-1">
-                      <span className="font-medium text-sm capitalize">{perm.area}</span>
+                      <span className="font-medium text-sm capitalize">
+                        {perm.area}
+                      </span>
                       <div className="flex flex-wrap gap-1">
                         {perm.permissions.map((p: string) => (
-                          <Badge key={p} variant="secondary" className="text-[10px] px-1 py-0 h-5">
+                          <Badge
+                            key={p}
+                            variant="secondary"
+                            className="text-[10px] px-1 py-0 h-5"
+                          >
                             {p}
                           </Badge>
                         ))}
@@ -420,14 +520,17 @@ function ChangePasswordDialog({
     setIsLoading(true);
 
     try {
-      const response = await fetch(`https://api.suportevca.com.br/users/${user.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({ password }),
-      });
+      const response = await fetch(
+        `https://api.suportevca.com.br/users/${user.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ password }),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -514,20 +617,28 @@ function ResetPasswordDialog({
         <DialogHeader>
           <DialogTitle>Confirmar Reset de Senha</DialogTitle>
           <DialogDescription>
-            Tem certeza que deseja resetar a senha de <strong>{user?.name}</strong>?
+            Tem certeza que deseja resetar a senha de{" "}
+            <strong>{user?.name}</strong>?
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">
-          <p className="text-sm text-muted-foreground mb-2">A nova senha será:</p>
+          <p className="text-sm text-muted-foreground mb-2">
+            A nova senha será:
+          </p>
           <div className="bg-muted p-2 rounded-md font-mono text-center text-lg tracking-wider select-all">
             {newPassword}
           </div>
           <p className="text-xs text-muted-foreground mt-4">
-            Essa ação não pode ser desfeita. Certifique-se de copiar a senha antes de confirmar.
+            Essa ação não pode ser desfeita. Certifique-se de copiar a senha
+            antes de confirmar.
           </p>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isLoading}
+          >
             Cancelar
           </Button>
           <Button onClick={onConfirm} disabled={isLoading}>
@@ -551,8 +662,10 @@ export function UsersTable({ users: usersProp }: { users?: User[] }) {
 
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
-  const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false);
-  const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false);
+  const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] =
+    useState(false);
+  const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] =
+    useState(false);
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [isResetting, setIsResetting] = useState(false);
 
@@ -567,11 +680,14 @@ export function UsersTable({ users: usersProp }: { users?: User[] }) {
 
     const fetchUsers = async () => {
       try {
-        const response = await fetch("https://api.suportevca.com.br/users?page=1&pageSize=1000", {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-          },
-        });
+        const response = await fetch(
+          "https://api.suportevca.com.br/users?page=1&pageSize=1000",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
         if (!response.ok) {
           throw new Error("Falha ao buscar usuários");
         }
@@ -607,7 +723,10 @@ export function UsersTable({ users: usersProp }: { users?: User[] }) {
 
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedUsers = filteredUsers.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
 
   useEffect(() => {
     setCurrentPage(1);
@@ -635,14 +754,17 @@ export function UsersTable({ users: usersProp }: { users?: User[] }) {
     if (!selectedUser) return;
     setIsResetting(true);
     try {
-      const response = await fetch(`https://api.suportevca.com.br/api/users/${selectedUser.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({ password: generatedPassword }),
-      });
+      const response = await fetch(
+        `https://api.suportevca.com.br/api/users/${selectedUser.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ password: generatedPassword }),
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -718,45 +840,46 @@ export function UsersTable({ users: usersProp }: { users?: User[] }) {
             </TableRow>
           ) : (
             paginatedUsers.map((item) => (
-            <TableRow key={item.id}>
-              <TableCell>{item.name || "Não cadastrado"}</TableCell>
-              <TableCell>{item.email}</TableCell>
-              <TableCell>{item.department || "Não cadastrado"}</TableCell>
-              <TableCell>{item.role}</TableCell>
-              <TableCell className="text-center">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <span className="sr-only">Abrir menu</span>
-                      <MoreHorizontalIcon className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onSelect={() => openPermissionsDialog(item)}
-                    >
-                      <ShieldCheck className="mr-2 h-4 w-4" />
-                      <span>Gerenciar Permissões</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => openChangePasswordDialog(item)}
-                    >
-                      <Lock className="mr-2 h-4 w-4" />
-                      <span>Alterar Senha</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => handleResetPasswordClick(item)}
-                    >
-                      <KeyRound className="mr-2 h-4 w-4" />
-                      <span>Resetar Senha</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
-          )))}
+              <TableRow key={item.id}>
+                <TableCell>{item.name || "Não cadastrado"}</TableCell>
+                <TableCell>{item.email}</TableCell>
+                <TableCell>{item.department || "Não cadastrado"}</TableCell>
+                <TableCell>{item.role}</TableCell>
+                <TableCell className="text-center">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Abrir menu</span>
+                        <MoreHorizontalIcon className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onSelect={() => openPermissionsDialog(item)}
+                      >
+                        <ShieldCheck className="mr-2 h-4 w-4" />
+                        <span>Gerenciar Permissões</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onSelect={() => openChangePasswordDialog(item)}
+                      >
+                        <Lock className="mr-2 h-4 w-4" />
+                        <span>Alterar Senha</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onSelect={() => handleResetPasswordClick(item)}
+                      >
+                        <KeyRound className="mr-2 h-4 w-4" />
+                        <span>Resetar Senha</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
 
@@ -777,8 +900,12 @@ export function UsersTable({ users: usersProp }: { users?: User[] }) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages || isLoadingData || totalPages === 0}
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
+            disabled={
+              currentPage === totalPages || isLoadingData || totalPages === 0
+            }
           >
             Próximo
             <ChevronRight className="ml-2 h-4 w-4" />
