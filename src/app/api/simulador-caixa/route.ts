@@ -13,24 +13,46 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders })
 }
 
-const redisConnection = {
-  url: process.env.REDIS_URL,
-  maxRetriesPerRequest: null,
-}
+const redisUrl = process.env.REDIS_URL
 
-console.log('🔍 [Redis Config]', {
-  url: process.env.REDIS_URL ? 'URL Definida' : 'URL Indefinida',
-})
+// Nota: não inicialize conexão Redis no import do módulo.
+// Isso evita spam de logs/retries em dev quando o Redis não está rodando.
+const redisConnection = redisUrl
+  ? {
+      url: redisUrl,
+      maxRetriesPerRequest: null,
+      // Sem retry automático: se Redis estiver fora, falha uma vez e pronto.
+      retryStrategy: () => null,
+    }
+  : null
 
-// Só criar a fila se não estiver em build time
-let simuladorQueue: Queue | null = null
+let simuladorQueuePromise: Promise<Queue | null> | null = null
+let redisErrorLogged = false
 
-try {
-  simuladorQueue = new Queue('simulador-caixa', {
-    connection: redisConnection,
-  })
-} catch (error) {
-  console.warn('⚠️ [Redis] Não foi possível conectar (provavelmente build time):', error)
+async function getSimuladorQueue() {
+  if (simuladorQueuePromise) return simuladorQueuePromise
+
+  simuladorQueuePromise = (async () => {
+    if (!redisConnection) return null
+
+    try {
+      const queue = new Queue('simulador-caixa', {
+        connection: redisConnection,
+      })
+
+      // Garante que conectou. Se não conectar, não fica tentando em loop.
+      await queue.waitUntilReady()
+      return queue
+    } catch (error) {
+      if (!redisErrorLogged) {
+        redisErrorLogged = true
+        console.warn('⚠️ [Redis] Não foi possível conectar. Verifique REDIS_URL e se o Redis está rodando.', error)
+      }
+      return null
+    }
+  })()
+
+  return simuladorQueuePromise
 }
 
 export async function POST(request: NextRequest) {
@@ -45,6 +67,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const simuladorQueue = await getSimuladorQueue()
     if (!simuladorQueue) {
       return NextResponse.json(
         { error: 'Redis não conectado' }, 
@@ -68,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     // Aguarda o job finalizar e retorna o resultado direto
     const QueueEvents = await import('bullmq').then(m => m.QueueEvents)
-    const events = new QueueEvents('simulador-caixa', { connection: redisConnection })
+    const events = new QueueEvents('simulador-caixa', { connection: redisConnection! })
     
     try {
       // Timeout de 120s para garantir que jobs demorados não quebrem
@@ -125,6 +148,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const simuladorQueue = await getSimuladorQueue()
     if (!simuladorQueue) {
       return NextResponse.json(
         { error: 'Redis não conectado' }, 

@@ -25,6 +25,7 @@ export type User = {
 
 export type AuthState = {
   user: User | null;
+  token: string | null;
   isLoading: boolean;
   loadUser: () => Promise<void>;
   login: (email: string, password: string) => Promise<boolean>;
@@ -55,6 +56,7 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
+      token: null,
       isLoading: true,
 
       getAllUsers: async (token: string, page = 1, pageSize = 20) => {
@@ -91,10 +93,10 @@ export const useAuthStore = create<AuthState>()(
           });
 
           const userData = await response.json();
-          set({ user: userData.data, isLoading: false });
+          set({ user: userData.data, isLoading: false, token });
         } catch (error) {
           console.log(error);
-          set({ user: null, isLoading: false });
+          set({ user: null, isLoading: false, token: null });
         }
       },
 
@@ -128,7 +130,7 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         Cookies.remove("vca-tech-auth");
-        set({ user: null });
+        set({ user: null, token: null });
       },
 
       hasPermission: (area, permission) => {

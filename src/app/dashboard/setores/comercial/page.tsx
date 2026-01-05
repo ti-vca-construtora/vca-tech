@@ -13,7 +13,7 @@ const solucoesData: Solucoes[] = [
     Icon: CiBank,
     href: "simulador-financiamento-caixa?title=Simulador de Financiamento CAIXA",
     area: "comercial",
-    permission: "simulador-financiamento-caixa",
+    permission: "simulador-caixa",
   },
 ];
 

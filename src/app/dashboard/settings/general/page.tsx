@@ -9,27 +9,10 @@ import {
 } from "@/components/ui/card";
 import { UsersTable } from "./_components/users-table";
 import { useUser } from "@/hooks/use-user";
-import { useEffect, useState } from "react";
-import { User } from "@/store/auth-store";
 import { RouteGuard } from "@/components/route-guard";
 
 export default function Page() {
-  const { getAllUsers, getToken, isLoading } = useUser();
-  const [users, setUsers] = useState<User[]>([]);
-
-  useEffect(() => {
-    const loadUsers = async () => {
-      const token = getToken();
-
-      if (!token) throw new Error("Não autenticado");
-
-      const data = await getAllUsers(token, 1, 20);
-
-      setUsers(data.data);
-    };
-
-    loadUsers();
-  }, []);
+  const { isLoading } = useUser();
 
   if (isLoading)
     return (
@@ -49,7 +32,7 @@ export default function Page() {
             <CardDescription>Gerenciamento geral de usuários</CardDescription>
           </CardHeader>
           <CardContent>
-            <UsersTable users={users} />
+            <UsersTable />
           </CardContent>
         </Card>
       </section>
