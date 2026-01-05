@@ -760,18 +760,18 @@ export function UsersTable({ users: usersProp }: { users?: User[] }) {
         </TableBody>
       </Table>
 
-      <div className="flex items-center justify-end space-x-2 py-4">
+      <div className="flex items-center justify-end gap-2 py-4">
         <div className="flex-1 text-sm text-muted-foreground">
           Página {currentPage} de {totalPages || 1}
         </div>
-        <div className="space-x-2">
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1 || isLoadingData}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="mr-2 h-4 w-4" />
             Anterior
           </Button>
           <Button
@@ -781,7 +781,7 @@ export function UsersTable({ users: usersProp }: { users?: User[] }) {
             disabled={currentPage === totalPages || isLoadingData || totalPages === 0}
           >
             Próximo
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
       </div>
