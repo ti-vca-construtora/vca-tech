@@ -64,6 +64,8 @@ export function SimuladorForm() {
   const [jaBeneficiadoSubsidio, setJaBeneficiadoSubsidio] = useState(false);
   const [possuiDependentes, setPossuiDependentes] = useState(false);
 
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
   // Form state - Etapa 2: Dados do Imóvel
   const [valorAvaliacao, setValorAvaliacao] = useState("");
   const [valorImovel, setValorImovel] = useState("");
@@ -88,6 +90,27 @@ export function SimuladorForm() {
       if (pollJobIntervalRef.current) clearInterval(pollJobIntervalRef.current);
     };
   }, []);
+
+  // Regra de negócio: se já beneficiado com subsídio, a origem do recurso deve ser SBPE e não pode ser alterada.
+  useEffect(() => {
+    if (jaBeneficiadoSubsidio && origemRecurso !== "SBPE") {
+      setOrigemRecurso("SBPE");
+    }
+  }, [jaBeneficiadoSubsidio, origemRecurso]);
+
+  const clearFieldError = (field: string) => {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const parseCurrencyToCents = (value: string) => {
+    const numbers = value.replace(/\D/g, "");
+    return Number(numbers || "0");
+  };
 
   const getMessageFromProgress = (progress: number): string => {
     if (progress <= 10) return "🚀 Iniciando automação...";
@@ -133,26 +156,58 @@ export function SimuladorForm() {
     }).format(Number(numbers) / 100);
   };
 
+  const validateEtapa1 = () => {
+    const errors: Record<string, string> = {};
+
+    if (!nomeCliente.trim()) errors.nomeCliente = "Informe o nome do cliente";
+    if (!dataNascimentoCliente) errors.dataNascimentoCliente = "Informe a data de nascimento";
+    if (!cidade.trim()) errors.cidade = "Informe a cidade";
+
+    const rendaCents = parseCurrencyToCents(rendaFamiliar);
+    if (rendaCents <= 0) errors.rendaFamiliar = "Informe uma renda familiar válida";
+
+    return errors;
+  };
+
+  const validateEtapa2 = () => {
+    const errors: Record<string, string> = {};
+
+    if (!nomeEmpreendimento.trim()) errors.nomeEmpreendimento = "Informe o nome do empreendimento";
+    if (!unidade.trim()) errors.unidade = "Informe a unidade";
+
+    const avaliacaoCents = parseCurrencyToCents(valorAvaliacao);
+    if (avaliacaoCents <= 0) errors.valorAvaliacao = "Informe um valor de avaliação válido";
+
+    const imovelCents = parseCurrencyToCents(valorImovel);
+    if (imovelCents <= 0) errors.valorImovel = "Informe um valor do imóvel válido";
+
+    return errors;
+  };
+
   const proximaEtapa = (e?: React.MouseEvent<HTMLButtonElement>) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
-    
+
     if (etapaAtual === 1) {
-      if (!nomeCliente || !dataNascimentoCliente || !cidade || !rendaFamiliar) {
+      const errors = validateEtapa1();
+      setFieldErrors(errors);
+      if (Object.keys(errors).length > 0) {
         toast({
           title: "Campos obrigatórios",
-          description: "Preencha todos os campos antes de avançar",
+          description: "Corrija os campos destacados antes de avançar",
           variant: "destructive",
         });
         return;
       }
     } else if (etapaAtual === 2) {
-      if (!valorAvaliacao || !valorImovel || !nomeEmpreendimento || !unidade) {
+      const errors = validateEtapa2();
+      setFieldErrors(errors);
+      if (Object.keys(errors).length > 0) {
         toast({
           title: "Campos obrigatórios",
-          description: "Preencha todos os campos antes de avançar",
+          description: "Corrija os campos destacados antes de avançar",
           variant: "destructive",
         });
         return;
@@ -171,6 +226,22 @@ export function SimuladorForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Garantia extra: valida dados das etapas anteriores antes de enviar.
+    const etapa1Errors = validateEtapa1();
+    const etapa2Errors = validateEtapa2();
+    const combinedErrors = { ...etapa1Errors, ...etapa2Errors };
+    if (Object.keys(combinedErrors).length > 0) {
+      setFieldErrors(combinedErrors);
+      toast({
+        title: "Campos obrigatórios",
+        description: "Corrija os campos destacados antes de iniciar a simulação",
+        variant: "destructive",
+      });
+      // Leva o usuário para a primeira etapa com erro
+      setEtapaAtual(Object.keys(etapa1Errors).length > 0 ? 1 : 2);
+      return;
+    }
 
     if (quantidadeParticipantes > 1) {
       const totalPactuacao = participantes.reduce((sum, p) => sum + p.pactuacao, 0);
@@ -537,19 +608,67 @@ export function SimuladorForm() {
     <div className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="nomeCliente">Nome do Cliente *</Label>
-        <Input id="nomeCliente" value={nomeCliente} onChange={(e) => setNomeCliente(e.target.value)} placeholder="Ex: João da Silva" required />
+        <Input
+          id="nomeCliente"
+          value={nomeCliente}
+          onChange={(e) => {
+            setNomeCliente(e.target.value);
+            clearFieldError("nomeCliente");
+          }}
+          placeholder="Ex: João da Silva"
+          required
+        />
+        {fieldErrors.nomeCliente && (
+          <p className="text-[0.8rem] font-medium text-destructive">{fieldErrors.nomeCliente}</p>
+        )}
       </div>
       <div className="space-y-2">
         <Label htmlFor="dataNascimento">Data de Nascimento *</Label>
-        <Input id="dataNascimento" type="date" value={dataNascimentoCliente} onChange={(e) => setDataNascimentoCliente(e.target.value)} required />
+        <Input
+          id="dataNascimento"
+          type="date"
+          value={dataNascimentoCliente}
+          onChange={(e) => {
+            setDataNascimentoCliente(e.target.value);
+            clearFieldError("dataNascimentoCliente");
+          }}
+          required
+        />
+        {fieldErrors.dataNascimentoCliente && (
+          <p className="text-[0.8rem] font-medium text-destructive">{fieldErrors.dataNascimentoCliente}</p>
+        )}
       </div>
       <div className="space-y-2">
         <Label htmlFor="cidade">Cidade *</Label>
-        <Input id="cidade" value={cidade} onChange={(e) => setCidade(e.target.value)} placeholder="Ex: Vitória da Conquista" required />
+        <Input
+          id="cidade"
+          value={cidade}
+          onChange={(e) => {
+            setCidade(e.target.value);
+            clearFieldError("cidade");
+          }}
+          placeholder="Ex: Vitória da Conquista"
+          required
+        />
+        {fieldErrors.cidade && (
+          <p className="text-[0.8rem] font-medium text-destructive">{fieldErrors.cidade}</p>
+        )}
       </div>
       <div className="space-y-2">
         <Label htmlFor="rendaFamiliar">Renda Familiar *</Label>
-        <Input id="rendaFamiliar" value={rendaFamiliar} onChange={(e) => setRendaFamiliar(formatCurrency(e.target.value))} placeholder="R$ 5.000,00" required />
+        <Input
+          id="rendaFamiliar"
+          value={rendaFamiliar}
+          onChange={(e) => {
+            setRendaFamiliar(formatCurrency(e.target.value));
+            clearFieldError("rendaFamiliar");
+          }}
+          placeholder="R$ 5.000,00"
+          required
+        />
+        {fieldErrors.rendaFamiliar && (
+          <p className="text-[0.8rem] font-medium text-destructive">{fieldErrors.rendaFamiliar}</p>
+        )}
       </div>
       <div className="space-y-3">
         <Label>Condições Especiais</Label>
@@ -558,7 +677,15 @@ export function SimuladorForm() {
           <Label htmlFor="possuiTresAnosFGTS">Possui 3 anos de FGTS</Label>
         </div>
         <div className="flex items-center space-x-2">
-          <Checkbox id="jaBeneficiadoSubsidio" checked={jaBeneficiadoSubsidio} onCheckedChange={(c) => setJaBeneficiadoSubsidio(!!c)} />
+          <Checkbox
+            id="jaBeneficiadoSubsidio"
+            checked={jaBeneficiadoSubsidio}
+            onCheckedChange={(c) => {
+              const checked = !!c;
+              setJaBeneficiadoSubsidio(checked);
+              if (checked) setOrigemRecurso("SBPE");
+            }}
+          />
           <Label htmlFor="jaBeneficiadoSubsidio">Já beneficiado com subsídio</Label>
         </div>
         <div className="flex items-center space-x-2">
@@ -573,26 +700,85 @@ export function SimuladorForm() {
     <div className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="nomeEmpreendimento">Nome do Empreendimento *</Label>
-        <Input id="nomeEmpreendimento" value={nomeEmpreendimento} onChange={(e) => setNomeEmpreendimento(e.target.value)} placeholder="Ex: Residencial das Flores" required />
+        <Input
+          id="nomeEmpreendimento"
+          value={nomeEmpreendimento}
+          onChange={(e) => {
+            setNomeEmpreendimento(e.target.value);
+            clearFieldError("nomeEmpreendimento");
+          }}
+          placeholder="Ex: Residencial das Flores"
+          required
+        />
+        {fieldErrors.nomeEmpreendimento && (
+          <p className="text-[0.8rem] font-medium text-destructive">{fieldErrors.nomeEmpreendimento}</p>
+        )}
       </div>
       <div className="space-y-2">
         <Label htmlFor="unidade">Unidade *</Label>
-        <Input id="unidade" value={unidade} onChange={(e) => setUnidade(e.target.value)} placeholder="Ex: Apartamento 101" required />
+        <Input
+          id="unidade"
+          value={unidade}
+          onChange={(e) => {
+            setUnidade(e.target.value);
+            clearFieldError("unidade");
+          }}
+          placeholder="Ex: Apartamento 101"
+          required
+        />
+        {fieldErrors.unidade && (
+          <p className="text-[0.8rem] font-medium text-destructive">{fieldErrors.unidade}</p>
+        )}
       </div>
       <div className="space-y-2">
         <Label htmlFor="valorAvaliacao">Valor de Avaliação *</Label>
-        <Input id="valorAvaliacao" value={valorAvaliacao} onChange={(e) => setValorAvaliacao(formatCurrency(e.target.value))} placeholder="R$ 200.000,00" required />
+        <Input
+          id="valorAvaliacao"
+          value={valorAvaliacao}
+          onChange={(e) => {
+            setValorAvaliacao(formatCurrency(e.target.value));
+            clearFieldError("valorAvaliacao");
+          }}
+          placeholder="R$ 200.000,00"
+          required
+        />
+        {fieldErrors.valorAvaliacao && (
+          <p className="text-[0.8rem] font-medium text-destructive">{fieldErrors.valorAvaliacao}</p>
+        )}
       </div>
       <div className="space-y-2">
         <Label htmlFor="valorImovel">Valor do Imóvel *</Label>
-        <Input id="valorImovel" value={valorImovel} onChange={(e) => setValorImovel(formatCurrency(e.target.value))} placeholder="R$ 200.000,00" required />
+        <Input
+          id="valorImovel"
+          value={valorImovel}
+          onChange={(e) => {
+            setValorImovel(formatCurrency(e.target.value));
+            clearFieldError("valorImovel");
+          }}
+          placeholder="R$ 200.000,00"
+          required
+        />
+        {fieldErrors.valorImovel && (
+          <p className="text-[0.8rem] font-medium text-destructive">{fieldErrors.valorImovel}</p>
+        )}
       </div>
       <div className="space-y-2">
         <Label htmlFor="origemRecurso">Origem de Recurso</Label>
-        <Select value={origemRecurso} onValueChange={(v: "FGTS" | "SBPE") => setOrigemRecurso(v)}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
+        <Select
+          value={origemRecurso}
+          onValueChange={(v: "FGTS" | "SBPE") => {
+            if (jaBeneficiadoSubsidio) return;
+            setOrigemRecurso(v);
+          }}
+        >
+          <SelectTrigger disabled={jaBeneficiadoSubsidio}><SelectValue /></SelectTrigger>
           <SelectContent><SelectItem value="FGTS">FGTS</SelectItem><SelectItem value="SBPE">SBPE</SelectItem></SelectContent>
         </Select>
+        {jaBeneficiadoSubsidio && (
+          <p className="text-[0.8rem] text-muted-foreground">
+            Como o cliente já foi beneficiado com subsídio, a origem do recurso fica fixada em SBPE.
+          </p>
+        )}
       </div>
       <div className="space-y-2">
         <Label htmlFor="sistemaAmortizacao">Sistema de Amortização</Label>
