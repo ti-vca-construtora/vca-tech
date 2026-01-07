@@ -10,7 +10,7 @@ const solucoesData: Solucoes[] = [
     titulo: "Contagem e Solicitação de EPIs",
     descricao: "Registro de contagem e solicitações de EPIs.",
     Icon: MdSell,
-    href: "epi?title=Contagem e Solicitação de EPIs",
+    href: "cont_solic_epi?title=Contagem e Solicitação de EPIs",
     area: "sesmt",
     permission: "epi",
   }
