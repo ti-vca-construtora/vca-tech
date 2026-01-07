@@ -293,11 +293,10 @@ export function SimuladorForm() {
     } // FIM CORREÇÃO
 
     try {
-      // ✅ SOLUÇÃO CORS: Usa a rota Next.js como proxy (mesma origem)
-      // Isso evita problema de CORS porque o navegador faz requisição para
-      // a mesma origem (tech.vcaconstrutora.com.br), e o servidor
-      // faz a requisição interna para o domínio externo se necessário.
-      const API_URL = "/api/simulador-caixa";
+      // ✅ SOLUÇÃO TIMEOUT: Requisição direta ao worker (sem passar pela Vercel)
+      // Isso evita timeout da Vercel porque a requisição vai direto do browser para o worker
+      const workerUrl = process.env.NEXT_PUBLIC_CAIXA_URL || "https://simulador-caixa.vcatech.cloud";
+      const API_URL = `${workerUrl}/api/simulador-caixa`;
 
       const payload = {
         origemRecurso,
@@ -314,7 +313,8 @@ export function SimuladorForm() {
         participantes: participantesAjustados,
       };
 
-      console.log('📤 Enviando payload para API:', payload);
+      console.log('📤 Enviando payload direto para worker:', payload);
+      console.log('🌐 Worker URL:', API_URL);
 
       const response = await fetch(API_URL, {
         method: "POST",
