@@ -293,10 +293,15 @@ export function SimuladorForm() {
     } // FIM CORREÇÃO
 
     try {
-      let API_URL = process.env.NEXT_PUBLIC_CAIXA_URL ?? "/api/simulador-caixa";
-      if (API_URL && !API_URL.endsWith("/api/simulador-caixa")) {
-        API_URL = API_URL.replace(/\/?$/, "/api/simulador-caixa");
+      let baseUrl = process.env.NEXT_PUBLIC_CAIXA_URL || "";
+      
+      // Garante protocolo se for um domínio externo (corrige erro 405)
+      if (baseUrl && !baseUrl.startsWith("http") && !baseUrl.startsWith("/")) {
+        baseUrl = `https://${baseUrl}`;
       }
+
+      // Remove barra final e constrói a URL completa
+      const API_URL = baseUrl.replace(/\/$/, "").replace(/\/api\/simulador-caixa$/, "") + "/api/simulador-caixa";
 
       const payload = {
         origemRecurso,

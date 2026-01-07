@@ -7,6 +7,7 @@ import {
   MdOutlineRealEstateAgent,
 } from "react-icons/md";
 import { FaRegHandshake } from "react-icons/fa";
+import { FaHelmetSafety } from "react-icons/fa6";
 // import { BsPeopleFill } from 'react-icons/bs'
 // import { GoLaw } from 'react-icons/go'
 
@@ -41,6 +42,11 @@ const setoresData: Setor[] = [
     title: "Comercial",
     href: "/dashboard/setores/comercial?title=Painel de Soluções - Comercial",
     Icon: FaRegHandshake,
+  },
+      {
+    title: "SESMT",
+    href: "/dashboard/setores/sesmt?title=Painel de Soluções - SESMT",
+    Icon: FaHelmetSafety,
   },
   // {
   //   title: "Controladoria",

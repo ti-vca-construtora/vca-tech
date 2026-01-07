@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Queue } from 'bullmq'
+import IORedis from 'ioredis'
 
 // --- CONFIGURAÇÃO CORS ---
 const corsHeaders = {
@@ -18,8 +19,8 @@ const redisUrl = process.env.REDIS_URL
 // Nota: não inicialize conexão Redis no import do módulo.
 // Isso evita spam de logs/retries em dev quando o Redis não está rodando.
 const redisConnection = redisUrl
+const redisOptions = redisUrl
   ? {
-      url: redisUrl,
       maxRetriesPerRequest: null,
       // Sem retry automático: se Redis estiver fora, falha uma vez e pronto.
       retryStrategy: () => null,
@@ -34,10 +35,11 @@ async function getSimuladorQueue() {
 
   simuladorQueuePromise = (async () => {
     if (!redisConnection) return null
+    if (!redisUrl || !redisOptions) return null
 
     try {
       const queue = new Queue('simulador-caixa', {
-        connection: redisConnection,
+        connection: new IORedis(redisUrl, redisOptions),
       })
 
       // Garante que conectou. Se não conectar, não fica tentando em loop.
@@ -91,7 +93,7 @@ export async function POST(request: NextRequest) {
 
     // Aguarda o job finalizar e retorna o resultado direto
     const QueueEvents = await import('bullmq').then(m => m.QueueEvents)
-    const events = new QueueEvents('simulador-caixa', { connection: redisConnection! })
+    const events = new QueueEvents('simulador-caixa', { connection: new IORedis(redisUrl!, redisOptions!) })
     
     try {
       // Timeout de 120s para garantir que jobs demorados não quebrem

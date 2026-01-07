@@ -101,6 +101,12 @@ export function Dashboard({ children }: DashboardProps) {
                         >
                           Comercial
                         </Link>
+                                                                                                <Link
+                          href="/dashboard/setores/sesmt?title=Painel de Soluções - SESMT"
+                          className="rounded-md px-2 py-1 text-sm hover:bg-muted"
+                        >
+                          SESMT
+                        </Link>
                       </div>
                     </details>
 

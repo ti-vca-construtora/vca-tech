@@ -45,8 +45,12 @@ const data = {
           title: "Comercial",
           url: "/dashboard/setores/comercial?title=Painel de Soluções - Comercial",
         },
-      ],
-    },
+                        {
+          title: "SESMT",
+          url: "/dashboard/setores/sesmt?title=Painel de Soluções - SESMT",
+        },
+        ],
+      },
     {
       title: "Configurações",
       url: "/dashboard/settings",
