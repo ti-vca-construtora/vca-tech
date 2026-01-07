@@ -1,7 +1,6 @@
 "use client";
 
 import { RouteGuard } from "@/components/route-guard";
-import { ContSolicEpi } from "./_components/cont-solic-epi";
 
 export default function ContSolicEpiPage() {
   return (
