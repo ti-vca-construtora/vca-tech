@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -841,22 +841,24 @@ export function SimuladorForm() {
           {erro ? (
             <div className="flex flex-col items-center justify-center space-y-4 py-8">
               <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center"><span className="text-4xl">❌</span></div>
-              <div className="text-center space-y-2">
-                <h3 className="text-lg font-semibold text-destructive">Erro na Simulação</h3>
-                <p className="text-sm text-muted-foreground">{erro}</p>
+              <DialogHeader className="text-center space-y-2">
+                <DialogTitle className="text-lg font-semibold text-destructive text-center">Erro na Simulação</DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground text-center">{erro}</DialogDescription>
                 <Button onClick={() => { setErro(null); setLoading(false); }} className="mt-4">Fechar</Button>
-              </div>
+              </DialogHeader>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center space-y-4 py-8">
               <Loader2 className="h-16 w-16 animate-spin text-primary" />
-              <div className="text-center space-y-4 w-full px-4">
-                <h3 className="text-lg font-semibold">{loadingMessage}</h3>
+              <DialogHeader className="text-center space-y-4 w-full px-4">
+                <DialogTitle className="text-lg font-semibold text-center">{loadingMessage}</DialogTitle>
                 <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
                   <div className="bg-primary h-2.5 rounded-full" style={{ width: `${progresso}%` }}></div>
                 </div>
-                <p className="text-sm text-muted-foreground">Por favor, aguarde enquanto processamos sua simulação...</p>
-              </div>
+                <DialogDescription className="text-sm text-muted-foreground text-center">
+                  Por favor, aguarde enquanto processamos sua simulação...
+                </DialogDescription>
+              </DialogHeader>
             </div>
           )}
         </DialogContent>

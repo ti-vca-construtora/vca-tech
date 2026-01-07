@@ -6,12 +6,12 @@ import IORedis from 'ioredis'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*', // Permite qualquer origem. Para produção, troque '*' pelo seu domínio (ex: 'https://tech.vcaconstrutora.com.br')
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
 }
 
 // Responde a requisições "preflight" do navegador (necessário para CORS)
 export async function OPTIONS() {
-  return NextResponse.json({}, { headers: corsHeaders })
+  return new NextResponse(null, { status: 204, headers: corsHeaders })
 }
 
 const redisUrl = process.env.REDIS_URL
