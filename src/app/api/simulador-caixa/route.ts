@@ -27,9 +27,17 @@ export async function POST(request: NextRequest) {
     console.log('📤 Redirecionando para worker:', body)
 
     // Envia direto para o worker via túnel Cloudflare
-    const workerUrl = process.env.NEXT_PUBLIC_CAIXA_URL || 'https://simulador-caixa.vcatech.cloud'
+    let workerUrl = process.env.NEXT_PUBLIC_CAIXA_URL || 'https://simulador-caixa.vcatech.cloud'
     
-    const response = await fetch(`${workerUrl}/api/simulador-caixa`, {
+    // Garante que a URL tem protocolo https://
+    if (!workerUrl.startsWith('http')) {
+      workerUrl = `https://${workerUrl}`
+    }
+    
+    const targetUrl = `${workerUrl}/api/simulador-caixa`
+    console.log('🌐 Worker URL alvo:', targetUrl)
+
+    const response = await fetch(targetUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -40,7 +48,15 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       const errorText = await response.text()
       console.error('❌ Erro do worker:', response.status, errorText)
-      throw new Error(`Worker retornou status ${response.status}: ${errorText}`)
+      return NextResponse.json(
+        {
+          error: 'Erro ao processar simulação',
+          workerStatus: response.status,
+          workerBody: errorText,
+          workerUrl: targetUrl,
+        },
+        { status: response.status, headers: corsHeaders }
+      )
     }
 
     const data = await response.json()
@@ -54,8 +70,11 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Erro ao comunicar com worker:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Erro ao processar simulação' },
-      { status: 500, headers: corsHeaders }
+      {
+        error: error instanceof Error ? error.message : 'Erro ao processar simulação',
+        workerUrl: process.env.NEXT_PUBLIC_CAIXA_URL || 'https://simulador-caixa.vcatech.cloud',
+      },
+      { status: 502, headers: corsHeaders }
     )
   }
 }
@@ -75,27 +94,48 @@ export async function GET(request: NextRequest) {
     console.log('📤 Consultando status do job:', jobId)
 
     // Consulta status no worker
-    const workerUrl = process.env.NEXT_PUBLIC_CAIXA_URL || 'https://simulador-caixa.vcatech.cloud'
+    let workerUrl = process.env.NEXT_PUBLIC_CAIXA_URL || 'https://simulador-caixa.vcatech.cloud'
     
-    const response = await fetch(`${workerUrl}/api/simulador-caixa?jobId=${jobId}`)
+    // Garante que a URL tem protocolo https://
+    if (!workerUrl.startsWith('http')) {
+      workerUrl = `https://${workerUrl}`
+    }
+    
+    const targetUrl = `${workerUrl}/api/simulador-caixa?jobId=${jobId}`
+    console.log('🌐 Worker URL alvo (status):', targetUrl)
+
+    const response = await fetch(targetUrl)
 
     if (!response.ok) {
-      throw new Error(`Worker retornou status ${response.status}`)
+      const errorText = await response.text()
+      console.error('❌ Erro do worker (status):', response.status, errorText)
+      return NextResponse.json(
+        {
+          error: 'Erro ao consultar status',
+          workerStatus: response.status,
+          workerBody: errorText,
+          workerUrl: targetUrl,
+        },
+        { status: response.status, headers: corsHeaders }
+      )
     }
 
     const data = await response.json()
 
     console.log('✅ Status do job:', data)
 
-    return NextResponse.json(data, { 
+    return NextResponse.json(data, {
       status: 200,
-      headers: corsHeaders
+      headers: corsHeaders,
     })
   } catch (error) {
     console.error('❌ Erro ao verificar status:', error)
     return NextResponse.json(
-      { error: 'Erro ao verificar status' },
-      { status: 500, headers: corsHeaders }
+      {
+        error: error instanceof Error ? error.message : 'Erro ao verificar status',
+        workerUrl: process.env.NEXT_PUBLIC_CAIXA_URL || 'https://simulador-caixa.vcatech.cloud',
+      },
+      { status: 502, headers: corsHeaders }
     )
   }
 }
