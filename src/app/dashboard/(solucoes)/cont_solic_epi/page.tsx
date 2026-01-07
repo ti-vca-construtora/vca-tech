@@ -6,7 +6,7 @@ export default function ContSolicEpiPage() {
   return (
     <RouteGuard requiredArea="sesmt" requiredPermission="epi">
       <div className="w-full h-full flex flex-col gap-6 p-6">
-        <ContSolicEpi />
+        <ContSolicEpiPage />
       </div>
     </RouteGuard>
   );
