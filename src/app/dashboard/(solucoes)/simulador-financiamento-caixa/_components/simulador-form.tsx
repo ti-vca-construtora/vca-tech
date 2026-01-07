@@ -293,15 +293,11 @@ export function SimuladorForm() {
     } // FIM CORREÇÃO
 
     try {
-      let baseUrl = process.env.NEXT_PUBLIC_CAIXA_URL || "";
-      
-      // Garante protocolo se for um domínio externo (corrige erro 405)
-      if (baseUrl && !baseUrl.startsWith("http") && !baseUrl.startsWith("/")) {
-        baseUrl = `https://${baseUrl}`;
-      }
-
-      // Remove barra final e constrói a URL completa
-      const API_URL = baseUrl.replace(/\/$/, "").replace(/\/api\/simulador-caixa$/, "") + "/api/simulador-caixa";
+      // ✅ SOLUÇÃO CORS: Usa a rota Next.js como proxy (mesma origem)
+      // Isso evita problema de CORS porque o navegador faz requisição para
+      // a mesma origem (tech.vcaconstrutora.com.br), e o servidor
+      // faz a requisição interna para o domínio externo se necessário.
+      const API_URL = "/api/simulador-caixa";
 
       const payload = {
         origemRecurso,
