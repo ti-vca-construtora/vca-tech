@@ -110,7 +110,7 @@ const CriarSlotsBulk = (onlyIds?: (string | number)[]) => {
       );
       console.log(
         `[CRIASLOTS] Empreendimento ${id} - slots existentes no período:`,
-        existed.size,
+        existingData?.data?.length ?? 0,
       );
 
       for (let i = 0; i < diasDuracao; i++) {
