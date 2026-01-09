@@ -76,6 +76,45 @@ type DefaultFuncaoItem = {
   monthlyFactor: MonthlyFactor;
 };
 
+// Valores projetados padrão por EPI (quantidades para funcionários projetados)
+const PROJECTED_QUANTITIES: Record<string, number> = {
+  "ABAFADOR DE RUÍDO PARA ACOPLAR": 1,
+  "AVENTAL DE RASPA": 2,
+  "BOTA DE ADMINISTRATIVO": 1,
+  "BOTA DE BORRACHA": 1,
+  "BOTA DE COURO": 1,
+  "CALÇA DA FARDA DA EMPRESA": 2,
+  "CAMISA DA FARDA": 2,
+  "CAPACETE (DETALHE AMARELO)": 1,
+  "CAPACETE (DETALHE AZUL)": 1,
+  "CAPACETE (DETALHE BRANCO)": 1,
+  "CAPACETE (DETALHE CINZA)": 1,
+  "CAPACETE (DETALHE MARROM)": 1,
+  "CAPACETE (DETALHE VERDE)": 1,
+  "CAPACETE (DETALHE VERMELHO)": 1,
+  "CHAPÉU PESCADOR COM PROTEÇÃO DE OMBRO (TOUCA ÁRABE)": 1,
+  "FARDAMENTO ANTI-CHAMAS (AVENTAL COM MANGAS) - C.A. 35236": 2,
+  "FILTRO PARA MÁSCARA": 1,
+  "RESPIRADOR FACIAL 1/4  COM FILTRO": 1,
+  "JOELHEIRA DE PROTEÇÃO": 1,
+  "LENTE FILTRO DE LUZ PARA MÁSCARA DE SOLDA": 1,
+  "LUVA DE POLIÉSTER COM BANHO DE LÁTEX CORRUGADO SS1009 - SUPER SAFFETY / CA - 31895": 4,
+  "LUVA DE VAQUETA": 1,
+  "LUVA EM HELANCA PU": 4,
+  "LUVA LÁTEX - LARANJA REFORÇADA": 4,
+  "LUVA VULCANIZADA": 3,
+  "MACACÃO DE PROTEÇÃO AZUL": 1,
+  "MÁSCARA DESCARTÁVEL": 4,
+  "MASCARA SOLDA AUTOMÁTICA S/ REGULAGEM 3 A 11 V8": 1,
+  "ÓCULOS AMPLA VISÃO": 1,
+  "ÓCULOS DE PROTEÇÃO ESCURO": 1,
+  "ÓCULOS DE PROTEÇÃO TRANSPARENTE": 1,
+  "PERNEIRA DE COURO SINTÉTICO": 1,
+  "PROTETOR AURICULAR TAPA OUVIDOS (PLUG)": 1,
+  "PROTETOR AURICULAR TIPO CONCHA": 1,
+  "PROTETOR SOLAR": 1,
+};
+
 const DEFAULT_FUNCOES_ITEMS: Record<string, DefaultFuncaoItem[]> = {
   "ADMINISTRATIVO": [
     { epi: "BOTA DE ADMINISTRATIVO", monthlyFactor: 0.083333333 },
@@ -417,12 +456,10 @@ const DEFAULT_FUNCOES_ITEMS: Record<string, DefaultFuncaoItem[]> = {
   ],
 };
 
-type IntervalUnit = "DIA" | "SEMANA" | "MES" | "ANO";
-
 type FuncaoEpiItem = {
   epi: string;
-  intervalValue: number;
-  intervalUnit: IntervalUnit;
+  intervalMonths: number;
+  quantityPerEmployee: number;
 };
 
 type FuncaoEpiConfig = {
@@ -442,85 +479,21 @@ function genId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function isCloseToInteger(value: number, tolerance = 1e-3) {
-  if (!Number.isFinite(value)) return false;
-  return Math.abs(value - Math.round(value)) <= tolerance;
-}
-
-function toIntervalFromMonthlyFactor(monthlyFactor: number): {
-  intervalValue: number;
-  intervalUnit: IntervalUnit;
-} {
-  if (!Number.isFinite(monthlyFactor) || monthlyFactor <= 0) {
-    return { intervalValue: 1, intervalUnit: "MES" };
+function formatIntervalMonths(months: number): string {
+  if (!Number.isFinite(months) || months <= 0) return "0 meses";
+  
+  if (months < 1) {
+    const dias = Math.round(months * 30);
+    return `${dias} ${dias === 1 ? 'dia' : 'dias'}`;
   }
-
-  const years = 1 / (12 * monthlyFactor);
-  if (isCloseToInteger(years)) {
-    return { intervalValue: Math.round(years), intervalUnit: "ANO" };
+  
+  if (months >= 12 && months % 12 === 0) {
+    const anos = months / 12;
+    return `${anos} ${anos === 1 ? 'ano' : 'anos'}`;
   }
-
-  const months = 1 / monthlyFactor;
-  if (isCloseToInteger(months)) {
-    return { intervalValue: Math.round(months), intervalUnit: "MES" };
-  }
-
-  const weeks = 4 / monthlyFactor;
-  if (isCloseToInteger(weeks)) {
-    return { intervalValue: Math.round(weeks), intervalUnit: "SEMANA" };
-  }
-
-  const days = 30 / monthlyFactor;
-  if (isCloseToInteger(days)) {
-    return { intervalValue: Math.round(days), intervalUnit: "DIA" };
-  }
-
-  return {
-    intervalValue: Math.max(1, Math.ceil(months)),
-    intervalUnit: "MES",
-  };
-}
-
-function monthsFactor(item: FuncaoEpiItem): number {
-  const n = item.intervalValue;
-  if (!Number.isFinite(n) || n <= 0) return 0;
-
-  switch (item.intervalUnit) {
-    case "DIA":
-      return 30 / n;
-    case "SEMANA":
-      return 4 / n;
-    case "MES":
-      return 1 / n;
-    case "ANO":
-      return 1 / (12 * n);
-  }
-}
-
-function intervalLabel(item: FuncaoEpiItem): string {
-  const n = item.intervalValue;
-  const unit = item.intervalUnit;
-
-  const isOne = Math.abs(n - 1) < 1e-9;
-
-  const unitLabel =
-    unit === "DIA"
-      ? isOne
-        ? "dia"
-        : "dias"
-      : unit === "SEMANA"
-        ? isOne
-          ? "semana"
-          : "semanas"
-        : unit === "MES"
-          ? isOne
-            ? "mês"
-            : "meses"
-          : isOne
-            ? "ano"
-            : "anos";
-
-  return `Trocar a cada ${n} ${unitLabel}`;
+  
+  const roundedMonths = Math.round(months * 100) / 100;
+  return `${roundedMonths} ${roundedMonths === 1 ? 'mês' : 'meses'}`;
 }
 
 function loadFuncoes(): FuncaoEpiConfig[] {
@@ -541,20 +514,13 @@ function loadFuncoes(): FuncaoEpiConfig[] {
           .filter((i: any) => i && typeof i === "object")
           .map((i: any) => {
             const epi = normalizeName(String(i.epi ?? ""));
-            const intervalValue = Number(i.intervalValue);
-            const intervalUnit = String(i.intervalUnit) as IntervalUnit;
-            const safeUnit: IntervalUnit =
-              intervalUnit === "DIA" ||
-              intervalUnit === "SEMANA" ||
-              intervalUnit === "MES" ||
-              intervalUnit === "ANO"
-                ? intervalUnit
-                : "MES";
+            const intervalMonths = Number(i.intervalMonths);
+            const quantityPerEmployee = Number(i.quantityPerEmployee);
 
             return {
               epi,
-              intervalValue: Number.isFinite(intervalValue) ? intervalValue : 1,
-              intervalUnit: safeUnit,
+              intervalMonths: Number.isFinite(intervalMonths) && intervalMonths > 0 ? intervalMonths : 3,
+              quantityPerEmployee: Number.isFinite(quantityPerEmployee) && quantityPerEmployee >= 0 ? quantityPerEmployee : 1,
             };
           })
           .filter((i: FuncaoEpiItem) => i.epi);
@@ -579,8 +545,8 @@ export function FuncoesConfiguracoes({ epiItems }: { epiItems: string[] }) {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [selectedEpi, setSelectedEpi] = useState<string>("");
-  const [intervalValue, setIntervalValue] = useState<string>("1");
-  const [intervalUnit, setIntervalUnit] = useState<IntervalUnit>("MES");
+  const [intervalMonths, setIntervalMonths] = useState<string>("3");
+  const [quantityPerEmployee, setQuantityPerEmployee] = useState<string>("1");
 
   useEffect(() => {
     const loaded = loadFuncoes();
@@ -592,10 +558,12 @@ export function FuncoesConfiguracoes({ epiItems }: { epiItems: string[] }) {
         const items: FuncaoEpiItem[] = defaults
           .map((d) => {
             const epi = normalizeName(d.epi);
-            const { intervalUnit, intervalValue } = toIntervalFromMonthlyFactor(
-              d.monthlyFactor,
-            );
-            return { epi, intervalUnit, intervalValue };
+            const intervalMonths = 1 / d.monthlyFactor;
+            return { 
+              epi, 
+              intervalMonths,
+              quantityPerEmployee: PROJECTED_QUANTITIES[epi] || 1
+            };
           })
           .filter((i) => i.epi)
           .sort((a, b) => a.epi.localeCompare(b.epi));
@@ -688,21 +656,11 @@ export function FuncoesConfiguracoes({ epiItems }: { epiItems: string[] }) {
     if (!editing) return;
 
     const epi = normalizeName(selectedEpi);
-    const n = Number.parseFloat(intervalValue);
 
     if (!epi) {
       toast({
         title: "Selecione um EPI",
         description: "Escolha um EPI para adicionar à função.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!Number.isFinite(n) || n <= 0) {
-      toast({
-        title: "Intervalo inválido",
-        description: "Informe um número maior que zero.",
         variant: "destructive",
       });
       return;
@@ -717,11 +675,35 @@ export function FuncoesConfiguracoes({ epiItems }: { epiItems: string[] }) {
       return;
     }
 
+    const intMonths = parseFloat(intervalMonths);
+    if (!Number.isFinite(intMonths) || intMonths <= 0) {
+      toast({
+        title: "Intervalo inválido",
+        description: "Informe um número maior que zero.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const qtyPerEmp = parseInt(quantityPerEmployee, 10);
+    if (!Number.isFinite(qtyPerEmp) || qtyPerEmp < 1) {
+      toast({
+        title: "Quantidade inválida",
+        description: "Informe um número inteiro maior que zero.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const updated: FuncaoEpiConfig = {
       ...editing,
       items: [
         ...editing.items,
-        { epi, intervalValue: Math.ceil(n), intervalUnit },
+        { 
+          epi, 
+          intervalMonths: intMonths,
+          quantityPerEmployee: qtyPerEmp
+        },
       ].sort(
         (a, b) => a.epi.localeCompare(b.epi),
       ),
@@ -735,12 +717,12 @@ export function FuncoesConfiguracoes({ epiItems }: { epiItems: string[] }) {
     saveFuncoes(next);
 
     setSelectedEpi("");
-    setIntervalValue("1");
-    setIntervalUnit("MES");
+    setIntervalMonths("3");
+    setQuantityPerEmployee("1");
 
     toast({
       title: "EPI vinculado",
-      description: `${epi} • ${intervalLabel({ epi, intervalValue: Math.ceil(n), intervalUnit })}`,
+      description: `${epi} • Intervalo: ${formatIntervalMonths(intMonths)} • Qtd: ${qtyPerEmp}`,
     });
   };
 
@@ -856,8 +838,8 @@ export function FuncoesConfiguracoes({ epiItems }: { epiItems: string[] }) {
                           onOpenChange={(open) => {
                             setEditingId(open ? f.id : null);
                             setSelectedEpi("");
-                            setIntervalValue("1");
-                            setIntervalUnit("MES");
+                            setIntervalMonths("3");
+                            setQuantityPerEmployee("1");
                           }}
                         >
                           <DialogTrigger asChild>
@@ -876,9 +858,15 @@ export function FuncoesConfiguracoes({ epiItems }: { epiItems: string[] }) {
                             </DialogHeader>
 
                             <div className="flex flex-col gap-4">
+                              <div className="text-xs text-muted-foreground mb-2">
+                                <strong>Tempo de troca (Efetivos):</strong> usado para calcular necessidade mensal. <strong>Qtd. Projetada:</strong> quantidade fixa por funcionário projetado.
+                              </div>
                               <div className="flex flex-wrap gap-2">
-                                <div className="min-w-[260px] flex-1">
-                                  <Select value={selectedEpi} onValueChange={setSelectedEpi}>
+                                <div className="min-w-[200px] flex-1">
+                                  <Select value={selectedEpi} onValueChange={(v) => {
+                                    setSelectedEpi(v);
+                                    setQuantityPerEmployee(String(PROJECTED_QUANTITIES[v] || 1));
+                                  }}>
                                     <SelectTrigger>
                                       <SelectValue placeholder="Selecione um EPI" />
                                     </SelectTrigger>
@@ -893,27 +881,22 @@ export function FuncoesConfiguracoes({ epiItems }: { epiItems: string[] }) {
                                 </div>
                                 <Input
                                   className="w-[140px]"
-                                  inputMode="numeric"
-                                  placeholder="Intervalo"
-                                  value={intervalValue}
-                                  onChange={(e) => setIntervalValue(e.target.value)}
+                                  type="number"
+                                  step="0.01"
+                                  min="0.1"
+                                  placeholder="Intervalo (meses)"
+                                  value={intervalMonths}
+                                  onChange={(e) => setIntervalMonths(e.target.value)}
+                                  title="Intervalo de reposição em meses (ex: 3, 0.5, 0.364)"
                                 />
-                                <div className="w-[180px]">
-                                  <Select
-                                    value={intervalUnit}
-                                    onValueChange={(v) => setIntervalUnit(v as IntervalUnit)}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Unidade" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="DIA">Dia(s)</SelectItem>
-                                      <SelectItem value="SEMANA">Semana(s)</SelectItem>
-                                      <SelectItem value="MES">Mês(es)</SelectItem>
-                                      <SelectItem value="ANO">Ano(s)</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
+                                <Input
+                                  className="w-[100px]"
+                                  inputMode="numeric"
+                                  placeholder="Qtd Proj."
+                                  value={quantityPerEmployee}
+                                  onChange={(e) => setQuantityPerEmployee(e.target.value)}
+                                  title="Quantidade para funcionários projetados"
+                                />
                                 <Button onClick={handleAddEpiToFuncao}>Adicionar EPI</Button>
                               </div>
 
@@ -923,14 +906,15 @@ export function FuncoesConfiguracoes({ epiItems }: { epiItems: string[] }) {
                                     <TableRow>
                                       <TableHead>EPI</TableHead>
                                       <TableHead>Tempo de troca</TableHead>
-                                      <TableHead className="w-[140px]">Fator/mês</TableHead>
+                                      <TableHead className="w-[100px]">Fator/mês</TableHead>
+                                      <TableHead className="w-[100px]">Qtd. Proj.</TableHead>
                                       <TableHead className="w-[140px] text-right">Ações</TableHead>
                                     </TableRow>
                                   </TableHeader>
                                   <TableBody>
                                     {(editing?.items ?? []).length === 0 ? (
                                       <TableRow>
-                                        <TableCell colSpan={4} className="text-center">
+                                        <TableCell colSpan={5} className="text-center">
                                           Nenhum EPI vinculado a essa função.
                                         </TableCell>
                                       </TableRow>
@@ -938,8 +922,32 @@ export function FuncoesConfiguracoes({ epiItems }: { epiItems: string[] }) {
                                       (editing?.items ?? []).map((i) => (
                                         <TableRow key={i.epi}>
                                           <TableCell className="font-medium">{i.epi}</TableCell>
-                                          <TableCell>{intervalLabel(i)}</TableCell>
-                                          <TableCell>{monthsFactor(i).toFixed(4)}</TableCell>
+                                          <TableCell>{formatIntervalMonths(i.intervalMonths)}</TableCell>
+                                          <TableCell>{(1 / i.intervalMonths).toFixed(4)}</TableCell>
+                                          <TableCell>
+                                            <Input
+                                              type="number"
+                                              min="1"
+                                              className="w-[80px]"
+                                              value={i.quantityPerEmployee || 1}
+                                              onChange={(e) => {
+                                                if (!editing) return;
+                                                const val = parseInt(e.target.value, 10);
+                                                if (!Number.isFinite(val) || val < 1) return;
+                                                const updated: FuncaoEpiConfig = {
+                                                  ...editing,
+                                                  items: editing.items.map(item => 
+                                                    item.epi === i.epi 
+                                                      ? { ...item, quantityPerEmployee: val }
+                                                      : item
+                                                  )
+                                                };
+                                                const next = funcoes.map(f => f.id === updated.id ? updated : f);
+                                                setFuncoes(next);
+                                                saveFuncoes(next);
+                                              }}
+                                            />
+                                          </TableCell>
                                           <TableCell className="text-right">
                                             <Button
                                               variant="destructive"

@@ -1,5 +1,23 @@
 "use client";
 
+import {
+  loadEpiItemsFromDB,
+  loadObrasFromDB,
+  loadFuncoesFromDB,
+  loadInventorySnapshotsFromDB,
+  saveEpiItemsToDB,
+  saveObrasToDB,
+  saveFuncoesToDB,
+  saveInventorySnapshotsToDB,
+  addInventorySnapshotToDB,
+} from './cont-solic-epi-supabase';
+
+// Flag para controlar se usa Supabase ou localStorage
+// Em produção, sempre use Supabase. Para desenvolvimento local sem Supabase, pode desabilitar
+const USE_SUPABASE = typeof window !== 'undefined' && 
+  process.env.NEXT_PUBLIC_SUPABASE_EPI_URL && 
+  process.env.NEXT_PUBLIC_SUPABASE_EPI_ANON_KEY;
+
 export type ObraEmpreendimentoTipo = "INCORPORADORA" | "LOTEAMENTO";
 
 export type Obra = {
@@ -10,12 +28,10 @@ export type Obra = {
   empreendimentoType: ObraEmpreendimentoTipo;
 };
 
-export type FuncaoEpiIntervalUnit = "DIA" | "SEMANA" | "MES" | "ANO";
-
 export type FuncaoEpiItem = {
   epi: string;
-  intervalValue: number;
-  intervalUnit: FuncaoEpiIntervalUnit;
+  intervalMonths: number; // Intervalo de reposição em meses (ex: 3, 6, 12, 0.5)
+  quantityPerEmployee: number; // Quantidade por funcionário projetado (geralmente 1, mas pode ser 2, 3, etc)
 };
 
 export type FuncaoEpiConfig = {
@@ -144,24 +160,17 @@ export function loadFuncoes(): FuncaoEpiConfig[] {
           .filter((i): i is Record<string, unknown> => !!i && typeof i === "object")
           .map((i) => {
             const epi = normalizeText("epi" in i ? String(i.epi ?? "") : "");
-            const intervalValue = Number("intervalValue" in i ? i.intervalValue : 1);
-            const intervalUnitRaw = normalizeText(
-              "intervalUnit" in i ? String(i.intervalUnit ?? "MES") : "MES",
-            );
-            const intervalUnit: FuncaoEpiIntervalUnit =
-              intervalUnitRaw === "DIA" ||
-              intervalUnitRaw === "SEMANA" ||
-              intervalUnitRaw === "MES" ||
-              intervalUnitRaw === "ANO"
-                ? intervalUnitRaw
-                : "MES";
+            const intervalMonths = Number("intervalMonths" in i ? i.intervalMonths : 3);
+            const quantityPerEmployee = Number("quantityPerEmployee" in i ? i.quantityPerEmployee : 1);
 
             return {
               epi,
-              intervalValue: Number.isFinite(intervalValue)
-                ? Math.max(1, Math.ceil(intervalValue))
+              intervalMonths: Number.isFinite(intervalMonths) && intervalMonths > 0
+                ? intervalMonths
+                : 3,
+              quantityPerEmployee: Number.isFinite(quantityPerEmployee) && quantityPerEmployee >= 0
+                ? quantityPerEmployee
                 : 1,
-              intervalUnit,
             };
           })
           .filter((i) => i.epi);
@@ -270,4 +279,113 @@ export function loadInventorySnapshots(): InventorySnapshot[] {
 
 export function saveInventorySnapshots(snapshots: InventorySnapshot[]) {
   localStorage.setItem(INVENTORY_SNAPSHOTS_KEY, JSON.stringify(snapshots));
+}
+
+// ============================================
+// WRAPPER FUNCTIONS - Use Supabase when available, fallback to localStorage
+// ============================================
+
+// EPI Items
+export async function loadEpiItemsAsync(): Promise<string[]> {
+  if (USE_SUPABASE) {
+    const items = await loadEpiItemsFromDB();
+    return items.length > 0 ? items : loadEpiItems(); // Fallback to localStorage if DB is empty
+  }
+  return loadEpiItems();
+}
+
+export async function saveEpiItemsAsync(items: string[]): Promise<boolean> {
+  if (USE_SUPABASE) {
+    const success = await saveEpiItemsToDB(items);
+    if (success) {
+      // Also save to localStorage as backup
+      localStorage.setItem(EPI_ITEMS_KEY, JSON.stringify(items));
+    }
+    return success;
+  }
+  localStorage.setItem(EPI_ITEMS_KEY, JSON.stringify(items));
+  return true;
+}
+
+// Obras
+export async function loadObrasAsync(): Promise<Obra[]> {
+  if (USE_SUPABASE) {
+    const obras = await loadObrasFromDB();
+    return obras.length > 0 ? obras : loadObras(); // Fallback to localStorage if DB is empty
+  }
+  return loadObras();
+}
+
+export async function saveObrasAsync(obras: Obra[]): Promise<boolean> {
+  if (USE_SUPABASE) {
+    const success = await saveObrasToDB(obras);
+    if (success) {
+      // Also save to localStorage as backup
+      saveObras(obras);
+    }
+    return success;
+  }
+  saveObras(obras);
+  return true;
+}
+
+// Funções
+export async function loadFuncoesAsync(): Promise<FuncaoEpiConfig[]> {
+  if (USE_SUPABASE) {
+    const funcoes = await loadFuncoesFromDB();
+    return funcoes.length > 0 ? funcoes : loadFuncoes(); // Fallback to localStorage if DB is empty
+  }
+  return loadFuncoes();
+}
+
+export async function saveFuncoesAsync(funcoes: FuncaoEpiConfig[]): Promise<boolean> {
+  if (USE_SUPABASE) {
+    const success = await saveFuncoesToDB(funcoes);
+    if (success) {
+      // Also save to localStorage as backup
+      localStorage.setItem(FUNCOES_KEY, JSON.stringify(funcoes));
+    }
+    return success;
+  }
+  localStorage.setItem(FUNCOES_KEY, JSON.stringify(funcoes));
+  return true;
+}
+
+// Inventory Snapshots
+export async function loadInventorySnapshotsAsync(): Promise<InventorySnapshot[]> {
+  if (USE_SUPABASE) {
+    const snapshots = await loadInventorySnapshotsFromDB();
+    return snapshots.length > 0 ? snapshots : loadInventorySnapshots(); // Fallback to localStorage if DB is empty
+  }
+  return loadInventorySnapshots();
+}
+
+export async function saveInventorySnapshotsAsync(snapshots: InventorySnapshot[]): Promise<boolean> {
+  if (USE_SUPABASE) {
+    const success = await saveInventorySnapshotsToDB(snapshots);
+    if (success) {
+      // Also save to localStorage as backup
+      saveInventorySnapshots(snapshots);
+    }
+    return success;
+  }
+  saveInventorySnapshots(snapshots);
+  return true;
+}
+
+export async function addInventorySnapshotAsync(snapshot: InventorySnapshot): Promise<boolean> {
+  if (USE_SUPABASE) {
+    const success = await addInventorySnapshotToDB(snapshot);
+    if (success) {
+      // Also add to localStorage as backup
+      const all = loadInventorySnapshots();
+      all.push(snapshot);
+      saveInventorySnapshots(all);
+    }
+    return success;
+  }
+  const all = loadInventorySnapshots();
+  all.push(snapshot);
+  saveInventorySnapshots(all);
+  return true;
 }

@@ -33,9 +33,11 @@ type FunctionRequest = {
   projectedEmployees: number;
   epiNeeds: Array<{
     epi: string;
-    monthlyFactor: number;
-    currentNeed: number;
-    projectedNeed: number;
+    intervalMonths: number; // Intervalo de reposição em meses
+    quantityPerEmployee: number; // Quantidade por funcionário projetado
+    currentNeed: number; // Necessidade mensal para efetivos
+    projectedNeed: number; // Necessidade para projetados
+    totalNeed: number; // Total (efetivos + projetados)
     stock: number;
     shortage: number;
     manualAdjust: number;
@@ -43,25 +45,11 @@ type FunctionRequest = {
   }>;
 };
 
-function monthsFactor(item: { intervalValue: number; intervalUnit: string }) {
-  switch (item.intervalUnit) {
-    case "DIA":
-      return 30 / item.intervalValue;
-    case "SEMANA":
-      return 4 / item.intervalValue;
-    case "ANO":
-      return 1 / (item.intervalValue * 12);
-    case "MES":
-    default:
-      return 1 / item.intervalValue;
-  }
-}
-
 export function RequestForm({ snapshotId, onBack }: RequestFormProps) {
   const { toast } = useToast();
   const [snapshot, setSnapshot] = useState<InventorySnapshot | null>(null);
   const [funcoes, setFuncoes] = useState<
-    Array<{ id: string; name: string; items: Array<{ epi: string; intervalValue: number; intervalUnit: string }> }>
+    Array<{ id: string; name: string; items: Array<{ epi: string; intervalMonths: number; quantityPerEmployee: number }> }>
   >([]);
 
   const [functionRequests, setFunctionRequests] = useState<FunctionRequest[]>([]);
@@ -80,12 +68,8 @@ export function RequestForm({ snapshotId, onBack }: RequestFormProps) {
     const funcs = loadFuncoes();
     setFuncoes(funcs);
 
-    // inicializar projetados com valores efetivos
-    const initial: Record<string, string> = {};
-    for (const [k, v] of Object.entries(found.functionCounts)) {
-      initial[k] = String(v);
-    }
-    setProjectedCounts(initial);
+    // NÃO inicializar projetados - deixar vazio para o usuário preencher
+    setProjectedCounts({});
   }, [snapshotId, onBack, toast]);
 
   // calcular necessidades quando mudar projetados
@@ -99,17 +83,32 @@ export function RequestForm({ snapshotId, onBack }: RequestFormProps) {
       const projectedEmp = parseInt(projectedCounts[func.name] || "0", 10);
 
       const epiNeeds = func.items.map((item) => {
-        const factor = monthsFactor(item);
-        const currentNeed = Math.ceil(currentEmp * factor);
-        const projectedNeed = Math.ceil(projectedEmp * factor);
+        // Lógica correta:
+        // 1. Para efetivos (já trabalhando): calcular necessidade MENSAL baseada no intervalo
+        //    - Taxa mensal = 1 / intervalo em meses
+        //    - Necessidade mensal = funcionários × taxa mensal (arredondado para cima)
+        //    - Ex: 10 func, intervalo 3 meses → 10 × (1/3) = 3.33 → 4 por mês
+        // 2. Para projetados (novos): quantidade inteira para equipar
+        //    - Necessidade = funcionários × quantidade unitária
+        //    - Ex: 5 novos func, 1 unidade cada → 5 unidades
+        // 3. Total = efetivos + projetados
+        // 4. Falta = total - estoque
+        
+        const taxaMensal = item.intervalMonths > 0 ? 1 / item.intervalMonths : 0;
+        const currentNeed = Math.ceil(currentEmp * taxaMensal); // Necessidade mensal para efetivos
+        const projectedNeed = projectedEmp * item.quantityPerEmployee; // Quantidade para novos
+        const totalNeed = currentNeed + projectedNeed;
+        
         const stock = snapshot.epiCounts[item.epi] || 0;
-        const shortage = Math.max(0, projectedNeed - stock);
+        const shortage = Math.max(0, totalNeed - stock);
 
         return {
           epi: item.epi,
-          monthlyFactor: factor,
+          intervalMonths: item.intervalMonths,
+          quantityPerEmployee: item.quantityPerEmployee,
           currentNeed,
           projectedNeed,
+          totalNeed,
           stock,
           shortage,
           manualAdjust: 0,
@@ -204,9 +203,12 @@ export function RequestForm({ snapshotId, onBack }: RequestFormProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Formulário de Solicitação</h3>
+          <h3 className="text-lg font-semibold">Etapa 3: Solicitação de EPIs</h3>
           <p className="text-sm text-muted-foreground">
             Obra: {snapshot.obraName} — {snapshot.obraCity}/{snapshot.obraState}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Defina os funcionários projetados e revise as necessidades calculadas
           </p>
         </div>
         <Button variant="outline" onClick={onBack}>
@@ -215,11 +217,25 @@ export function RequestForm({ snapshotId, onBack }: RequestFormProps) {
       </div>
 
       <div className="border rounded-lg p-4 bg-muted/20">
-        <h4 className="text-sm font-medium mb-4">
-          Preencha os funcionários projetados e revise os cálculos
-        </h4>
+        <div className="mb-4 space-y-1">
+          <h4 className="text-sm font-semibold">Como funciona o cálculo:</h4>
+          <p className="text-xs text-muted-foreground">
+            • <strong>Efetivos</strong>: necessidade MENSAL baseada no intervalo de reposição (ex: intervalo 3 meses = 1/3 por mês)
+          </p>
+          <p className="text-xs text-muted-foreground">
+            • <strong>Projetados</strong>: quantidade inteira para equipar os novos (ex: 5 novos = 5 unidades)
+          </p>
+          <p className="text-xs text-muted-foreground">
+            • <strong>Total</strong>: Efetivos + Projetados
+          </p>
+          <p className="text-xs text-muted-foreground">
+            • <strong>Falta</strong>: Total necessário - Estoque disponível
+          </p>
+        </div>
 
-        {functionRequests.map((req) => (
+        {functionRequests
+          .filter(req => req.epiNeeds.some(need => need.shortage > 0))
+          .map((req) => (
           <div key={req.functionName} className="mb-6 border-b pb-4 last:border-b-0">
             <div className="grid gap-4 md:grid-cols-3 mb-4">
               <div>
@@ -246,12 +262,14 @@ export function RequestForm({ snapshotId, onBack }: RequestFormProps) {
                   <TableHeader>
                     <TableRow>
                       <TableHead>EPI</TableHead>
-                      <TableHead className="w-[100px]">Fator/mês</TableHead>
-                      <TableHead className="w-[100px]">Nec. Efetivos</TableHead>
-                      <TableHead className="w-[100px]">Nec. Projetados</TableHead>
-                      <TableHead className="w-[100px]">Estoque</TableHead>
-                      <TableHead className="w-[100px]">Falta</TableHead>
-                      <TableHead className="w-[120px]">Ajuste Manual</TableHead>
+                      <TableHead className="w-[110px] text-xs">Intervalo (meses)</TableHead>
+                      <TableHead className="w-[90px] text-xs">Qtd/Func</TableHead>
+                      <TableHead className="w-[90px]">Nec. Efetivos</TableHead>
+                      <TableHead className="w-[90px]">Nec. Projetados</TableHead>
+                      <TableHead className="w-[90px]">Total Mês</TableHead>
+                      <TableHead className="w-[80px]">Estoque</TableHead>
+                      <TableHead className="w-[70px]">Falta</TableHead>
+                      <TableHead className="w-[110px]">Ajuste</TableHead>
                       <TableHead>Justificativa</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -259,9 +277,11 @@ export function RequestForm({ snapshotId, onBack }: RequestFormProps) {
                     {req.epiNeeds.map((need) => (
                       <TableRow key={need.epi}>
                         <TableCell className="font-medium">{need.epi}</TableCell>
-                        <TableCell>{need.monthlyFactor.toFixed(2)}</TableCell>
+                        <TableCell className="text-muted-foreground">{need.intervalMonths} {need.intervalMonths === 1 ? 'mês' : 'meses'}</TableCell>
+                        <TableCell className="text-muted-foreground">{need.quantityPerEmployee}</TableCell>
                         <TableCell>{need.currentNeed}</TableCell>
-                        <TableCell>{need.projectedNeed}</TableCell>
+                        <TableCell className="font-semibold">{need.projectedNeed}</TableCell>
+                        <TableCell className="font-semibold text-blue-600">{need.totalNeed}</TableCell>
                         <TableCell>{need.stock}</TableCell>
                         <TableCell className={need.shortage > 0 ? "text-red-600 font-semibold" : ""}>
                           {need.shortage > 0 ? `+${need.shortage}` : "OK"}

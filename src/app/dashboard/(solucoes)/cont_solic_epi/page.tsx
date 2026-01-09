@@ -35,9 +35,17 @@ export default function ContSolicEpiPage() {
   return (
     <div className="w-full h-full flex flex-col gap-6 p-6">
       <div className="flex flex-wrap gap-6">
+              <SolucoesCard
+          titulo="Solicitar Equipamento"
+          descricao="Solicitação de EPIs"
+          href="cont_solic_epi/solicitar"
+          Icon={FiShoppingCart}
+          area="sesmt"
+          permission="epi"
+        />
         <SolucoesCard
-          titulo="Histórico de Estoque"
-          descricao="Gerenciamento de estoque de EPIs cadastrados pelos técnicos nas obras"
+          titulo="Histórico"
+          descricao="Histórico de Solicitações de EPIs"
           href="cont_solic_epi/estoque"
           Icon={FiBox}
           area="sesmt"
@@ -58,14 +66,6 @@ export default function ContSolicEpiPage() {
           Icon={FiSettings}
           area="sesmt"
           permission="adm-sesmt"
-        />
-        <SolucoesCard
-          titulo="Solicitar Equipamento"
-          descricao="Solicitação de EPIs"
-          href="cont_solic_epi/solicitar"
-          Icon={FiShoppingCart}
-          area="sesmt"
-          permission="epi"
         />
       </div>
     </div>
