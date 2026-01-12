@@ -69,8 +69,13 @@ export function normalizeText(value: string) {
     .toUpperCase();
 }
 
+// Gerar UUID v4 válido
 export function genId() {
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
 }
 
 export function loadEpiItems(): string[] {
@@ -288,8 +293,7 @@ export function saveInventorySnapshots(snapshots: InventorySnapshot[]) {
 // EPI Items
 export async function loadEpiItemsAsync(): Promise<string[]> {
   if (USE_SUPABASE) {
-    const items = await loadEpiItemsFromDB();
-    return items.length > 0 ? items : loadEpiItems(); // Fallback to localStorage if DB is empty
+    return await loadEpiItemsFromDB();
   }
   return loadEpiItems();
 }
@@ -310,8 +314,7 @@ export async function saveEpiItemsAsync(items: string[]): Promise<boolean> {
 // Obras
 export async function loadObrasAsync(): Promise<Obra[]> {
   if (USE_SUPABASE) {
-    const obras = await loadObrasFromDB();
-    return obras.length > 0 ? obras : loadObras(); // Fallback to localStorage if DB is empty
+    return await loadObrasFromDB();
   }
   return loadObras();
 }
@@ -332,8 +335,7 @@ export async function saveObrasAsync(obras: Obra[]): Promise<boolean> {
 // Funções
 export async function loadFuncoesAsync(): Promise<FuncaoEpiConfig[]> {
   if (USE_SUPABASE) {
-    const funcoes = await loadFuncoesFromDB();
-    return funcoes.length > 0 ? funcoes : loadFuncoes(); // Fallback to localStorage if DB is empty
+    return await loadFuncoesFromDB();
   }
   return loadFuncoes();
 }
@@ -354,8 +356,7 @@ export async function saveFuncoesAsync(funcoes: FuncaoEpiConfig[]): Promise<bool
 // Inventory Snapshots
 export async function loadInventorySnapshotsAsync(): Promise<InventorySnapshot[]> {
   if (USE_SUPABASE) {
-    const snapshots = await loadInventorySnapshotsFromDB();
-    return snapshots.length > 0 ? snapshots : loadInventorySnapshots(); // Fallback to localStorage if DB is empty
+    return await loadInventorySnapshotsFromDB();
   }
   return loadInventorySnapshots();
 }

@@ -71,13 +71,18 @@ export async function loadObrasFromDB(): Promise<Obra[]> {
       return [];
     }
 
-    return (data || []).map((obra: any) => ({
-      id: obra.id,
-      name: obra.name,
-      state: obra.state,
-      city: obra.city,
-      empreendimentoType: obra.empreendimento_type as ObraEmpreendimentoTipo,
-    }));
+    console.log('Obras carregadas do Supabase:', data);
+
+    return (data || []).map((obra: any) => {
+      console.log('Processando obra:', obra);
+      return {
+        id: obra.id,
+        name: obra.name,
+        state: obra.state || obra.STATE || '',
+        city: obra.city || obra.CITY || '',
+        empreendimentoType: obra.empreendimento_type || obra.EMPREENDIMENTO_TYPE || 'INCORPORADORA',
+      };
+    });
   } catch (error) {
     console.error('Error loading obras:', error);
     return [];
@@ -279,28 +284,41 @@ export async function saveInventorySnapshotsToDB(snapshots: InventorySnapshot[])
 
 export async function addInventorySnapshotToDB(snapshot: InventorySnapshot): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from('inventory_snapshots')
-      .insert({
-        id: snapshot.id,
-        obra_id: snapshot.obraId,
-        obra_name: snapshot.obraName,
-        obra_state: snapshot.obraState,
-        obra_city: snapshot.obraCity,
-        obra_type: snapshot.obraType,
-        created_at: snapshot.createdAt,
-        created_by_id: snapshot.createdBy?.id ?? null,
-        created_by_name: snapshot.createdBy?.name ?? null,
-        created_by_email: snapshot.createdBy?.email ?? null,
-        epi_counts: snapshot.epiCounts,
-        function_counts: snapshot.functionCounts,
-      } as any);
-
-    if (error) {
-      console.error('Error adding inventory snapshot:', error);
+    // Validar que obra_type não é null/undefined
+    if (!snapshot.obraType || !['INCORPORADORA', 'LOTEAMENTO'].includes(snapshot.obraType)) {
+      console.error('Invalid obra_type:', snapshot.obraType);
       return false;
     }
 
+    const dataToInsert = {
+      id: snapshot.id,
+      obra_id: snapshot.obraId,
+      obra_name: snapshot.obraName,
+      obra_state: snapshot.obraState,
+      obra_city: snapshot.obraCity,
+      obra_type: snapshot.obraType,
+      created_at: snapshot.createdAt,
+      created_by_id: snapshot.createdBy?.id ?? null,
+      created_by_name: snapshot.createdBy?.name ?? null,
+      created_by_email: snapshot.createdBy?.email ?? null,
+      epi_counts: snapshot.epiCounts,
+      function_counts: snapshot.functionCounts,
+    };
+
+    console.log('Tentando inserir snapshot:', dataToInsert);
+
+    const { error, data } = await supabase
+      .from('inventory_snapshots')
+      .insert(dataToInsert as any)
+      .select();
+
+    if (error) {
+      console.error('Error adding inventory snapshot:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      return false;
+    }
+
+    console.log('Snapshot inserido com sucesso:', data);
     return true;
   } catch (error) {
     console.error('Error adding inventory snapshot:', error);

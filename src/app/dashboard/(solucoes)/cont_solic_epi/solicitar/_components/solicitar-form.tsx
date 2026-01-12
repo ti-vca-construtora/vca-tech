@@ -35,11 +35,6 @@ import {
 } from "../../_lib/cont-solic-epi-storage";
 import { RequestForm } from "./request-form";
 
-function monthsFactor(intervalMonths: number): number {
-  if (!Number.isFinite(intervalMonths) || intervalMonths <= 0) return 0;
-  return 1 / intervalMonths;
-}
-
 export function SolicitarForm() {
   const { toast } = useToast();
   const user = useUser();
@@ -180,8 +175,8 @@ export function SolicitarForm() {
               ) : (
                 funcoes.map((func) => (
                   <TableRow key={func.id}>
-                    <TableCell>{func.name}</TableCell>
-                    <TableCell>
+                    <TableCell className="border border-gray-400 rounded-lg">{func.name}</TableCell>
+                    <TableCell className="border border-gray-400 rounded-lg">
                       <Input
                         type="number"
                         min="0"
@@ -261,8 +256,8 @@ export function SolicitarForm() {
                   ) : (
                     epiItems.map((item) => (
                       <TableRow key={item}>
-                        <TableCell>{item}</TableCell>
-                        <TableCell>
+                        <TableCell className="border border-gray-400 rounded-lg px-2 py-1">{item}</TableCell>
+                        <TableCell className="border border-gray-400 rounded-lg">
                           <Input
                             type="number"
                             min="0"

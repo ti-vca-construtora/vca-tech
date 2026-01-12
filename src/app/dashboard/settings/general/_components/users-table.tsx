@@ -11,6 +11,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -20,6 +30,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -44,6 +61,7 @@ import {
   ShieldCheck,
   X,
   Trash2,
+  Plus,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -54,6 +72,7 @@ const AREAS = [
   "relacionamento",
   "entregas",
   "obras",
+  "sesmt"
 ];
 
 type AreaKey = (typeof AREAS)[number];
@@ -114,7 +133,7 @@ function ManagePermissionsDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [openArea, setOpenArea] = useState(false);
   const [openPermissions, setOpenPermissions] = useState(false);
-  const [userPermissions, setUserPermissions] = useState<any[]>([]);
+  const [userPermissions, setUserPermissions] = useState<{ id: string; area: string; permission?: string; permissions?: string[] }[]>([]);
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(false);
 
   const availablePermissions =
@@ -185,6 +204,7 @@ function ManagePermissionsDialog({
     } else if (user) {
       fetchPermissions();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, user]);
 
   const handleDeletePermission = async (id: string) => {
@@ -311,6 +331,7 @@ function ManagePermissionsDialog({
                         area === a.toLowerCase() &&
                           "bg-primary/10 text-primary font-semibold"
                       )}
+                      role="option"
                       aria-selected={area === a.toLowerCase()}
                       onClick={() => {
                         setArea(
@@ -399,6 +420,7 @@ function ManagePermissionsDialog({
                         permissions.includes(p) &&
                           "bg-primary/10 text-primary font-semibold"
                       )}
+                      role="option"
                       aria-selected={permissions.includes(p)}
                       onClick={() => {
                         setPermissions((prev) =>
@@ -435,7 +457,7 @@ function ManagePermissionsDialog({
               </div>
             ) : userPermissions.length > 0 ? (
               <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
-                {userPermissions.map((perm: any) => (
+                {userPermissions.map((perm) => (
                   <div
                     key={perm.id}
                     className="flex items-center justify-between p-2 rounded-md border bg-gray-50"
@@ -445,7 +467,7 @@ function ManagePermissionsDialog({
                         {perm.area}
                       </span>
                       <div className="flex flex-wrap gap-1">
-                        {perm.permissions.map((p: string) => (
+                        {(perm.permissions || []).map((p: string) => (
                           <Badge
                             key={p}
                             variant="secondary"
@@ -596,6 +618,261 @@ function ChangePasswordDialog({
   );
 }
 
+function AddUserDialog({
+  isOpen,
+  onOpenChange,
+  onSuccess,
+  onUserCreated,
+}: {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+  onUserCreated: (user: User) => void;
+}) {
+  const { toast } = useToast();
+  const { token } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    name: "",
+    department: "",
+    role: "",
+  });
+  const [feedback, setFeedback] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+    isError: boolean;
+    newUser?: User;
+  }>({ open: false, title: "", description: "", isError: false });
+
+  useEffect(() => {
+    if (!isOpen) {
+      setFormData({
+        email: "",
+        password: "",
+        name: "",
+        department: "",
+        role: "",
+      });
+    }
+  }, [isOpen]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.email || !formData.password || !formData.name || !formData.role) {
+      toast({
+        title: "Erro",
+        description: "Preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch("https://api.suportevca.com.br/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          name: formData.name,
+          department: formData.department,
+          role: formData.role,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Falha ao criar usuário.");
+      }
+
+      const userData = await response.json();
+      const newUser = userData.data || userData;
+
+      toast({
+        title: "Sucesso!",
+        description: "Usuário criado com sucesso.",
+      });
+      // Fechar o formulário e atualizar a lista
+      onOpenChange(false);
+      onSuccess();
+
+      // Exibir pop-up com ação para definir permissões
+      setFeedback({
+        open: true,
+        title: "Usuário criado",
+        description: `O usuário ${newUser.name || newUser.email} foi criado com sucesso. Deseja definir as permissões agora?`,
+        isError: false,
+        newUser,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Ocorreu um erro inesperado.";
+      toast({ title: "Erro", description: message, variant: "destructive" });
+      setFeedback({
+        open: true,
+        title: "Erro ao criar usuário",
+        description: message,
+        isError: true,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Adicionar Novo Usuário</DialogTitle>
+            <DialogDescription>
+              Preencha os dados do novo usuário.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">E-mail *</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, email: e.target.value }))
+              }
+              placeholder="usuario@exemplo.com"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password">Senha *</Label>
+            <Input
+              id="password"
+              type="password"
+              value={formData.password}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, password: e.target.value }))
+              }
+              placeholder="Digite a senha"
+              required
+              minLength={6}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="name">Nome Completo *</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, name: e.target.value }))
+              }
+              placeholder="João Silva"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="department">Departamento</Label>
+            <Select
+              value={formData.department}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, department: value }))
+              }
+            >
+              <SelectTrigger id="department">
+                <SelectValue placeholder="Selecione um departamento" />
+              </SelectTrigger>
+              <SelectContent>
+                {AREAS.map((area) => (
+                  <SelectItem key={area} value={area}>
+                    {area.charAt(0).toUpperCase() + area.slice(1)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="role">Cargo *</Label>
+            <Select
+              value={formData.role}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, role: value }))
+              }
+            >
+              <SelectTrigger id="role">
+                <SelectValue placeholder="Selecione um cargo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="MASTER">Administrador</SelectItem>
+                <SelectItem value="USER">Usuário</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isLoading}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={
+                isLoading ||
+                !formData.email ||
+                !formData.password ||
+                !formData.name ||
+                !formData.role
+              }
+            >
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Criar Usuário
+            </Button>
+          </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pop-up de feedback */}
+      <AlertDialog open={feedback.open} onOpenChange={(open) => setFeedback((prev) => ({ ...prev, open }))}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{feedback.isError ? "Erro" : "Sucesso"}</AlertDialogTitle>
+            <AlertDialogDescription>{feedback.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setFeedback((prev) => ({ ...prev, open: false }))}>Fechar</AlertDialogCancel>
+            {!feedback.isError && feedback.newUser && (
+              <AlertDialogAction
+                onClick={() => {
+                  if (feedback.newUser) {
+                    onUserCreated(feedback.newUser);
+                  }
+                  setFeedback((prev) => ({ ...prev, open: false }));
+                }}
+              >
+                Definir permissões
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
 function ResetPasswordDialog({
   user,
   isOpen,
@@ -666,8 +943,20 @@ export function UsersTable({ users: usersProp }: { users?: User[] }) {
     useState(false);
   const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] =
     useState(false);
+  const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [isResetting, setIsResetting] = useState(false);
+
+  // Deleção de usuário
+  const [isDeleteUserDialogOpen, setIsDeleteUserDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [isDeletingUser, setIsDeletingUser] = useState(false);
+  const [deleteFeedback, setDeleteFeedback] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+    isError: boolean;
+  }>({ open: false, title: "", description: "", isError: false });
 
   useEffect(() => {
     if (usersProp === undefined) return;
@@ -755,7 +1044,7 @@ export function UsersTable({ users: usersProp }: { users?: User[] }) {
     setIsResetting(true);
     try {
       const response = await fetch(
-        `https://api.suportevca.com.br/api/users/${selectedUser.id}`,
+        `https://api.suportevca.com.br/users/${selectedUser.id}`,
         {
           method: "PATCH",
           headers: {
@@ -800,6 +1089,91 @@ export function UsersTable({ users: usersProp }: { users?: User[] }) {
     setIsChangePasswordDialogOpen(true);
   };
 
+  const openDeleteUserDialog = (user: User) => {
+    setUserToDelete(user);
+    setIsDeleteUserDialogOpen(true);
+  };
+
+  const handleConfirmDeleteUser = async () => {
+    if (!userToDelete) return;
+    setIsDeletingUser(true);
+    try {
+      const response = await fetch(
+        `https://api.suportevca.com.br/users/${userToDelete.id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        let message = "Falha ao excluir usuário.";
+        try {
+          const errorData = await response.json();
+          message = errorData.message || message;
+        } catch (_) {
+          // sem corpo JSON
+        }
+        throw new Error(message);
+      }
+
+      setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
+      setDeleteFeedback({
+        open: true,
+        title: "Usuário excluído",
+        description: `${userToDelete.name || userToDelete.email} foi excluído com sucesso.`,
+        isError: false,
+      });
+      setIsDeleteUserDialogOpen(false);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Ocorreu um erro inesperado.";
+      setDeleteFeedback({
+        open: true,
+        title: "Erro ao excluir usuário",
+        description: message,
+        isError: true,
+      });
+      setIsDeleteUserDialogOpen(false);
+    } finally {
+      setIsDeletingUser(false);
+      setUserToDelete(null);
+    }
+  };
+
+  const handleAddUserSuccess = () => {
+    // Recarregar a lista de usuários
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch(
+          "https://api.suportevca.com.br/users?page=1&pageSize=1000",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (!response.ok) {
+          throw new Error("Falha ao buscar usuários");
+        }
+        const data = await response.json();
+        const usersList = Array.isArray(data) ? data : data.data || [];
+        setUsers(usersList);
+      } catch (error) {
+        console.error("Erro ao buscar usuários:", error);
+      }
+    };
+    fetchUsers();
+  };
+
+  const handleUserCreated = (user: User) => {
+    // Abrir o gerenciador de permissões com o novo usuário
+    setSelectedUser(user);
+    setIsPermissionsDialogOpen(true);
+  };
+
   return (
     <>
       <div className="flex items-center justify-between py-4">
@@ -812,6 +1186,13 @@ export function UsersTable({ users: usersProp }: { users?: User[] }) {
             className="pl-8"
           />
         </div>
+        <Button
+          onClick={() => setIsAddUserDialogOpen(true)}
+          className="ml-4"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Adicionar Usuário
+        </Button>
       </div>
 
       <Table className="p-2 rounded bg-white">
@@ -874,6 +1255,14 @@ export function UsersTable({ users: usersProp }: { users?: User[] }) {
                         <KeyRound className="mr-2 h-4 w-4" />
                         <span>Resetar Senha</span>
                       </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-red-600 focus:text-red-600"
+                        onSelect={() => openDeleteUserDialog(item)}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        <span>Excluir Usuário</span>
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -931,6 +1320,44 @@ export function UsersTable({ users: usersProp }: { users?: User[] }) {
         newPassword={generatedPassword}
         isLoading={isResetting}
       />
+      <AddUserDialog
+        isOpen={isAddUserDialogOpen}
+        onOpenChange={setIsAddUserDialogOpen}
+        onSuccess={handleAddUserSuccess}
+        onUserCreated={handleUserCreated}
+      />
+
+      {/* Confirmar deleção */}
+      <AlertDialog open={isDeleteUserDialogOpen} onOpenChange={setIsDeleteUserDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Usuário</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{userToDelete?.name || userToDelete?.email}</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDeleteUser} disabled={isDeletingUser}>
+              {isDeletingUser && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Feedback de deleção */}
+      <AlertDialog open={deleteFeedback.open} onOpenChange={(open) => setDeleteFeedback((prev) => ({ ...prev, open }))}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{deleteFeedback.isError ? "Erro" : "Sucesso"}</AlertDialogTitle>
+            <AlertDialogDescription>{deleteFeedback.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteFeedback((prev) => ({ ...prev, open: false }))}>Fechar</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

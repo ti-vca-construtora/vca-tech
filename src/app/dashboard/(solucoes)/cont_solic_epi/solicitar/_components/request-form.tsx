@@ -17,8 +17,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 
 import {
-  loadFuncoes,
-  loadInventorySnapshots,
+  loadFuncoesAsync,
+  loadInventorySnapshotsAsync,
+  loadEpiItemsAsync,
   InventorySnapshot,
 } from "../../_lib/cont-solic-epi-storage";
 
@@ -51,30 +52,38 @@ export function RequestForm({ snapshotId, onBack }: RequestFormProps) {
   const [funcoes, setFuncoes] = useState<
     Array<{ id: string; name: string; items: Array<{ epi: string; intervalMonths: number; quantityPerEmployee: number }> }>
   >([]);
+  const [availableEpis, setAvailableEpis] = useState<string[]>([]);
 
   const [functionRequests, setFunctionRequests] = useState<FunctionRequest[]>([]);
   const [projectedCounts, setProjectedCounts] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const snaps = loadInventorySnapshots();
-    const found = snaps.find((s) => s.id === snapshotId);
-    if (!found) {
-      toast({ title: "Snapshot não encontrado", variant: "destructive" });
-      onBack();
-      return;
+    async function loadData() {
+      const [snaps, funcs, epis] = await Promise.all([
+        loadInventorySnapshotsAsync(),
+        loadFuncoesAsync(),
+        loadEpiItemsAsync(),
+      ]);
+      
+      const found = snaps.find((s) => s.id === snapshotId);
+      if (!found) {
+        toast({ title: "Snapshot não encontrado", variant: "destructive" });
+        onBack();
+        return;
+      }
+      setSnapshot(found);
+      setAvailableEpis(epis);
+      setFuncoes(funcs);
+
+      // NÃO inicializar projetados - deixar vazio para o usuário preencher
+      setProjectedCounts({});
     }
-    setSnapshot(found);
-
-    const funcs = loadFuncoes();
-    setFuncoes(funcs);
-
-    // NÃO inicializar projetados - deixar vazio para o usuário preencher
-    setProjectedCounts({});
+    loadData();
   }, [snapshotId, onBack, toast]);
 
   // calcular necessidades quando mudar projetados
   useEffect(() => {
-    if (!snapshot) return;
+    if (!snapshot || availableEpis.length === 0) return;
 
     const requests: FunctionRequest[] = [];
 
@@ -82,39 +91,42 @@ export function RequestForm({ snapshotId, onBack }: RequestFormProps) {
       const currentEmp = snapshot.functionCounts[func.name] || 0;
       const projectedEmp = parseInt(projectedCounts[func.name] || "0", 10);
 
-      const epiNeeds = func.items.map((item) => {
-        // Lógica correta:
-        // 1. Para efetivos (já trabalhando): calcular necessidade MENSAL baseada no intervalo
-        //    - Taxa mensal = 1 / intervalo em meses
-        //    - Necessidade mensal = funcionários × taxa mensal (arredondado para cima)
-        //    - Ex: 10 func, intervalo 3 meses → 10 × (1/3) = 3.33 → 4 por mês
-        // 2. Para projetados (novos): quantidade inteira para equipar
-        //    - Necessidade = funcionários × quantidade unitária
-        //    - Ex: 5 novos func, 1 unidade cada → 5 unidades
-        // 3. Total = efetivos + projetados
-        // 4. Falta = total - estoque
-        
-        const taxaMensal = item.intervalMonths > 0 ? 1 / item.intervalMonths : 0;
-        const currentNeed = Math.ceil(currentEmp * taxaMensal); // Necessidade mensal para efetivos
-        const projectedNeed = projectedEmp * item.quantityPerEmployee; // Quantidade para novos
-        const totalNeed = currentNeed + projectedNeed;
-        
-        const stock = snapshot.epiCounts[item.epi] || 0;
-        const shortage = Math.max(0, totalNeed - stock);
+      // Filtrar apenas EPIs que ainda existem na lista cadastrada
+      const epiNeeds = func.items
+        .filter((item) => availableEpis.includes(item.epi))
+        .map((item) => {
+          // Lógica correta:
+          // 1. Para efetivos (já trabalhando): calcular necessidade MENSAL baseada no intervalo
+          //    - Taxa mensal = 1 / intervalo em meses
+          //    - Necessidade mensal = funcionários × taxa mensal (arredondado para cima)
+          //    - Ex: 10 func, intervalo 3 meses → 10 × (1/3) = 3.33 → 4 por mês
+          // 2. Para projetados (novos): quantidade inteira para equipar
+          //    - Necessidade = funcionários × quantidade unitária
+          //    - Ex: 5 novos func, 1 unidade cada → 5 unidades
+          // 3. Total = efetivos + projetados
+          // 4. Falta = total - estoque
+          
+          const taxaMensal = item.intervalMonths > 0 ? 1 / item.intervalMonths : 0;
+          const currentNeed = Math.ceil(currentEmp * taxaMensal); // Necessidade mensal para efetivos
+          const projectedNeed = projectedEmp * item.quantityPerEmployee; // Quantidade para novos
+          const totalNeed = currentNeed + projectedNeed;
+          
+          const stock = snapshot.epiCounts[item.epi] || 0;
+          const shortage = Math.max(0, totalNeed - stock);
 
-        return {
-          epi: item.epi,
-          intervalMonths: item.intervalMonths,
-          quantityPerEmployee: item.quantityPerEmployee,
-          currentNeed,
-          projectedNeed,
-          totalNeed,
-          stock,
-          shortage,
-          manualAdjust: 0,
-          justification: "",
-        };
-      });
+          return {
+            epi: item.epi,
+            intervalMonths: item.intervalMonths,
+            quantityPerEmployee: item.quantityPerEmployee,
+            currentNeed,
+            projectedNeed,
+            totalNeed,
+            stock,
+            shortage,
+            manualAdjust: 0,
+            justification: "",
+          };
+        });
 
       requests.push({
         functionName: func.name,
@@ -125,7 +137,7 @@ export function RequestForm({ snapshotId, onBack }: RequestFormProps) {
     }
 
     setFunctionRequests(requests);
-  }, [snapshot, funcoes, projectedCounts]);
+  }, [snapshot, funcoes, projectedCounts, availableEpis]);
 
   function updateProjected(funcName: string, value: string) {
     setProjectedCounts((prev) => ({ ...prev, [funcName]: value }));

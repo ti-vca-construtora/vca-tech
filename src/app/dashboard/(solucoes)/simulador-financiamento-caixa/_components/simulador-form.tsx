@@ -36,7 +36,6 @@ interface DadosSimulacao {
   quantidadeParticipantes: number;
   participantes: Participante[];
   possuiTresAnosFGTS: boolean;
-  jaBeneficiadoSubsidio: boolean;
   sistemaAmortizacao: string;
   possuiDependentes: boolean;
 }
@@ -61,8 +60,8 @@ export function SimuladorForm() {
   const [cidade, setCidade] = useState("Vitória da Conquista");
   const [rendaFamiliar, setRendaFamiliar] = useState("");
   const [possuiTresAnosFGTS, setPossuiTresAnosFGTS] = useState(false);
-  const [jaBeneficiadoSubsidio, setJaBeneficiadoSubsidio] = useState(false);
   const [possuiDependentes, setPossuiDependentes] = useState(false);
+  const [origemRecurso, setOrigemRecurso] = useState<"FGTS" | "SBPE">("FGTS");
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -71,7 +70,6 @@ export function SimuladorForm() {
   const [valorImovel, setValorImovel] = useState("");
   const [nomeEmpreendimento, setNomeEmpreendimento] = useState("");
   const [unidade, setUnidade] = useState("");
-  const [origemRecurso, setOrigemRecurso] = useState<"FGTS" | "SBPE">("FGTS");
   const [sistemaAmortizacao, setSistemaAmortizacao] = useState<"PRICE" | "SAC">("PRICE");
 
   // Form state - Etapa 3: Configurações de Pactuação
@@ -91,12 +89,7 @@ export function SimuladorForm() {
     };
   }, []);
 
-  // Regra de negócio: se já beneficiado com subsídio, a origem do recurso deve ser SBPE e não pode ser alterada.
-  useEffect(() => {
-    if (jaBeneficiadoSubsidio && origemRecurso !== "SBPE") {
-      setOrigemRecurso("SBPE");
-    }
-  }, [jaBeneficiadoSubsidio, origemRecurso]);
+  // Regra de negócio removida - jaBeneficiadoSubsidio foi removido
 
   const clearFieldError = (field: string) => {
     setFieldErrors((prev) => {
@@ -306,7 +299,6 @@ export function SimuladorForm() {
         rendaFamiliar: rendaFamiliar.replace(/\D/g, ""),
         dataNascimento: dataNascimentoCliente,
         possuiTresAnosFGTS,
-        jaBeneficiadoSubsidio,
         possuiDependentes,
         quantidadeParticipantes, // Mantido, pois o worker espera este campo
         sistemaAmortizacao,
@@ -415,7 +407,6 @@ export function SimuladorForm() {
                 quantidadeParticipantes,
                 participantes: participantesAjustados,
                 possuiTresAnosFGTS,
-                jaBeneficiadoSubsidio,
                 sistemaAmortizacao,
                 possuiDependentes,
             };
@@ -671,24 +662,24 @@ export function SimuladorForm() {
           <p className="text-[0.8rem] font-medium text-destructive">{fieldErrors.rendaFamiliar}</p>
         )}
       </div>
+      <div className="space-y-2">
+        <Label htmlFor="origemRecurso">Origem de Recurso *</Label>
+        <Select value={origemRecurso} onValueChange={(v: "FGTS" | "SBPE") => setOrigemRecurso(v)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="FGTS">FGTS</SelectItem><SelectItem value="SBPE">SBPE</SelectItem></SelectContent>
+        </Select>
+      </div>
+      {origemRecurso === "FGTS" && (
+        <div className="space-y-3">
+          <Label>Condições Especiais</Label>
+          <div className="flex items-center space-x-2">
+            <Checkbox id="possuiTresAnosFGTS" checked={possuiTresAnosFGTS} onCheckedChange={(c) => setPossuiTresAnosFGTS(!!c)} />
+            <Label htmlFor="possuiTresAnosFGTS">Possui 3 anos de FGTS</Label>
+          </div>
+        </div>
+      )}
       <div className="space-y-3">
-        <Label>Condições Especiais</Label>
-        <div className="flex items-center space-x-2">
-          <Checkbox id="possuiTresAnosFGTS" checked={possuiTresAnosFGTS} onCheckedChange={(c) => setPossuiTresAnosFGTS(!!c)} />
-          <Label htmlFor="possuiTresAnosFGTS">Possui 3 anos de FGTS</Label>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="jaBeneficiadoSubsidio"
-            checked={jaBeneficiadoSubsidio}
-            onCheckedChange={(c) => {
-              const checked = !!c;
-              setJaBeneficiadoSubsidio(checked);
-              if (checked) setOrigemRecurso("SBPE");
-            }}
-          />
-          <Label htmlFor="jaBeneficiadoSubsidio">Já beneficiado com subsídio</Label>
-        </div>
+        <Label>Dados Adicionais</Label>
         <div className="flex items-center space-x-2">
           <Checkbox id="possuiDependentes" checked={possuiDependentes} onCheckedChange={(c) => setPossuiDependentes(!!c)} />
           <Label htmlFor="possuiDependentes">Possui dependentes</Label>
@@ -761,24 +752,6 @@ export function SimuladorForm() {
         />
         {fieldErrors.valorImovel && (
           <p className="text-[0.8rem] font-medium text-destructive">{fieldErrors.valorImovel}</p>
-        )}
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="origemRecurso">Origem de Recurso</Label>
-        <Select
-          value={origemRecurso}
-          onValueChange={(v: "FGTS" | "SBPE") => {
-            if (jaBeneficiadoSubsidio) return;
-            setOrigemRecurso(v);
-          }}
-        >
-          <SelectTrigger disabled={jaBeneficiadoSubsidio}><SelectValue /></SelectTrigger>
-          <SelectContent><SelectItem value="FGTS">FGTS</SelectItem><SelectItem value="SBPE">SBPE</SelectItem></SelectContent>
-        </Select>
-        {jaBeneficiadoSubsidio && (
-          <p className="text-[0.8rem] text-muted-foreground">
-            Como o cliente já foi beneficiado com subsídio, a origem do recurso fica fixada em SBPE.
-          </p>
         )}
       </div>
       <div className="space-y-2">

@@ -21,7 +21,7 @@ import {
 
 import {
   InventorySnapshot,
-  loadInventorySnapshots,
+  loadInventorySnapshotsAsync,
 } from "../../_lib/cont-solic-epi-storage";
 
 function formatDateTime(iso: string) {
@@ -41,9 +41,16 @@ function entriesSorted(record: Record<string, number>) {
 
 export function EstoqueSnapshots() {
   const [snapshots, setSnapshots] = useState<InventorySnapshot[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setSnapshots(loadInventorySnapshots());
+    async function loadData() {
+      setLoading(true);
+      const data = await loadInventorySnapshotsAsync();
+      setSnapshots(data);
+      setLoading(false);
+    }
+    loadData();
   }, []);
 
   const sorted = useMemo(() => {
@@ -56,8 +63,13 @@ export function EstoqueSnapshots() {
         Mostra os snapshots cadastrados pelo técnico (obra, data e contagens).
       </div>
 
-      <Table>
-        <TableHeader>
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-azul-claro-vca"></div>
+        </div>
+      ) : (
+        <Table>
+          <TableHeader>
           <TableRow>
             <TableHead>Obra</TableHead>
             <TableHead>Data</TableHead>
@@ -172,6 +184,7 @@ export function EstoqueSnapshots() {
           )}
         </TableBody>
       </Table>
+      )}
     </div>
   );
 }
