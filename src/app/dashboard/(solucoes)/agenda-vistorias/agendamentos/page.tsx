@@ -35,6 +35,13 @@ import { ToastContainer, toast } from "react-toastify";
 interface Inspection {
   id: string;
   status: string;
+  customerName?: string;
+  customerCpf?: string;
+  customer?: {
+    name?: string;
+    fullName?: string;
+    nome?: string;
+  };
   inspectionSlot: {
     startAt: string | Date;
     endAt: string | Date;
@@ -287,12 +294,81 @@ const ScheduledInspectionsPage = () => {
           }),
         );
 
+        const extractCustomerNameFromUnitResponse = (payload: any) => {
+          return (
+            payload?.data?.customerName ||
+            payload?.customerName ||
+            payload?.data?.data?.customerName ||
+            null
+          );
+        };
+
+        // Buscar nome do cliente via unidade (por unitId)
+        const unitCustomerNameCache = new Map<string, string | null>();
+
+        const fetchUnitCustomerName = async (unitId: string) => {
+          if (!unitId) return null;
+          if (unitCustomerNameCache.has(unitId)) {
+            return unitCustomerNameCache.get(unitId) ?? null;
+          }
+
+          console.log(`[AGENDAMENTOS] Consultando unidade ${unitId}...`);
+          try {
+            const unitResponse = await fetch(
+              `/api/vistorias/unidades?id=${unitId}`,
+              {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              },
+            );
+
+            const unitPayload = await unitResponse.json().catch(() => null);
+            console.log(
+              `[AGENDAMENTOS] Resposta unidade ${unitId} (status ${unitResponse.status}):`,
+              unitPayload,
+            );
+
+            if (!unitResponse.ok) {
+              unitCustomerNameCache.set(unitId, null);
+              return null;
+            }
+
+            const customerName = extractCustomerNameFromUnitResponse(unitPayload);
+            unitCustomerNameCache.set(unitId, customerName);
+            return customerName;
+          } catch (error) {
+            console.error(
+              `[AGENDAMENTOS] Erro ao consultar unidade ${unitId}:`,
+              error,
+            );
+            unitCustomerNameCache.set(unitId, null);
+            return null;
+          }
+        };
+
+        const inspectionsWithCustomerNames = await Promise.all(
+          inspectionsWithDevelopmentNames.map(async (inspection) => {
+            const customerName = await fetchUnitCustomerName(inspection.unitId);
+            return {
+              ...inspection,
+              customerName: customerName || inspection.customerName,
+            };
+          }),
+        );
+
         console.log(
           "[AGENDAMENTOS] Inspeções com nomes dos empreendimentos:",
           inspectionsWithDevelopmentNames,
         );
 
-        setInspections(inspectionsWithDevelopmentNames);
+        console.log(
+          "[AGENDAMENTOS] Inspeções com nomes de empreendimentos + clientes:",
+          inspectionsWithCustomerNames,
+        );
+
+        setInspections(inspectionsWithCustomerNames);
       } catch (error) {
         console.error(error);
       } finally {
@@ -327,6 +403,16 @@ const ScheduledInspectionsPage = () => {
     return addHours(dateObj, 3);
   };
 
+  const getCustomerName = (inspection: Inspection) => {
+    return (
+      inspection.customer?.name ||
+      inspection.customer?.fullName ||
+      inspection.customer?.nome ||
+      inspection.customerName ||
+      "Cliente não informado"
+    );
+  };
+
   const filteredInspections = inspections.filter((inspection) => {
     const inspectionDate = normalizeDate(inspection.inspectionSlot.startAt);
 
@@ -352,85 +438,14 @@ const ScheduledInspectionsPage = () => {
     if (filteredInspections.length === 0) {
       return (
         <div className="text-center py-4 text-muted-foreground">
-          Nenhuma vistoria agendada para este dia.
+          {startDate === endDate
+            ? "Nenhuma vistoria agendada para este dia."
+            : "Nenhuma vistoria agendada para este período."}
         </div>
       );
     }
 
-    const atualizarCheckUnidade = async (id: string) => {
-      const response = await fetch(`/api/vistorias/unidades?id=${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          validations: ["FINANCIAL", "QUALITY"],
-        }),
-      });
-
-      if (!response.ok) {
-        console.error("Erro ao atualizar agendamento.");
-        errorNotif();
-        return;
-      }
-
-      const data = await response.json();
-      console.log(data);
-      sucessNotif();
-      setTimeout(() => {
-        window.location.reload();
-      }, 3000);
-    };
-
-    const atualizarVistoria = async (
-      id: string,
-      status: string,
-      // eslint-disable-next-line prettier/prettier
-      unitId: string,
-    ) => {
-      console.log("[ATUALIZAR VISTORIA] Iniciando atualização...");
-      console.log("[ATUALIZAR VISTORIA] ID:", id);
-      console.log("[ATUALIZAR VISTORIA] Status:", status);
-      console.log("[ATUALIZAR VISTORIA] UnitId:", unitId);
-
-      try {
-        const response = await fetch(`/api/vistorias/inspections?id=${id}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            status,
-          }),
-        });
-
-        console.log("[ATUALIZAR VISTORIA] Response status:", response.status);
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error("[ATUALIZAR VISTORIA] Erro na resposta:", errorData);
-          errorNotif();
-          return;
-        }
-
-        const data = await response.json();
-        console.log("[ATUALIZAR VISTORIA] Resposta sucesso:", data);
-
-        if (status === "COMPLETED") {
-          sucessNotif();
-          setTimeout(() => {
-            window.location.reload();
-          }, 3000);
-        } else if (status === "RESCHEDULED") {
-          atualizarCheckUnidade(unitId);
-        }
-      } catch (error) {
-        console.error("[ATUALIZAR VISTORIA] Exception:", error);
-        errorNotif();
-      }
-    };
-
-    return filteredInspections.map((inspection) => {
+    const renderInspectionRow = (inspection: Inspection) => {
       const startDate = normalizeDate(inspection.inspectionSlot.startAt);
       const endDate = normalizeDate(inspection.inspectionSlot.endAt);
 
@@ -450,6 +465,9 @@ const ScheduledInspectionsPage = () => {
               {inspection.developmentName || "Nome não disponível"}
             </h2>
             <p>{`Unidade: ${inspection.unit.unit}`}</p>
+            <p className="text-sm text-muted-foreground">
+              {`Cliente: ${getCustomerName(inspection)}`}
+            </p>
             <p className="text-sm text-muted-foreground">
               {`Horário: ${formatTime(startDate)} às ${formatTime(endDate)}`}
             </p>
@@ -536,6 +554,118 @@ const ScheduledInspectionsPage = () => {
               </div>
             </DialogContent>
           </div>
+        </div>
+      );
+    };
+
+    const atualizarCheckUnidade = async (id: string) => {
+      const response = await fetch(`/api/vistorias/unidades?id=${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          validations: ["FINANCIAL", "QUALITY"],
+        }),
+      });
+
+      if (!response.ok) {
+        console.error("Erro ao atualizar agendamento.");
+        errorNotif();
+        return;
+      }
+
+      const data = await response.json();
+      console.log(data);
+      sucessNotif();
+      setTimeout(() => {
+        window.location.reload();
+      }, 3000);
+    };
+
+    const atualizarVistoria = async (
+      id: string,
+      status: string,
+      // eslint-disable-next-line prettier/prettier
+      unitId: string,
+    ) => {
+      console.log("[ATUALIZAR VISTORIA] Iniciando atualização...");
+      console.log("[ATUALIZAR VISTORIA] ID:", id);
+      console.log("[ATUALIZAR VISTORIA] Status:", status);
+      console.log("[ATUALIZAR VISTORIA] UnitId:", unitId);
+
+      try {
+        const response = await fetch(`/api/vistorias/inspections?id=${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status,
+          }),
+        });
+
+        console.log("[ATUALIZAR VISTORIA] Response status:", response.status);
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error("[ATUALIZAR VISTORIA] Erro na resposta:", errorData);
+          errorNotif();
+          return;
+        }
+
+        const data = await response.json();
+        console.log("[ATUALIZAR VISTORIA] Resposta sucesso:", data);
+
+        if (status === "COMPLETED") {
+          sucessNotif();
+          setTimeout(() => {
+            window.location.reload();
+          }, 3000);
+        } else if (status === "RESCHEDULED") {
+          atualizarCheckUnidade(unitId);
+        }
+      } catch (error) {
+        console.error("[ATUALIZAR VISTORIA] Exception:", error);
+        errorNotif();
+      }
+    };
+
+    const sortedInspections = [...filteredInspections].sort((a, b) => {
+      const aTime = normalizeDate(a.inspectionSlot.startAt).getTime();
+      const bTime = normalizeDate(b.inspectionSlot.startAt).getTime();
+      return aTime - bTime;
+    });
+
+    if (startDate === endDate) {
+      return sortedInspections.map(renderInspectionRow);
+    }
+
+    const inspectionsByDay = sortedInspections.reduce(
+      (acc, inspection) => {
+        const dayKey = format(
+          normalizeDate(inspection.inspectionSlot.startAt),
+          "yyyy-MM-dd",
+        );
+        acc[dayKey] = acc[dayKey] || [];
+        acc[dayKey].push(inspection);
+        return acc;
+      },
+      {} as Record<string, Inspection[]>,
+    );
+
+    const dayKeys = Object.keys(inspectionsByDay).sort();
+
+    return dayKeys.map((dayKey) => {
+      const dayDate = parseISO(dayKey + "T00:00:00");
+      const dayLabel = format(dayDate, "dd/MM/yyyy");
+
+      return (
+        <div key={dayKey} className="mt-4">
+          <div className="mb-2 rounded-md border bg-muted/40 px-3 py-2 text-sm font-semibold">
+            {dayLabel}
+          </div>
+          {inspectionsByDay[dayKey].map(renderInspectionRow)}
         </div>
       );
     });

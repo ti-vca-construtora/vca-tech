@@ -9,6 +9,14 @@ import puppeteerCore, { type Browser as BrowserCore } from "puppeteer-core";
 interface Inspection {
   id: string;
   status: string;
+  developmentName?: string;
+  customerName?: string;
+  customerCpf?: string;
+  customer?: {
+    name?: string;
+    fullName?: string;
+    nome?: string;
+  };
   inspectionSlot: {
     startAt: string | Date;
     endAt: string | Date;
@@ -16,9 +24,10 @@ interface Inspection {
   unitId: string;
   unit: {
     unit: string;
-    development: {
-      name: string;
+    development?: {
+      name?: string;
     };
+    developmentId?: string;
   };
 }
 
@@ -32,8 +41,59 @@ function generateAgendamentosHTML(data: {
 }) {
   const { inspections, filters } = data;
 
+  const getDevelopmentName = (inspection: Inspection) => {
+    return (
+      inspection.developmentName ||
+      inspection.unit?.development?.name ||
+      "Nome não disponível"
+    );
+  };
+
+  const getCustomerName = (inspection: Inspection) => {
+    return (
+      inspection.customer?.name ||
+      inspection.customer?.fullName ||
+      inspection.customer?.nome ||
+      inspection.customerName ||
+      "Cliente não informado"
+    );
+  };
+
   const formatDate = (dateStr: string) => {
     return format(parseISO(dateStr), "dd/MM/yyyy", { locale: ptBR });
+  };
+
+  const normalizeDateTime = (date: string | Date) => {
+    if (typeof date === "string") return addHours(parseISO(date), 3);
+    return date;
+  };
+
+  const formatDayLabel = (date: string | Date) => {
+    return format(normalizeDateTime(date), "dd/MM/yyyy", { locale: ptBR });
+  };
+
+  const groupByDay = (items: Inspection[]) => {
+    const sorted = [...items].sort((a, b) => {
+      const aTime = normalizeDateTime(a.inspectionSlot.startAt).getTime();
+      const bTime = normalizeDateTime(b.inspectionSlot.startAt).getTime();
+      return aTime - bTime;
+    });
+
+    const grouped = sorted.reduce(
+      (acc, inspection) => {
+        const dayKey = format(
+          normalizeDateTime(inspection.inspectionSlot.startAt),
+          "yyyy-MM-dd",
+        );
+        acc[dayKey] = acc[dayKey] || [];
+        acc[dayKey].push(inspection);
+        return acc;
+      },
+      {} as Record<string, Inspection[]>,
+    );
+
+    const dayKeys = Object.keys(grouped).sort();
+    return { grouped, dayKeys };
   };
 
   const formatDateTime = (date: string | Date) => {
@@ -101,6 +161,19 @@ function generateAgendamentosHTML(data: {
             margin-bottom: 15px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
           }
+          .day-group {
+            margin-top: 18px;
+            margin-bottom: 8px;
+          }
+          .day-title {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 10px;
+          }
           .inspection-header { 
             display: flex; 
             justify-content: space-between; 
@@ -163,22 +236,43 @@ function generateAgendamentosHTML(data: {
         ${
           inspections.length === 0
             ? '<div class="no-data">Nenhum agendamento encontrado com os filtros aplicados.</div>'
-            : inspections
-                .map(
-                  (inspection) => `
-            <div class="inspection-card">
-              <div class="inspection-header">
-                <div class="inspection-title">${inspection.unit.development.name}</div>
-                <div>${getStatusBadge(inspection.status)}</div>
-              </div>
-              <div class="inspection-details">
-                <div class="inspection-detail"><strong>Unidade:</strong> ${inspection.unit.unit}</div>
-                <div class="inspection-detail"><strong>Data/Hora:</strong> ${formatDateTime(inspection.inspectionSlot.startAt)} - ${format(typeof inspection.inspectionSlot.endAt === "string" ? addHours(parseISO(inspection.inspectionSlot.endAt), 3) : inspection.inspectionSlot.endAt, "HH:mm")}</div>
-              </div>
-            </div>
-          `,
-                )
-                .join("")
+            : (() => {
+                const { grouped, dayKeys } = groupByDay(inspections);
+
+                return dayKeys
+                  .map((dayKey) => {
+                    const dayItems = grouped[dayKey] || [];
+                    const dayLabel = dayItems[0]
+                      ? formatDayLabel(dayItems[0].inspectionSlot.startAt)
+                      : format(parseISO(dayKey + "T00:00:00"), "dd/MM/yyyy", {
+                          locale: ptBR,
+                        });
+
+                    return `
+                      <div class="day-group">
+                        <div class="day-title">${dayLabel}</div>
+                        ${dayItems
+                          .map(
+                            (inspection) => `
+                          <div class="inspection-card">
+                            <div class="inspection-header">
+                              <div class="inspection-title">${getDevelopmentName(inspection)}</div>
+                              <div>${getStatusBadge(inspection.status)}</div>
+                            </div>
+                            <div class="inspection-details">
+                              <div class="inspection-detail"><strong>Unidade:</strong> ${inspection.unit.unit}</div>
+                              <div class="inspection-detail"><strong>Cliente:</strong> ${getCustomerName(inspection)}</div>
+                              <div class="inspection-detail"><strong>Data/Hora:</strong> ${formatDateTime(inspection.inspectionSlot.startAt)} - ${format(normalizeDateTime(inspection.inspectionSlot.endAt), "HH:mm")}</div>
+                            </div>
+                          </div>
+                        `,
+                          )
+                          .join("")}
+                      </div>
+                    `;
+                  })
+                  .join("");
+              })()
         }
 
         <div class="footer">
@@ -279,6 +373,15 @@ export async function POST(req: Request) {
       },
     });
   } catch (error) {
-    return NextResponse.json({ error }, { status: 500 });
+    console.error("[PDF] Erro ao gerar PDF:", error);
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? { message: error.message, stack: error.stack }
+            : { message: "Erro desconhecido" },
+      },
+      { status: 500 },
+    );
   }
 }
