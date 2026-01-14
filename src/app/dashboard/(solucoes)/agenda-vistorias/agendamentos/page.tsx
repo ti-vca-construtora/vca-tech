@@ -4,32 +4,32 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from "@/components/ui/card";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 import { addHours, format, isWithinInterval, parseISO } from "date-fns";
 import { Download, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 
 interface Inspection {
@@ -67,6 +67,9 @@ const ScheduledInspectionsPage = () => {
   const [developments, setDevelopments] = useState<Development[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState<boolean>(false);
+  const [customerNameByUnitId, setCustomerNameByUnitId] = useState<
+    Record<string, string>
+  >({});
   const [selectedDevelopment, setSelectedDevelopment] = useState<string>("ALL");
   const [startDate, setStartDate] = useState<string>(
     format(new Date(), "yyyy-MM-dd"),
@@ -149,7 +152,7 @@ const ScheduledInspectionsPage = () => {
         body: JSON.stringify({
           type: "agendamentos",
           data: {
-            inspections: filteredInspections,
+            inspections: filteredInspectionsWithCustomerNames,
             filters: {
               startDate,
               endDate,
@@ -294,81 +297,12 @@ const ScheduledInspectionsPage = () => {
           }),
         );
 
-        const extractCustomerNameFromUnitResponse = (payload: any) => {
-          return (
-            payload?.data?.customerName ||
-            payload?.customerName ||
-            payload?.data?.data?.customerName ||
-            null
-          );
-        };
-
-        // Buscar nome do cliente via unidade (por unitId)
-        const unitCustomerNameCache = new Map<string, string | null>();
-
-        const fetchUnitCustomerName = async (unitId: string) => {
-          if (!unitId) return null;
-          if (unitCustomerNameCache.has(unitId)) {
-            return unitCustomerNameCache.get(unitId) ?? null;
-          }
-
-          console.log(`[AGENDAMENTOS] Consultando unidade ${unitId}...`);
-          try {
-            const unitResponse = await fetch(
-              `/api/vistorias/unidades?id=${unitId}`,
-              {
-                method: "GET",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-              },
-            );
-
-            const unitPayload = await unitResponse.json().catch(() => null);
-            console.log(
-              `[AGENDAMENTOS] Resposta unidade ${unitId} (status ${unitResponse.status}):`,
-              unitPayload,
-            );
-
-            if (!unitResponse.ok) {
-              unitCustomerNameCache.set(unitId, null);
-              return null;
-            }
-
-            const customerName = extractCustomerNameFromUnitResponse(unitPayload);
-            unitCustomerNameCache.set(unitId, customerName);
-            return customerName;
-          } catch (error) {
-            console.error(
-              `[AGENDAMENTOS] Erro ao consultar unidade ${unitId}:`,
-              error,
-            );
-            unitCustomerNameCache.set(unitId, null);
-            return null;
-          }
-        };
-
-        const inspectionsWithCustomerNames = await Promise.all(
-          inspectionsWithDevelopmentNames.map(async (inspection) => {
-            const customerName = await fetchUnitCustomerName(inspection.unitId);
-            return {
-              ...inspection,
-              customerName: customerName || inspection.customerName,
-            };
-          }),
-        );
-
         console.log(
           "[AGENDAMENTOS] Inspeções com nomes dos empreendimentos:",
           inspectionsWithDevelopmentNames,
         );
 
-        console.log(
-          "[AGENDAMENTOS] Inspeções com nomes de empreendimentos + clientes:",
-          inspectionsWithCustomerNames,
-        );
-
-        setInspections(inspectionsWithCustomerNames);
+        setInspections(inspectionsWithDevelopmentNames);
       } catch (error) {
         console.error(error);
       } finally {
@@ -405,6 +339,7 @@ const ScheduledInspectionsPage = () => {
 
   const getCustomerName = (inspection: Inspection) => {
     return (
+      customerNameByUnitId[inspection.unitId] ||
       inspection.customer?.name ||
       inspection.customer?.fullName ||
       inspection.customer?.nome ||
@@ -413,22 +348,100 @@ const ScheduledInspectionsPage = () => {
     );
   };
 
-  const filteredInspections = inspections.filter((inspection) => {
-    const inspectionDate = normalizeDate(inspection.inspectionSlot.startAt);
+  const filteredInspections = useMemo(() => {
+    return inspections.filter((inspection) => {
+      const inspectionDate = normalizeDate(inspection.inspectionSlot.startAt);
 
-    // Filtro de empreendimento
-    if (selectedDevelopment !== "ALL") {
-      if (inspection.developmentName !== selectedDevelopment) {
-        return false;
+      // Filtro de empreendimento
+      if (selectedDevelopment !== "ALL") {
+        if (inspection.developmentName !== selectedDevelopment) {
+          return false;
+        }
       }
-    }
 
-    // Filtro de data (intervalo de/até)
-    const start = parseISO(startDate + "T00:00:00");
-    const end = parseISO(endDate + "T23:59:59");
+      // Filtro de data (intervalo de/até)
+      const start = parseISO(startDate + "T00:00:00");
+      const end = parseISO(endDate + "T23:59:59");
 
-    return isWithinInterval(inspectionDate, { start, end });
-  });
+      return isWithinInterval(inspectionDate, { start, end });
+    });
+  }, [inspections, selectedDevelopment, startDate, endDate]);
+
+  const filteredInspectionsWithCustomerNames = useMemo(() => {
+    return filteredInspections.map((inspection) => ({
+      ...inspection,
+      customerName:
+        customerNameByUnitId[inspection.unitId] || inspection.customerName,
+    }));
+  }, [filteredInspections, customerNameByUnitId]);
+
+  // Buscar customerName APENAS para as unidades visíveis na tela (lista filtrada)
+  useEffect(() => {
+    const extractCustomerNameFromUnitResponse = (payload: any) => {
+      return (
+        payload?.data?.customerName ||
+        payload?.customerName ||
+        payload?.data?.data?.customerName ||
+        null
+      );
+    };
+
+    const visibleUnitIds = Array.from(
+      new Set(filteredInspections.map((i) => i.unitId).filter(Boolean)),
+    );
+
+    const unitIdsToFetch = visibleUnitIds.filter(
+      (unitId) => !customerNameByUnitId[unitId],
+    );
+
+    if (unitIdsToFetch.length === 0) return;
+
+    let cancelled = false;
+
+    const fetchCustomersForVisibleUnits = async () => {
+      for (const unitId of unitIdsToFetch) {
+        if (cancelled) return;
+
+        console.log(`[AGENDAMENTOS] Consultando unidade ${unitId}...`);
+        try {
+          const unitResponse = await fetch(`/api/vistorias/unidades?id=${unitId}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            },
+          );
+
+          const unitPayload = await unitResponse.json().catch(() => null);
+          console.log(
+            `[AGENDAMENTOS] Resposta unidade ${unitId} (status ${unitResponse.status}):`,
+            unitPayload,
+          );
+
+          if (!unitResponse.ok) {
+            continue;
+          }
+
+          const customerName = extractCustomerNameFromUnitResponse(unitPayload);
+          if (customerName) {
+            setCustomerNameByUnitId((prev) => ({
+              ...prev,
+              [unitId]: customerName,
+            }));
+          }
+        } catch (error) {
+          console.error(`[AGENDAMENTOS] Erro ao consultar unidade ${unitId}:`, error);
+        }
+      }
+    };
+
+    fetchCustomersForVisibleUnits();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [filteredInspections, customerNameByUnitId]);
 
   const renderInspections = () => {
     if (isLoading) {
