@@ -31,6 +31,14 @@ interface Inspection {
   };
 }
 
+interface RecusaUnit {
+  id: string;
+  unit: string;
+  enterpriseName: string;
+  customerName?: string;
+  lastRescheduledAt?: string | null;
+}
+
 function generateAgendamentosHTML(data: {
   inspections: Inspection[];
   filters: {
@@ -284,6 +292,232 @@ function generateAgendamentosHTML(data: {
   `;
 }
 
+function generateRecusasHTML(data: {
+  units: RecusaUnit[];
+  filters: {
+    startDate: string;
+    endDate: string;
+    enterprise: string;
+  };
+}) {
+  const { units, filters } = data;
+
+  const formatDate = (dateStr: string) => {
+    return format(parseISO(dateStr), "dd/MM/yyyy", { locale: ptBR });
+  };
+
+  const normalizeDateTime = (date: string) => {
+    return addHours(parseISO(date), 3);
+  };
+
+  const formatDateTime = (date: string) => {
+    return format(normalizeDateTime(date), "dd/MM/yyyy 'às' HH:mm", {
+      locale: ptBR,
+    });
+  };
+
+  const getCustomerName = (unit: RecusaUnit) => {
+    return unit.customerName || "Cliente não informado";
+  };
+
+  const badge =
+    '<span style="background: #fef9c3; color: #ca8a04; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 500;">Recusado</span>';
+
+  const sorted = [...units]
+    .filter((u) => !!u.lastRescheduledAt)
+    .sort((a, b) => {
+      const aTime = a.lastRescheduledAt
+        ? normalizeDateTime(a.lastRescheduledAt).getTime()
+        : 0;
+      const bTime = b.lastRescheduledAt
+        ? normalizeDateTime(b.lastRescheduledAt).getTime()
+        : 0;
+      return aTime - bTime;
+    });
+
+  const grouped = sorted.reduce(
+    (acc, unit) => {
+      const dayKey = unit.lastRescheduledAt
+        ? format(normalizeDateTime(unit.lastRescheduledAt), "yyyy-MM-dd")
+        : "SEM-DATA";
+      acc[dayKey] = acc[dayKey] || [];
+      acc[dayKey].push(unit);
+      return acc;
+    },
+    {} as Record<string, RecusaUnit[]>,
+  );
+
+  const dayKeys = Object.keys(grouped).sort();
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: Arial, sans-serif; padding: 40px; background: #fff; }
+          .header { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            padding-bottom: 20px;
+            border-bottom: 3px solid #2563eb;
+          }
+          .header h1 { 
+            color: #1e40af; 
+            font-size: 28px; 
+            margin-bottom: 10px;
+          }
+          .filters { 
+            background: #f8fafc; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin-bottom: 30px;
+            border-left: 4px solid #2563eb;
+          }
+          .filters h2 { 
+            color: #1e40af; 
+            font-size: 16px; 
+            margin-bottom: 12px;
+          }
+          .filter-item { 
+            margin: 8px 0; 
+            color: #475569;
+            font-size: 14px;
+          }
+          .filter-label { 
+            font-weight: 600; 
+            color: #334155;
+          }
+          .day-group { margin-top: 18px; margin-bottom: 8px; }
+          .day-title {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 10px;
+          }
+          .card { 
+            background: #fff; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 8px; 
+            padding: 20px; 
+            margin-bottom: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          }
+          .card-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            margin-bottom: 12px;
+          }
+          .card-title { 
+            font-size: 18px; 
+            font-weight: 600; 
+            color: #1e293b;
+          }
+          .details { 
+            color: #64748b; 
+            font-size: 14px;
+            line-height: 1.6;
+          }
+          .detail { margin: 4px 0; }
+          .no-data { 
+            text-align: center; 
+            color: #94a3b8; 
+            padding: 40px; 
+            font-size: 16px;
+          }
+          .footer { 
+            margin-top: 40px; 
+            padding-top: 20px; 
+            border-top: 1px solid #e2e8f0;
+            text-align: center; 
+            color: #94a3b8; 
+            font-size: 12px;
+          }
+          .count { 
+            background: #dbeafe; 
+            color: #1e40af; 
+            padding: 8px 16px; 
+            border-radius: 6px; 
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 10px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>📋 Relatório de Recusas</h1>
+          <p style="color: #64748b; margin-top: 5px;">Gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
+        </div>
+
+        <div class="filters">
+          <h2>🔍 Filtros Aplicados</h2>
+          <div class="filter-item">
+            <span class="filter-label">Período:</span> ${formatDate(filters.startDate)} até ${formatDate(filters.endDate)}
+          </div>
+          <div class="filter-item">
+            <span class="filter-label">Empreendimento:</span> ${filters.enterprise}
+          </div>
+          <div class="count">Total de recusas: ${units.length}</div>
+        </div>
+
+        ${
+          units.length === 0
+            ? '<div class="no-data">Nenhuma recusa encontrada com os filtros aplicados.</div>'
+            : dayKeys
+                .map((dayKey) => {
+                  const dayItems = grouped[dayKey] || [];
+                  const dayLabel =
+                    dayKey === "SEM-DATA"
+                      ? "Sem data"
+                      : format(parseISO(dayKey + "T00:00:00"), "dd/MM/yyyy", {
+                          locale: ptBR,
+                        });
+
+                  return `
+                    <div class="day-group">
+                      <div class="day-title">${dayLabel}</div>
+                      ${dayItems
+                        .map(
+                          (unit) => `
+                        <div class="card">
+                          <div class="card-header">
+                            <div class="card-title">${unit.enterpriseName}</div>
+                            <div>${badge}</div>
+                          </div>
+                          <div class="details">
+                            <div class="detail"><strong>Unidade:</strong> ${unit.unit}</div>
+                            <div class="detail"><strong>Cliente:</strong> ${getCustomerName(unit)}</div>
+                            ${
+                              unit.lastRescheduledAt
+                                ? `<div class="detail"><strong>Data/Hora:</strong> ${formatDateTime(unit.lastRescheduledAt)}</div>`
+                                : ""
+                            }
+                          </div>
+                        </div>
+                      `,
+                        )
+                        .join("")}
+                    </div>
+                  `;
+                })
+                .join("")
+        }
+
+        <div class="footer">
+          <p>VCA Tech - Sistema de Gestão de Vistorias</p>
+          <p>Este relatório foi gerado automaticamente pelo sistema</p>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -296,6 +530,12 @@ export async function POST(req: Request) {
     if (type === "agendamentos" && data) {
       pdfFileName = `agendamentos-${format(new Date(), "dd-MM-yyyy-HHmmss")}.pdf`;
       finalHtml = generateAgendamentosHTML(data);
+    }
+
+    // Se for do tipo 'recusas', gerar HTML específico
+    if (type === "recusas" && data) {
+      pdfFileName = `recusas-${format(new Date(), "dd-MM-yyyy-HHmmss")}.pdf`;
+      finalHtml = generateRecusasHTML(data);
     }
 
     if (!finalHtml) {

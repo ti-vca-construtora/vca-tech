@@ -9,6 +9,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -16,6 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { addHours, format, isWithinInterval, parseISO } from "date-fns";
+import { Download } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 
@@ -28,6 +32,7 @@ type Unidade = {
   validations: ValidationType[];
   developmentId: string;
   enterpriseName: string;
+  customerName?: string;
 };
 
 type Empreendimento = {
@@ -41,6 +46,9 @@ type Inspection = {
   id: string;
   status: string;
   unitId: string;
+  inspectionSlot?: {
+    startAt?: string | Date;
+  };
 };
 
 const UnidadesComReagendamento = () => {
@@ -49,6 +57,11 @@ const UnidadesComReagendamento = () => {
   const [units, setUnits] = useState<Unidade[]>([]);
   const [inspections, setInspections] = useState<Inspection[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [startDate, setStartDate] = useState<string>(
+    format(new Date(), "yyyy-MM-dd"),
+  );
+  const [endDate, setEndDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const filters = {
     financial: false,
     quality: false,
@@ -121,6 +134,65 @@ const UnidadesComReagendamento = () => {
       setInspections(data.data);
     } catch (error) {
       console.error(error);
+    }
+  };
+
+  const normalizeDate = (date: string | Date): Date => {
+    const dateObj = typeof date === "string" ? parseISO(date) : date;
+    return addHours(dateObj, 3);
+  };
+
+  const getSelectedEnterpriseLabel = () => {
+    if (selectedEnterprise === "TODOS") return "Todos";
+    return (
+      enterprises.find((e) => e.id === selectedEnterprise)?.name ||
+      selectedEnterprise
+    );
+  };
+
+  const handleExportPDF = async () => {
+    if (isGeneratingPDF) return;
+
+    setIsGeneratingPDF(true);
+    try {
+      const response = await fetch("/api/pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "recusas",
+          data: {
+            units: exportUnits,
+            filters: {
+              startDate,
+              endDate,
+              enterprise: getSelectedEnterpriseLabel(),
+            },
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro ao gerar relatório");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `recusas-${format(new Date(), "dd-MM-yyyy-HHmmss")}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success("Relatório gerado com sucesso!", toastConfig);
+    } catch (error) {
+      console.error("Erro ao exportar PDF:", error);
+      toast.error("Erro ao gerar relatório", toastConfig);
+    } finally {
+      setIsGeneratingPDF(false);
     }
   };
 
@@ -231,6 +303,11 @@ const UnidadesComReagendamento = () => {
   };
 
   const baseFilteredUnits = units.filter((unit) => {
+    const startRaw = parseISO(startDate + "T00:00:00");
+    const endRaw = parseISO(endDate + "T23:59:59");
+    const start = startRaw <= endRaw ? startRaw : endRaw;
+    const end = startRaw <= endRaw ? endRaw : startRaw;
+
     const hasFinancial = unit.validations.includes("FINANCIAL");
     const hasQuality = unit.validations.includes("QUALITY");
     const hasRelationship = unit.validations.includes("RELATIONSHIP");
@@ -239,10 +316,16 @@ const UnidadesComReagendamento = () => {
       return false;
     }
 
-    const hasRescheduled = inspections.some(
-      (inspection) =>
-        inspection.unitId === unit.id && inspection.status === "RESCHEDULED",
-    );
+    const hasRescheduled = inspections.some((inspection) => {
+      if (inspection.unitId !== unit.id) return false;
+      if (inspection.status !== "RESCHEDULED") return false;
+
+      const slotDate = inspection.inspectionSlot?.startAt;
+      if (!slotDate) return true; // se não vier data, considera (fallback)
+
+      const inspectionDate = normalizeDate(slotDate);
+      return isWithinInterval(inspectionDate, { start, end });
+    });
 
     return hasRescheduled;
   });
@@ -261,6 +344,44 @@ const UnidadesComReagendamento = () => {
       matches.push(unitValidations.includes("RELATIONSHIP"));
 
     return matches.length > 0 && matches.every((m) => m);
+  });
+
+  const exportUnits = filteredUnits.map((unit) => {
+    const startRaw = parseISO(startDate + "T00:00:00");
+    const endRaw = parseISO(endDate + "T23:59:59");
+    const start = startRaw <= endRaw ? startRaw : endRaw;
+    const end = startRaw <= endRaw ? endRaw : startRaw;
+
+    const unitRescheduled = inspections
+      .filter((inspection) => {
+        if (inspection.unitId !== unit.id) return false;
+        if (inspection.status !== "RESCHEDULED") return false;
+        const slotDate = inspection.inspectionSlot?.startAt;
+        if (!slotDate) return false;
+        const inspectionDate = normalizeDate(slotDate);
+        return isWithinInterval(inspectionDate, { start, end });
+      })
+      .sort((a, b) => {
+        const aTime = a.inspectionSlot?.startAt
+          ? normalizeDate(a.inspectionSlot.startAt).getTime()
+          : 0;
+        const bTime = b.inspectionSlot?.startAt
+          ? normalizeDate(b.inspectionSlot.startAt).getTime()
+          : 0;
+        return bTime - aTime;
+      });
+
+    const lastRescheduledAt = unitRescheduled[0]?.inspectionSlot?.startAt
+      ? normalizeDate(unitRescheduled[0].inspectionSlot.startAt).toISOString()
+      : null;
+
+    return {
+      id: unit.id,
+      unit: unit.unit,
+      enterpriseName: unit.enterpriseName,
+      customerName: unit.customerName,
+      lastRescheduledAt,
+    };
   });
 
   const renderUnitCards = () => {
@@ -347,9 +468,26 @@ const UnidadesComReagendamento = () => {
         pauseOnHover
         theme="light"
       />
-      <div className="flex">
-        <div className="mr-2 w-1/2">
-          <h1 className="font-medium ml-1">Selecione o empreendimento:</h1>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-xl font-semibold">Gerenciar recusas</h1>
+          <p className="text-sm text-muted-foreground">
+            Unidades com vistoria recusada (reagendamento)
+          </p>
+        </div>
+        <Button
+          onClick={handleExportPDF}
+          disabled={filteredUnits.length === 0 || isGeneratingPDF}
+          className="flex items-center gap-2 bg-azul-claro-vca text-white hover:bg-azul-vca"
+        >
+          <Download className="h-4 w-4" />
+          {isGeneratingPDF ? "Gerando..." : "Exportar Relatório"}
+        </Button>
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="space-y-2">
+          <Label>Empreendimento</Label>
           <Select
             value={selectedEnterprise}
             onValueChange={handleEnterpriseChange}
@@ -373,6 +511,26 @@ const UnidadesComReagendamento = () => {
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="startDate">Data inicial</Label>
+          <Input
+            id="startDate"
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="endDate">Data final</Label>
+          <Input
+            id="endDate"
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
         </div>
       </div>
 
