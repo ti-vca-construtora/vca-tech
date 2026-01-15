@@ -53,8 +53,8 @@ export async function POST(req: NextRequest) {
     body: JSON.stringify(body),
   });
 
-  const data = await res.json();
-  return NextResponse.json(data);
+  const data = await res.json().catch(() => null);
+  return NextResponse.json(data, { status: res.status });
 }
 
 export async function PATCH(req: NextRequest) {
@@ -128,12 +128,47 @@ export async function DELETE(req: NextRequest) {
   if (!id)
     return NextResponse.json({ error: "ID is required" }, { status: 400 });
 
-  await fetch(`${API_BASE_URL}/${API_ENDPOINT}/${id}`, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${process.env.NEXT_PUBLIC_VISTORIAS_TOKEN}`,
-    },
-  });
+  try {
+    const deleteUrl = `${API_BASE_URL}/${API_ENDPOINT}/${id}`;
+    console.log("[API INSPECTIONS DELETE] URL:", deleteUrl);
+    const externalResponse = await fetch(`${API_BASE_URL}/${API_ENDPOINT}/${id}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${process.env.NEXT_PUBLIC_VISTORIAS_TOKEN}`,
+        },
+      });
 
-  return NextResponse.json({ status: 200 });
+    const payload = await externalResponse.json().catch(() => null);
+
+    console.log(
+      "[API INSPECTIONS DELETE] Status:",
+      externalResponse.status,
+      externalResponse.statusText,
+    );
+    console.log("[API INSPECTIONS DELETE] Payload:", payload);
+
+    if (!externalResponse.ok) {
+      return NextResponse.json(
+        {
+          error: "Failed to cancel inspection",
+          details: payload,
+          status: externalResponse.status,
+        },
+        { status: externalResponse.status },
+      );
+    }
+
+    // Algumas APIs retornam 204 No Content no DELETE
+    return NextResponse.json(
+      { success: true, data: payload },
+      { status: externalResponse.status === 204 ? 200 : externalResponse.status },
+    );
+  } catch (error) {
+    console.error("[API INSPECTIONS DELETE] Exception:", error);
+    return NextResponse.json(
+      { error: "Failed to cancel inspection" },
+      { status: 500 },
+    );
+  }
 }

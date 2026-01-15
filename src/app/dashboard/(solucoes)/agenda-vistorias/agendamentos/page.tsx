@@ -118,7 +118,23 @@ const ScheduledInspectionsPage = () => {
       );
 
       if (!response.ok) {
-        throw new Error("Erro ao cancelar agendamento");
+        const errorPayload = await response.json().catch(() => null);
+        const errorMessage =
+          errorPayload?.details?.message ||
+          errorPayload?.details?.error ||
+          errorPayload?.error?.message ||
+          errorPayload?.error ||
+          "Erro ao cancelar agendamento";
+
+        const policyMessage =
+          "Cancelamento permitido apenas até 3 dias úteis antes da vistoria.";
+
+        // Para 400/403 normalmente é regra de negócio (prazo/permite cancelar)
+        if (response.status === 400 || response.status === 403) {
+          throw new Error(`${errorMessage}. ${policyMessage}`);
+        }
+
+        throw new Error(errorMessage);
       }
 
       toast.success("Agendamento cancelado com sucesso!");
@@ -130,7 +146,14 @@ const ScheduledInspectionsPage = () => {
       }, 2000);
     } catch (error) {
       console.error("Erro ao cancelar agendamento:", error);
-      toast.error("Erro ao cancelar agendamento");
+      const policyMessage =
+        "Cancelamento permitido apenas até 3 dias úteis antes da vistoria.";
+      const errorMessage =
+        error instanceof Error && error.message
+          ? error.message
+          : "Erro ao cancelar agendamento.";
+
+      toast.error(`${errorMessage} ${policyMessage}`.trim());
     }
   };
 
@@ -461,6 +484,7 @@ const ScheduledInspectionsPage = () => {
     const renderInspectionRow = (inspection: Inspection) => {
       const startDate = normalizeDate(inspection.inspectionSlot.startAt);
       const endDate = normalizeDate(inspection.inspectionSlot.endAt);
+      const canCancel = inspection.status === "SCHEDULED";
 
       console.log("[AGENDAMENTOS RENDER] Inspection:", inspection);
       console.log(
@@ -522,7 +546,13 @@ const ScheduledInspectionsPage = () => {
             <Button
               variant="destructive"
               size="icon"
-              onClick={() => openCancelModal(inspection.id)}
+              disabled={!canCancel}
+              onClick={() => canCancel && openCancelModal(inspection.id)}
+              title={
+                canCancel
+                  ? "Cancelar agendamento"
+                  : "Somente vistorias agendadas podem ser canceladas"
+              }
             >
               <X className="h-4 w-4" />
             </Button>
