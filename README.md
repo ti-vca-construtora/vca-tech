@@ -24,7 +24,7 @@ Sistema web completo com múltiplas soluções para automação e gestão intern
 - 📧 **Huggy Envio em Massa** - Automação de mensagens
 - 🛴 **Reserva de Patinete** - Sistema de reservas
 
-### APIs Integradas
+###  APIs Integradas
 
 - Sienge API
 - AVP (Análise de Viabilidade de Proposta)
