@@ -11,7 +11,7 @@ Sistema web completo com múltiplas soluções para automação e gestão intern
 - **Banco de Dados**: Firebase + Supabase
 - **Autenticação**: Firebase Auth + JWT
 
-## 📦 Principais Funcionalidades
+##  📦 Principais Funcionalidades
 
 ### Soluções Implementadas
 
