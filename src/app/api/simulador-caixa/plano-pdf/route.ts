@@ -259,6 +259,10 @@ function getHtmlContent({ dadosSimulacao, resultados, linhasPlano, prazoEntrega,
       background: #e0e0e0;
       color: #666;
     }
+    .badge-false {
+      background: #f44336;
+      color: white;
+    }
     .footer {
       margin-top: 25px;
       padding-top: 12px;
@@ -412,13 +416,13 @@ function getHtmlContent({ dadosSimulacao, resultados, linhasPlano, prazoEntrega,
       <div style="margin-top: 12px;">
         <div class="field-label" style="margin-bottom: 8px;">Condições Especiais</div>
         <div>
-          <span class="badge ${dadosSimulacao.possuiTresAnosFGTS ? 'badge-success' : 'badge-default'}">
+          <span class="badge ${dadosSimulacao.possuiTresAnosFGTS ? 'badge-success' : 'badge-false'}">
             ${dadosSimulacao.possuiTresAnosFGTS ? '✓' : '✗'} 3 anos de FGTS
           </span>
-          <span class="badge ${dadosSimulacao.jaBeneficiadoSubsidio ? 'badge-success' : 'badge-default'}">
+          <span class="badge ${dadosSimulacao.jaBeneficiadoSubsidio ? 'badge-success' : 'badge-false'}">
             ${dadosSimulacao.jaBeneficiadoSubsidio ? '✓' : '✗'} Já beneficiado
           </span>
-          <span class="badge ${dadosSimulacao.possuiDependentes ? 'badge-success' : 'badge-default'}">
+          <span class="badge ${dadosSimulacao.possuiDependentes ? 'badge-success' : 'badge-false'}">
             ${dadosSimulacao.possuiDependentes ? '✓' : '✗'} Possui dependentes
           </span>
         </div>
