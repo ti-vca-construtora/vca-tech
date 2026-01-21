@@ -6,6 +6,10 @@
 -- NOTA: interval_months é calculado como 1 / taxa_mensal_efetivos
 -- Exemplo: taxa 0.333333 (1/3) = interval_months 3
 --          taxa 10 (10 por mês) = interval_months 0.1
+--
+-- IMPORTANTE: Os dados serão inseridos para INCORPORACAO
+-- Use a migration-add-empreendimento-tipo.sql para adicionar automaticamente
+-- as configurações de LOTEAMENTO (duplicando as de INCORPORACAO)
 
 -- Limpar dados existentes (cuidado em produção!)
 DELETE FROM funcao_epi_items;
@@ -580,19 +584,26 @@ WHERE f.name = 'SOLDAGEM (SERVENTES)';
 -- ============================================
 -- 4. INSERIR OBRAS DE EXEMPLO
 -- ============================================
-INSERT INTO obras (id, name) VALUES
-(gen_random_uuid(), 'Obra Centro Comercial'),
-(gen_random_uuid(), 'Obra Residencial Norte'),
-(gen_random_uuid(), 'Obra Industrial Sul');
+INSERT INTO obras (id, name, empreendimento_tipo) VALUES
+(gen_random_uuid(), 'Obra Centro Comercial', 'INCORPORACAO'),
+(gen_random_uuid(), 'Obra Residencial Norte', 'INCORPORACAO'),
+(gen_random_uuid(), 'Loteamento Industrial Sul', 'LOTEAMENTO');
 
 -- ============================================
 -- FIM DO SEED
 -- ============================================
 
+-- NOTA: Todos os registros de funcao_epi_items foram inseridos com empreendimento_tipo='INCORPORACAO'
+-- Para criar as configurações de LOTEAMENTO, execute: migration-add-empreendimento-tipo.sql
+
 -- Verificar dados inseridos
 SELECT 'EPIs cadastrados:' as info, COUNT(*) as total FROM epi_items
 UNION ALL
 SELECT 'Funções cadastradas:', COUNT(*) FROM funcoes
+UNION ALL
+SELECT 'Relações Função-EPI (INCORPORACAO):', COUNT(*) FROM funcao_epi_items WHERE empreendimento_tipo = 'INCORPORACAO'
+UNION ALL
+SELECT 'Relações Função-EPI (LOTEAMENTO):', COUNT(*) FROM funcao_epi_items WHERE empreendimento_tipo = 'LOTEAMENTO'
 UNION ALL
 SELECT 'Relações Função-EPI:', COUNT(*) FROM funcao_epi_items
 UNION ALL

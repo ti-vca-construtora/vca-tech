@@ -35,7 +35,7 @@ export interface Database {
           name: string
           state: string
           city: string
-          empreendimento_type: 'INCORPORADORA' | 'LOTEAMENTO'
+          empreendimento_type: 'INCORPORACAO' | 'LOTEAMENTO'
           created_at: string
           updated_at: string
         }
@@ -44,7 +44,7 @@ export interface Database {
           name: string
           state: string
           city: string
-          empreendimento_type: 'INCORPORADORA' | 'LOTEAMENTO'
+          empreendimento_type: 'INCORPORACAO' | 'LOTEAMENTO'
           created_at?: string
           updated_at?: string
         }
@@ -53,7 +53,7 @@ export interface Database {
           name?: string
           state?: string
           city?: string
-          empreendimento_type?: 'INCORPORADORA' | 'LOTEAMENTO'
+          empreendimento_type?: 'INCORPORACAO' | 'LOTEAMENTO'
           created_at?: string
           updated_at?: string
         }
@@ -117,7 +117,7 @@ export interface Database {
           obra_name: string
           obra_state: string
           obra_city: string
-          obra_type: 'INCORPORADORA' | 'LOTEAMENTO'
+          obra_type: 'INCORPORACAO' | 'LOTEAMENTO'
           created_at: string
           created_by_id: string | null
           created_by_name: string | null
@@ -131,7 +131,7 @@ export interface Database {
           obra_name: string
           obra_state: string
           obra_city: string
-          obra_type: 'INCORPORADORA' | 'LOTEAMENTO'
+          obra_type: 'INCORPORACAO' | 'LOTEAMENTO'
           created_at?: string
           created_by_id?: string | null
           created_by_name?: string | null
@@ -145,13 +145,57 @@ export interface Database {
           obra_name?: string
           obra_state?: string
           obra_city?: string
-          obra_type?: 'INCORPORADORA' | 'LOTEAMENTO'
+          obra_type?: 'INCORPORACAO' | 'LOTEAMENTO'
           created_at?: string
           created_by_id?: string | null
           created_by_name?: string | null
           created_by_email?: string | null
           epi_counts?: Json
           function_counts?: Json
+        }
+      }
+      epi_requests: {
+        Row: {
+          id: string
+          obra_id: string
+          obra_name: string
+          obra_type: string
+          collected_data: Json
+          request_data: Json
+          total_summary: Json
+          created_at: string
+          created_by_id: string | null
+          created_by_name: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          obra_id: string
+          obra_name: string
+          obra_type: string
+          collected_data: Json
+          request_data: Json
+          total_summary: Json
+          created_at?: string
+          created_by_id?: string | null
+          created_by_name?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          obra_id?: string
+          obra_name?: string
+          obra_type?: string
+          collected_data?: Json
+          request_data?: Json
+          total_summary?: Json
+          created_at?: string
+          created_by_id?: string | null
+          created_by_name?: string | null
+          status?: string
+          updated_at?: string | null
         }
       }
     }

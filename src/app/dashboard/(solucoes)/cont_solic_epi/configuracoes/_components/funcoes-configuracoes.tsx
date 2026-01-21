@@ -479,17 +479,47 @@ function genId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+// Conversões de unidades para meses (para salvar no banco)
+function convertToMonths(value: number, unit: 'dias' | 'semanas' | 'meses' | 'anos'): number {
+  switch (unit) {
+    case 'dias':
+      return value / 30;
+    case 'semanas':
+      return value / 4;
+    case 'meses':
+      return value;
+    case 'anos':
+      return value * 12;
+    default:
+      return value;
+  }
+}
+
+// Função melhorada para formatar intervalo de meses de forma inteligente
 function formatIntervalMonths(months: number): string {
   if (!Number.isFinite(months) || months <= 0) return "0 meses";
   
+  // Menos de 1 mês (< 30 dias)
   if (months < 1) {
     const dias = Math.round(months * 30);
+    
+    // Se tiver mais de 7 dias, mostrar em semanas
+    if (dias > 7) {
+      const semanas = Math.round(dias / 7);
+      return `${semanas} ${semanas === 1 ? 'semana' : 'semanas'}`;
+    }
+    
     return `${dias} ${dias === 1 ? 'dia' : 'dias'}`;
   }
   
-  if (months >= 12 && months % 12 === 0) {
+  // 12 meses ou mais → converter para anos
+  if (months >= 12) {
     const anos = months / 12;
-    return `${anos} ${anos === 1 ? 'ano' : 'anos'}`;
+    // Se for exatamente divisível por 12, mostrar em anos
+    if (months % 12 === 0) {
+      return `${anos} ${anos === 1 ? 'ano' : 'anos'}`;
+    }
+    // Senão, mostrar em meses
   }
   
   const roundedMonths = Math.round(months * 100) / 100;
@@ -545,7 +575,8 @@ export function FuncoesConfiguracoes({ epiItems }: { epiItems: string[] }) {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [selectedEpi, setSelectedEpi] = useState<string>("");
-  const [intervalMonths, setIntervalMonths] = useState<string>("3");
+  const [intervalValue, setIntervalValue] = useState<string>("3");
+  const [intervalUnit, setIntervalUnit] = useState<'dias' | 'semanas' | 'meses' | 'anos'>('meses');
   const [quantityPerEmployee, setQuantityPerEmployee] = useState<string>("1");
 
   useEffect(() => {
@@ -675,8 +706,8 @@ export function FuncoesConfiguracoes({ epiItems }: { epiItems: string[] }) {
       return;
     }
 
-    const intMonths = parseFloat(intervalMonths);
-    if (!Number.isFinite(intMonths) || intMonths <= 0) {
+    const intValue = parseFloat(intervalValue);
+    if (!Number.isFinite(intValue) || intValue <= 0) {
       toast({
         title: "Intervalo inválido",
         description: "Informe um número maior que zero.",
@@ -694,6 +725,9 @@ export function FuncoesConfiguracoes({ epiItems }: { epiItems: string[] }) {
       });
       return;
     }
+
+    // Converter o valor inserido para meses antes de salvar
+    const intMonths = convertToMonths(intValue, intervalUnit);
 
     const updated: FuncaoEpiConfig = {
       ...editing,
@@ -717,7 +751,8 @@ export function FuncoesConfiguracoes({ epiItems }: { epiItems: string[] }) {
     saveFuncoes(next);
 
     setSelectedEpi("");
-    setIntervalMonths("3");
+    setIntervalValue("3");
+    setIntervalUnit('meses');
     setQuantityPerEmployee("1");
 
     toast({
@@ -838,7 +873,8 @@ export function FuncoesConfiguracoes({ epiItems }: { epiItems: string[] }) {
                           onOpenChange={(open) => {
                             setEditingId(open ? f.id : null);
                             setSelectedEpi("");
-                            setIntervalMonths("3");
+                            setIntervalValue("3");
+                            setIntervalUnit('meses');
                             setQuantityPerEmployee("1");
                           }}
                         >
@@ -880,15 +916,31 @@ export function FuncoesConfiguracoes({ epiItems }: { epiItems: string[] }) {
                                   </Select>
                                 </div>
                                 <Input
-                                  className="w-[140px]"
+                                  className="w-[100px]"
                                   type="number"
-                                  step="0.01"
-                                  min="0.1"
-                                  placeholder="Intervalo (meses)"
-                                  value={intervalMonths}
-                                  onChange={(e) => setIntervalMonths(e.target.value)}
-                                  title="Intervalo de reposição em meses (ex: 3, 0.5, 0.364)"
+                                  step="1"
+                                  min="1"
+                                  placeholder="Intervalo"
+                                  value={intervalValue}
+                                  onChange={(e) => setIntervalValue(e.target.value)}
+                                  title="Intervalo de reposição"
                                 />
+                                <Select 
+                                  value={intervalUnit} 
+                                  onValueChange={(value: 'dias' | 'semanas' | 'meses' | 'anos') => 
+                                    setIntervalUnit(value)
+                                  }
+                                >
+                                  <SelectTrigger className="w-[110px]">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="dias">Dias</SelectItem>
+                                    <SelectItem value="semanas">Semanas</SelectItem>
+                                    <SelectItem value="meses">Meses</SelectItem>
+                                    <SelectItem value="anos">Anos</SelectItem>
+                                  </SelectContent>
+                                </Select>
                                 <Input
                                   className="w-[100px]"
                                   inputMode="numeric"

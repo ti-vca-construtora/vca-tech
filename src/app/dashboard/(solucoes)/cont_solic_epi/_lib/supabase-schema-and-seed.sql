@@ -7,6 +7,9 @@
 -- 1. CRIAR TABELAS
 -- ============================================
 
+-- Criar ENUM para tipos de empreendimento
+CREATE TYPE empreendimento_tipo AS ENUM ('INCORPORACAO', 'LOTEAMENTO');
+
 -- Tabela de EPIs (Equipamentos de Proteção Individual)
 CREATE TABLE IF NOT EXISTS epi_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -25,20 +28,23 @@ CREATE TABLE IF NOT EXISTS funcoes (
 CREATE TABLE IF NOT EXISTS obras (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL UNIQUE,
+  empreendimento_tipo empreendimento_tipo NOT NULL DEFAULT 'INCORPORACAO',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Tabela de relacionamento Função-EPI (configuração)
 -- interval_months: intervalo de reposição em meses (para cálculo de necessidade de efetivos)
 -- quantity_per_employee: quantidade que cada funcionário projetado recebe
+-- empreendimento_tipo: tipo de obra (INCORPORACAO ou LOTEAMENTO) para diferentes configurações
 CREATE TABLE IF NOT EXISTS funcao_epi_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   funcao_id UUID NOT NULL REFERENCES funcoes(id) ON DELETE CASCADE,
   epi TEXT NOT NULL,
   interval_months NUMERIC NOT NULL CHECK (interval_months > 0),
   quantity_per_employee NUMERIC NOT NULL DEFAULT 1 CHECK (quantity_per_employee >= 0),
+  empreendimento_tipo empreendimento_tipo NOT NULL DEFAULT 'INCORPORACAO',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  UNIQUE(funcao_id, epi)
+  UNIQUE(funcao_id, epi, empreendimento_tipo)
 );
 
 -- Tabela de snapshots de inventário (histórico de estoque)
@@ -55,6 +61,8 @@ CREATE TABLE IF NOT EXISTS inventory_snapshots (
 -- Índices para melhorar performance
 CREATE INDEX IF NOT EXISTS idx_funcao_epi_items_funcao_id ON funcao_epi_items(funcao_id);
 CREATE INDEX IF NOT EXISTS idx_funcao_epi_items_epi ON funcao_epi_items(epi);
+CREATE INDEX IF NOT EXISTS idx_funcao_epi_items_tipo ON funcao_epi_items(empreendimento_tipo);
+CREATE INDEX IF NOT EXISTS idx_obras_tipo ON obras(empreendimento_tipo);
 CREATE INDEX IF NOT EXISTS idx_inventory_snapshots_obra_funcao ON inventory_snapshots(obra_id, funcao_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_snapshots_date ON inventory_snapshots(snapshot_date);
 

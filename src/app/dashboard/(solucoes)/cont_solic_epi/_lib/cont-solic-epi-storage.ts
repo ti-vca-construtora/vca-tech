@@ -18,26 +18,30 @@ const USE_SUPABASE = typeof window !== 'undefined' &&
   process.env.NEXT_PUBLIC_SUPABASE_EPI_URL && 
   process.env.NEXT_PUBLIC_SUPABASE_EPI_ANON_KEY;
 
-export type ObraEmpreendimentoTipo = "INCORPORADORA" | "LOTEAMENTO";
+export type EmpreendimentoTipo = "INCORPORACAO" | "LOTEAMENTO";
+
+export type ObraEmpreendimentoTipo = EmpreendimentoTipo; // Mantendo compatibilidade
 
 export type Obra = {
   id: string;
   name: string;
   state: string;
   city: string;
-  empreendimentoType: ObraEmpreendimentoTipo;
+  empreendimentoType: EmpreendimentoTipo;
 };
 
 export type FuncaoEpiItem = {
   epi: string;
   intervalMonths: number; // Intervalo de reposição em meses (ex: 3, 6, 12, 0.5)
   quantityPerEmployee: number; // Quantidade por funcionário projetado (geralmente 1, mas pode ser 2, 3, etc)
+  empreendimentoTipo?: EmpreendimentoTipo; // Tipo de empreendimento (INCORPORACAO ou LOTEAMENTO)
 };
 
 export type FuncaoEpiConfig = {
   id: string;
   name: string;
   items: FuncaoEpiItem[];
+  empreendimentoTipo?: EmpreendimentoTipo; // Filtro opcional para carregar apenas um tipo
 };
 
 export type InventorySnapshot = {
@@ -122,10 +126,10 @@ export function loadObras(): Obra[] {
             : "",
         );
         const safeType: ObraEmpreendimentoTipo =
-          empreendimentoTypeRaw === "INCORPORADORA" ||
+          empreendimentoTypeRaw === "INCORPORACAO" ||
           empreendimentoTypeRaw === "LOTEAMENTO"
-            ? empreendimentoTypeRaw
-            : "INCORPORADORA";
+            ? (empreendimentoTypeRaw as ObraEmpreendimentoTipo)
+            : "INCORPORACAO";
 
         return {
           id,
@@ -215,9 +219,9 @@ export function loadInventorySnapshots(): InventorySnapshot[] {
           "obraType" in obj ? String(obj.obraType ?? "") : "",
         );
         const obraType: ObraEmpreendimentoTipo =
-          obraTypeRaw === "INCORPORADORA" || obraTypeRaw === "LOTEAMENTO"
-            ? obraTypeRaw
-            : "INCORPORADORA";
+          obraTypeRaw === "INCORPORACAO" || obraTypeRaw === "LOTEAMENTO"
+            ? (obraTypeRaw as ObraEmpreendimentoTipo)
+            : "INCORPORACAO";
 
         const createdAt =
           "createdAt" in obj ? String(obj.createdAt ?? new Date().toISOString()) : new Date().toISOString();
@@ -333,16 +337,16 @@ export async function saveObrasAsync(obras: Obra[]): Promise<boolean> {
 }
 
 // Funções
-export async function loadFuncoesAsync(): Promise<FuncaoEpiConfig[]> {
+export async function loadFuncoesAsync(empreendimentoTipo?: EmpreendimentoTipo): Promise<FuncaoEpiConfig[]> {
   if (USE_SUPABASE) {
-    return await loadFuncoesFromDB();
+    return await loadFuncoesFromDB(empreendimentoTipo);
   }
   return loadFuncoes();
 }
 
-export async function saveFuncoesAsync(funcoes: FuncaoEpiConfig[]): Promise<boolean> {
+export async function saveFuncoesAsync(funcoes: FuncaoEpiConfig[], empreendimentoTipo: EmpreendimentoTipo = 'INCORPORACAO'): Promise<boolean> {
   if (USE_SUPABASE) {
-    const success = await saveFuncoesToDB(funcoes);
+    const success = await saveFuncoesToDB(funcoes, empreendimentoTipo);
     if (success) {
       // Also save to localStorage as backup
       localStorage.setItem(FUNCOES_KEY, JSON.stringify(funcoes));

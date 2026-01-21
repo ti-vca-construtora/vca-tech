@@ -121,7 +121,7 @@ export async function saveObrasToDB(obras: Obra[]): Promise<boolean> {
 
 // ============= Funções =============
 
-export async function loadFuncoesFromDB(): Promise<FuncaoEpiConfig[]> {
+export async function loadFuncoesFromDB(empreendimentoTipo?: 'INCORPORACAO' | 'LOTEAMENTO'): Promise<FuncaoEpiConfig[]> {
   try {
     const { data: funcoesData, error: funcoesError } = await supabase
       .from('funcoes')
@@ -133,9 +133,14 @@ export async function loadFuncoesFromDB(): Promise<FuncaoEpiConfig[]> {
       return [];
     }
 
-    const { data: itemsData, error: itemsError } = await supabase
-      .from('funcao_epi_items')
-      .select('*');
+    // Query funcao_epi_items com filtro opcional de tipo
+    let itemsQuery = supabase.from('funcao_epi_items').select('*');
+    
+    if (empreendimentoTipo) {
+      itemsQuery = itemsQuery.eq('empreendimento_tipo', empreendimentoTipo);
+    }
+
+    const { data: itemsData, error: itemsError } = await itemsQuery;
 
     if (itemsError) {
       console.error('Error loading funcao items:', itemsError);
@@ -151,7 +156,9 @@ export async function loadFuncoesFromDB(): Promise<FuncaoEpiConfig[]> {
           epi: item.epi,
           intervalMonths: Number(item.interval_months),
           quantityPerEmployee: Number(item.quantity_per_employee),
+          empreendimentoTipo: item.empreendimento_tipo,
         })),
+      empreendimentoTipo,
     }));
   } catch (error) {
     console.error('Error loading funcoes:', error);
@@ -159,28 +166,43 @@ export async function loadFuncoesFromDB(): Promise<FuncaoEpiConfig[]> {
   }
 }
 
-export async function saveFuncoesToDB(funcoes: FuncaoEpiConfig[]): Promise<boolean> {
+export async function saveFuncoesToDB(funcoes: FuncaoEpiConfig[], empreendimentoTipo: 'INCORPORACAO' | 'LOTEAMENTO' = 'INCORPORACAO'): Promise<boolean> {
   try {
-    // Delete all existing funcoes and their items (cascade should handle items)
-    await supabase.from('funcao_epi_items').delete().neq('id', '');
-    await supabase.from('funcoes').delete().neq('id', '');
+    // Delete existing items for this tipo only
+    await supabase
+      .from('funcao_epi_items')
+      .delete()
+      .eq('empreendimento_tipo', empreendimentoTipo);
 
-    // Insert funcoes
-    const funcoesData = funcoes.map(funcao => ({
-      id: funcao.id,
-      name: funcao.name,
-    }));
-
-    const { error: funcoesError } = await supabase
+    // Get existing funcoes or create new ones
+    const { data: existingFuncoes } = await supabase
       .from('funcoes')
-      .insert(funcoesData as any);
+      .select('id, name');
 
-    if (funcoesError) {
-      console.error('Error saving funcoes:', funcoesError);
-      return false;
+    const existingFuncoesMap = new Map(
+      (existingFuncoes || []).map((f: any) => [f.name, f.id])
+    );
+
+    // Insert only new funcoes
+    const newFuncoes = funcoes
+      .filter(funcao => !existingFuncoesMap.has(funcao.name))
+      .map(funcao => ({
+        id: funcao.id,
+        name: funcao.name,
+      }));
+
+    if (newFuncoes.length > 0) {
+      const { error: funcoesError } = await supabase
+        .from('funcoes')
+        .insert(newFuncoes as any);
+
+      if (funcoesError) {
+        console.error('Error saving funcoes:', funcoesError);
+        return false;
+      }
     }
 
-    // Insert funcao items
+    // Insert funcao items with empreendimento_tipo
     const itemsData = funcoes.flatMap(funcao =>
       funcao.items.map(item => ({
         id: genId(),
@@ -188,6 +210,7 @@ export async function saveFuncoesToDB(funcoes: FuncaoEpiConfig[]): Promise<boole
         epi: item.epi,
         interval_months: item.intervalMonths,
         quantity_per_employee: item.quantityPerEmployee,
+        empreendimento_tipo: item.empreendimentoTipo || empreendimentoTipo,
       }))
     );
 
@@ -322,6 +345,63 @@ export async function addInventorySnapshotToDB(snapshot: InventorySnapshot): Pro
     return true;
   } catch (error) {
     console.error('Error adding inventory snapshot:', error);
+    return false;
+  }
+}
+
+// ============= EPI Requests/Solicitations =============
+
+export async function loadEpiRequestsFromDB(): Promise<any[]> {
+  try {
+    const { data, error } = await supabase
+      .from('epi_requests')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error loading EPI requests:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error loading EPI requests:', error);
+    return [];
+  }
+}
+
+export async function saveEpiRequestToDB(requestData: any): Promise<boolean> {
+  try {
+    const insertData = {
+      id: requestData.id,
+      obra_id: requestData.obraId,
+      obra_name: requestData.obraName,
+      obra_type: requestData.obraType,
+      collected_data: {
+        epiCounts: requestData.epiCounts,
+        currentFunctionCounts: requestData.currentFunctionCounts,
+        projectedFunctionCounts: requestData.projectedFunctionCounts,
+      },
+      request_data: requestData.functionRequests,
+      total_summary: requestData.totalSummary,
+      created_at: requestData.createdAt,
+      created_by_id: requestData.createdBy?.id ?? null,
+      created_by_name: requestData.createdBy?.name ?? null,
+      status: 'PENDING',
+    };
+
+    const { error } = await supabase
+      .from('epi_requests')
+      .insert(insertData as any);
+
+    if (error) {
+      console.error('Error saving EPI request:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error saving EPI request:', error);
     return false;
   }
 }

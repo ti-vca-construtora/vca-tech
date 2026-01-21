@@ -62,6 +62,7 @@ export function SimuladorForm() {
   const [possuiTresAnosFGTS, setPossuiTresAnosFGTS] = useState(false);
   const [possuiDependentes, setPossuiDependentes] = useState(false);
   const [origemRecurso, setOrigemRecurso] = useState<"FGTS" | "SBPE">("FGTS");
+  const [origemLocked, setOrigemLocked] = useState(false);
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -664,20 +665,41 @@ export function SimuladorForm() {
       </div>
       <div className="space-y-2">
         <Label htmlFor="origemRecurso">Origem de Recurso *</Label>
-        <Select value={origemRecurso} onValueChange={(v: "FGTS" | "SBPE") => setOrigemRecurso(v)}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent><SelectItem value="FGTS">FGTS</SelectItem><SelectItem value="SBPE">SBPE</SelectItem></SelectContent>
+        <Select
+          value={origemRecurso}
+          onValueChange={(v: "FGTS" | "SBPE") => {
+            if (!origemLocked) setOrigemRecurso(v);
+          }}
+        >
+          <SelectTrigger disabled={origemLocked}><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="FGTS">FGTS</SelectItem>
+            <SelectItem value="SBPE">SBPE</SelectItem>
+          </SelectContent>
         </Select>
       </div>
-      {origemRecurso === "FGTS" && (
-        <div className="space-y-3">
-          <Label>Condições Especiais</Label>
-          <div className="flex items-center space-x-2">
-            <Checkbox id="possuiTresAnosFGTS" checked={possuiTresAnosFGTS} onCheckedChange={(c) => setPossuiTresAnosFGTS(!!c)} />
-            <Label htmlFor="possuiTresAnosFGTS">Possui 3 anos de FGTS</Label>
-          </div>
+
+      <div className="space-y-3">
+        <Label>Condições Especiais</Label>
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="possuiTresAnosFGTS"
+            checked={possuiTresAnosFGTS}
+            onCheckedChange={(c) => {
+              const checked = !!c;
+              setPossuiTresAnosFGTS(checked);
+              if (checked) {
+                setOrigemRecurso("SBPE");
+                setOrigemLocked(true);
+              } else {
+                setOrigemRecurso("FGTS");
+                setOrigemLocked(false);
+              }
+            }}
+          />
+          <Label htmlFor="possuiTresAnosFGTS">Possui 3 anos de FGTS</Label>
         </div>
-      )}
+      </div>
       <div className="space-y-3">
         <Label>Dados Adicionais</Label>
         <div className="flex items-center space-x-2">

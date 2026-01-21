@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -19,48 +20,51 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import {
-  InventorySnapshot,
-  loadInventorySnapshotsAsync,
-} from "../../_lib/cont-solic-epi-storage";
+import { loadEpiRequestsFromDB } from "../../_lib/cont-solic-epi-supabase";
 
 function formatDateTime(iso: string) {
   try {
     const d = new Date(iso);
-    return d.toLocaleString();
+    return d.toLocaleString("pt-BR");
   } catch {
     return iso;
   }
 }
 
-function entriesSorted(record: Record<string, number>) {
-  return Object.entries(record)
-    .filter(([k]) => !!k)
-    .sort(([a], [b]) => a.localeCompare(b));
+function getStatusBadge(status: string) {
+  const variants: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    PENDING: { label: "Pendente", variant: "secondary" },
+    APPROVED: { label: "Aprovado", variant: "default" },
+    REJECTED: { label: "Rejeitado", variant: "destructive" },
+    COMPLETED: { label: "Concluído", variant: "outline" },
+  };
+  
+  const config = variants[status] || { label: status, variant: "secondary" };
+  return <Badge variant={config.variant}>{config.label}</Badge>;
 }
 
-export function EstoqueSnapshots() {
-  const [snapshots, setSnapshots] = useState<InventorySnapshot[]>([]);
+export function HistoricoSolicitacoes() {
+  const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       setLoading(true);
-      const data = await loadInventorySnapshotsAsync();
-      setSnapshots(data);
+      const data = await loadEpiRequestsFromDB();
+      setRequests(data);
       setLoading(false);
     }
     loadData();
   }, []);
 
   const sorted = useMemo(() => {
-    return [...snapshots].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  }, [snapshots]);
+    return [...requests].sort((a, b) => b.created_at.localeCompare(a.created_at));
+  }, [requests]);
 
   return (
     <div className="space-y-4">
       <div className="text-sm text-muted-foreground">
-        Mostra os snapshots cadastrados pelo técnico (obra, data e contagens).
+        Histórico de solicitações de EPIs realizadas.
       </div>
 
       {loading ? (
@@ -70,120 +74,146 @@ export function EstoqueSnapshots() {
       ) : (
         <Table>
           <TableHeader>
-          <TableRow>
-            <TableHead>Obra</TableHead>
-            <TableHead>Data</TableHead>
-            <TableHead>Cadastrado por</TableHead>
-            <TableHead className="w-[140px]">Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sorted.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={4} className="text-muted-foreground">
-                Nenhum snapshot cadastrado ainda.
-              </TableCell>
+              <TableHead>Obra</TableHead>
+              <TableHead>Data</TableHead>
+              <TableHead>Solicitado por</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="w-[140px]">Ações</TableHead>
             </TableRow>
-          ) : (
-            sorted.map((s) => (
-              <TableRow key={s.id}>
-                <TableCell>
-                  <div className="font-medium">{s.obraName}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {s.obraCity}/{s.obraState}
-                  </div>
-                </TableCell>
-                <TableCell>{formatDateTime(s.createdAt)}</TableCell>
-                <TableCell>
-                  {s.createdBy?.name || s.createdBy?.email || "-"}
-                </TableCell>
-                <TableCell>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button size="sm" variant="secondary">
-                        Ver detalhes
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-3xl">
-                      <DialogHeader>
-                        <DialogTitle>
-                          {s.obraName} — {formatDateTime(s.createdAt)}
-                        </DialogTitle>
-                      </DialogHeader>
-
-                      <div className="grid gap-6 md:grid-cols-2">
-                        <div className="space-y-2">
-                          <div className="text-sm font-medium">
-                            Funcionários (por função)
-                          </div>
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Função</TableHead>
-                                <TableHead className="w-[120px]">Qtd</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {entriesSorted(s.functionCounts).length === 0 ? (
-                                <TableRow>
-                                  <TableCell
-                                    colSpan={2}
-                                    className="text-muted-foreground"
-                                  >
-                                    Sem dados.
-                                  </TableCell>
-                                </TableRow>
-                              ) : (
-                                entriesSorted(s.functionCounts).map(([k, v]) => (
-                                  <TableRow key={k}>
-                                    <TableCell>{k}</TableCell>
-                                    <TableCell>{v}</TableCell>
-                                  </TableRow>
-                                ))
-                              )}
-                            </TableBody>
-                          </Table>
-                        </div>
-
-                        <div className="space-y-2">
-                          <div className="text-sm font-medium">EPIs (estoque)</div>
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>EPI</TableHead>
-                                <TableHead className="w-[120px]">Qtd</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {entriesSorted(s.epiCounts).length === 0 ? (
-                                <TableRow>
-                                  <TableCell
-                                    colSpan={2}
-                                    className="text-muted-foreground"
-                                  >
-                                    Sem dados.
-                                  </TableCell>
-                                </TableRow>
-                              ) : (
-                                entriesSorted(s.epiCounts).map(([k, v]) => (
-                                  <TableRow key={k}>
-                                    <TableCell>{k}</TableCell>
-                                    <TableCell>{v}</TableCell>
-                                  </TableRow>
-                                ))
-                              )}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+          </TableHeader>
+          <TableBody>
+            {sorted.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-muted-foreground">
+                  Nenhuma solicitação cadastrada ainda.
                 </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ) : (
+              sorted.map((req) => (
+                <TableRow key={req.id}>
+                  <TableCell>
+                    <div className="font-medium">{req.obra_name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {req.obra_type}
+                    </div>
+                  </TableCell>
+                  <TableCell>{formatDateTime(req.created_at)}</TableCell>
+                  <TableCell>{req.created_by_name || "-"}</TableCell>
+                  <TableCell>{getStatusBadge(req.status)}</TableCell>
+                  <TableCell>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button size="sm" variant="secondary">
+                          Ver detalhes
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle>
+                            Solicitação - {req.obra_name}
+                          </DialogTitle>
+                          <div className="text-sm text-muted-foreground">
+                            {formatDateTime(req.created_at)} • {req.created_by_name}
+                          </div>
+                        </DialogHeader>
+
+                        <div className="space-y-6">
+                          {/* Resumo de EPIs Solicitados */}
+                          <div className="space-y-2">
+                            <div className="text-sm font-semibold">Resumo da Solicitação</div>
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>EPI</TableHead>
+                                  <TableHead className="w-[120px]">Quantidade</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {Object.entries(req.total_summary || {})
+                                  .filter(([, v]: any) => v.adjusted > 0)
+                                  .sort(([a], [b]) => a.localeCompare(b))
+                                  .map(([epi, data]: any) => (
+                                    <TableRow key={epi}>
+                                      <TableCell>{epi}</TableCell>
+                                      <TableCell>{data.adjusted}</TableCell>
+                                    </TableRow>
+                                  ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+
+                          {/* Dados Coletados */}
+                          {req.collected_data && (
+                            <div className="space-y-4">
+                              <div className="text-sm font-semibold">Dados Coletados</div>
+                              
+                              <div className="grid gap-4 md:grid-cols-2">
+                                {/* Funcionários Efetivos */}
+                                <div className="space-y-2">
+                                  <div className="text-xs font-medium text-muted-foreground">
+                                    Funcionários Efetivos
+                                  </div>
+                                  <div className="border rounded-lg p-3 space-y-1 text-sm">
+                                    {Object.entries(req.collected_data.currentFunctionCounts || {})
+                                      .filter(([, v]) => v)
+                                      .map(([func, qty]) => (
+                                        <div key={func} className="flex justify-between">
+                                          <span>{func}:</span>
+                                          <span className="font-medium">{qty as string}</span>
+                                        </div>
+                                      ))}
+                                  </div>
+                                </div>
+
+                                {/* Funcionários Projetados */}
+                                <div className="space-y-2">
+                                  <div className="text-xs font-medium text-muted-foreground">
+                                    Funcionários Projetados
+                                  </div>
+                                  <div className="border rounded-lg p-3 space-y-1 text-sm">
+                                    {Object.entries(req.collected_data.projectedFunctionCounts || {})
+                                      .filter(([, v]) => v)
+                                      .map(([func, qty]) => (
+                                        <div key={func} className="flex justify-between">
+                                          <span>{func}:</span>
+                                          <span className="font-medium">{qty as string}</span>
+                                        </div>
+                                      ))}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Estoque Inicial */}
+                              <div className="space-y-2">
+                                <div className="text-xs font-medium text-muted-foreground">
+                                  Estoque Informado
+                                </div>
+                                <div className="border rounded-lg p-3">
+                                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+                                    {Object.entries(req.collected_data.epiCounts || {})
+                                      .filter(([, v]) => v)
+                                      .sort(([a], [b]) => a.localeCompare(b))
+                                      .map(([epi, qty]) => (
+                                        <div key={epi} className="flex justify-between">
+                                          <span>{epi}:</span>
+                                          <span className="font-medium">{qty as string}</span>
+                                        </div>
+                                      ))}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       )}
     </div>
   );

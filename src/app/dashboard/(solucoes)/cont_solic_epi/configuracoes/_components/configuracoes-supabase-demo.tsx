@@ -58,6 +58,77 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+// Conversões de unidades para meses (para salvar no banco)
+function convertToMonths(value: number, unit: 'dias' | 'semanas' | 'meses' | 'anos'): number {
+  switch (unit) {
+    case 'dias':
+      return value / 30;
+    case 'semanas':
+      return value / 4;
+    case 'meses':
+      return value;
+    case 'anos':
+      return value * 12;
+    default:
+      return value;
+  }
+}
+
+// Função melhorada para formatar intervalo de meses de forma inteligente
+function formatIntervalMonths(months: number): string {
+  if (!Number.isFinite(months) || months <= 0) return "0 meses";
+  
+  // Menos de 1 mês (< 30 dias)
+  if (months < 1) {
+    const dias = Math.round(months * 30);
+    
+    // Se tiver mais de 7 dias, mostrar em semanas
+    if (dias > 7) {
+      const semanas = Math.round(dias / 7);
+      return `${semanas} ${semanas === 1 ? 'semana' : 'semanas'}`;
+    }
+    
+    return `${dias} ${dias === 1 ? 'dia' : 'dias'}`;
+  }
+  
+  // 12 meses ou mais → converter para anos
+  if (months >= 12) {
+    const anos = months / 12;
+    // Se for exatamente divisível por 12, mostrar em anos
+    if (months % 12 === 0) {
+      return `${anos} ${anos === 1 ? 'ano' : 'anos'}`;
+    }
+    // Senão, mostrar em meses
+  }
+  
+  const roundedMonths = Math.round(months * 100) / 100;
+  return `${roundedMonths} ${roundedMonths === 1 ? 'mês' : 'meses'}`;
+}
+
+// Função para converter meses de volta para a melhor unidade de exibição no formulário
+function convertFromMonths(months: number): { value: number; unit: 'dias' | 'semanas' | 'meses' | 'anos' } {
+  // Se for exatamente divisível por 12 e >= 12, mostrar em anos
+  if (months >= 12 && months % 12 === 0) {
+    return { value: months / 12, unit: 'anos' };
+  }
+  
+  // Se for >= 1 mês, mostrar em meses
+  if (months >= 1) {
+    return { value: months, unit: 'meses' };
+  }
+  
+  // Menos de 1 mês
+  const dias = Math.round(months * 30);
+  
+  // Se tiver mais de 7 dias e for múltiplo de 7, mostrar em semanas
+  if (dias > 7 && dias % 7 === 0) {
+    return { value: dias / 7, unit: 'semanas' };
+  }
+  
+  // Caso contrário, mostrar em dias
+  return { value: dias, unit: 'dias' };
+}
+
 export function ConfiguracoesSupabaseDemo() {
   const [funcoes, setFuncoes] = useState<FuncaoEpiConfig[]>([]);
   const [epis, setEpis] = useState<string[]>([]);
@@ -65,6 +136,7 @@ export function ConfiguracoesSupabaseDemo() {
   const [error, setError] = useState<string | null>(null);
   const [searchEpi, setSearchEpi] = useState("");
   const [openFuncoes, setOpenFuncoes] = useState<Record<string, boolean>>({});
+  const [empreendimentoTipo, setEmpreendimentoTipo] = useState<'INCORPORACAO' | 'LOTEAMENTO'>('INCORPORACAO');
   
   // Estados para modais
   const [isAddEpiModalOpen, setIsAddEpiModalOpen] = useState(false);
@@ -77,17 +149,20 @@ export function ConfiguracoesSupabaseDemo() {
   const [newEpiName, setNewEpiName] = useState("");
   const [newEpiToFuncao, setNewEpiToFuncao] = useState({
     epi: "",
-    intervalMonths: 3,
+    intervalValue: 3,
+    intervalUnit: 'meses' as 'dias' | 'semanas' | 'meses' | 'anos',
     quantityPerEmployee: 1,
   });
   const [editEpiItem, setEditEpiItem] = useState({
-    intervalMonths: 3,
+    intervalValue: 3,
+    intervalUnit: 'meses' as 'dias' | 'semanas' | 'meses' | 'anos',
     quantityPerEmployee: 1,
   });
 
   useEffect(() => {
     loadAllData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [empreendimentoTipo]); // Recarregar quando mudar o tipo
 
   async function loadAllData() {
     try {
@@ -95,7 +170,7 @@ export function ConfiguracoesSupabaseDemo() {
       setError(null);
       
       const [funcoesData, episData] = await Promise.all([
-        loadFuncoesAsync(),
+        loadFuncoesAsync(empreendimentoTipo),
         loadEpiItemsAsync(),
       ]);
       
@@ -145,10 +220,14 @@ export function ConfiguracoesSupabaseDemo() {
       return;
     }
 
+    // Converter o valor inserido para meses antes de salvar
+    const intervalMonths = convertToMonths(newEpiToFuncao.intervalValue, newEpiToFuncao.intervalUnit);
+
     const newItem: FuncaoEpiItem = {
       epi: newEpiToFuncao.epi,
-      intervalMonths: newEpiToFuncao.intervalMonths,
+      intervalMonths: intervalMonths,
       quantityPerEmployee: newEpiToFuncao.quantityPerEmployee,
+      empreendimentoTipo: empreendimentoTipo,
     };
 
     const updatedFuncoes = funcoes.map(f => 
@@ -158,10 +237,10 @@ export function ConfiguracoesSupabaseDemo() {
     );
 
     try {
-      const success = await saveFuncoesAsync(updatedFuncoes);
+      const success = await saveFuncoesAsync(updatedFuncoes, empreendimentoTipo);
       if (success) {
         setFuncoes(updatedFuncoes);
-        setNewEpiToFuncao({ epi: "", intervalMonths: 3, quantityPerEmployee: 1 });
+        setNewEpiToFuncao({ epi: "", intervalValue: 3, intervalUnit: 'meses', quantityPerEmployee: 1 });
         setIsAddEpiToFuncaoModalOpen(false);
         toast.success("EPI adicionado à função!");
       } else {
@@ -177,12 +256,16 @@ export function ConfiguracoesSupabaseDemo() {
     if (!selectedEpiItem) return;
 
     const { funcao, index } = selectedEpiItem;
+    
+    // Converter o valor inserido para meses antes de salvar
+    const intervalMonths = convertToMonths(editEpiItem.intervalValue, editEpiItem.intervalUnit);
+    
     const updatedFuncoes = funcoes.map(f => {
       if (f.id === funcao.id) {
         const newItems = [...f.items];
         newItems[index] = {
           ...newItems[index],
-          intervalMonths: editEpiItem.intervalMonths,
+          intervalMonths: intervalMonths,
           quantityPerEmployee: editEpiItem.quantityPerEmployee,
         };
         return { ...f, items: newItems };
@@ -191,7 +274,7 @@ export function ConfiguracoesSupabaseDemo() {
     });
 
     try {
-      const success = await saveFuncoesAsync(updatedFuncoes);
+      const success = await saveFuncoesAsync(updatedFuncoes, empreendimentoTipo);
       if (success) {
         setFuncoes(updatedFuncoes);
         setIsEditEpiItemModalOpen(false);
@@ -213,7 +296,7 @@ export function ConfiguracoesSupabaseDemo() {
     );
 
     try {
-      const success = await saveFuncoesAsync(updatedFuncoes);
+      const success = await saveFuncoesAsync(updatedFuncoes, empreendimentoTipo);
       if (success) {
         setFuncoes(updatedFuncoes);
         toast.success("EPI removido da função");
@@ -264,6 +347,44 @@ export function ConfiguracoesSupabaseDemo() {
 
   return (
     <div className="space-y-6">
+      {/* Seletor de Tipo de Empreendimento */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Tipo de Empreendimento</span>
+            <Badge variant={empreendimentoTipo === 'INCORPORACAO' ? 'default' : 'secondary'}>
+              {empreendimentoTipo === 'INCORPORACAO' ? 'Incorporação' : 'Loteamento'}
+            </Badge>
+          </CardTitle>
+          <CardDescription>
+            Selecione o tipo de empreendimento para configurar os EPIs específicos
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2">
+            <Button
+              variant={empreendimentoTipo === 'INCORPORACAO' ? 'default' : 'outline'}
+              onClick={() => setEmpreendimentoTipo('INCORPORACAO')}
+              className="flex-1"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Incorporação
+            </Button>
+            <Button
+              variant={empreendimentoTipo === 'LOTEAMENTO' ? 'default' : 'outline'}
+              onClick={() => setEmpreendimentoTipo('LOTEAMENTO')}
+              className="flex-1"
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Loteamento
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            As configurações de intervalo de reposição e quantidade por funcionário são diferentes para cada tipo
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Estatísticas */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
@@ -377,7 +498,7 @@ export function ConfiguracoesSupabaseDemo() {
                               <TableRow key={idx}>
                                 <TableCell className="font-medium">{item.epi}</TableCell>
                                 <TableCell className="text-right">
-                                  {item.intervalMonths} {item.intervalMonths === 1 ? 'mês' : 'meses'}
+                                  {formatIntervalMonths(item.intervalMonths)}
                                 </TableCell>
                                 <TableCell className="text-right">
                                   {item.quantityPerEmployee}
@@ -388,9 +509,11 @@ export function ConfiguracoesSupabaseDemo() {
                                         size="sm"
                                         variant="ghost"
                                         onClick={() => {
+                                          const converted = convertFromMonths(item.intervalMonths);
                                           setSelectedEpiItem({ funcao, item, index: idx });
                                           setEditEpiItem({
-                                            intervalMonths: item.intervalMonths,
+                                            intervalValue: converted.value,
+                                            intervalUnit: converted.unit,
                                             quantityPerEmployee: item.quantityPerEmployee,
                                           });
                                           setIsEditEpiItemModalOpen(true);
@@ -540,17 +663,36 @@ export function ConfiguracoesSupabaseDemo() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="interval-months">Intervalo de Reposição (meses)</Label>
-              <Input
-                id="interval-months"
-                type="number"
-                step="0.01"
-                min="0.1"
-                value={newEpiToFuncao.intervalMonths}
-                onChange={(e) => setNewEpiToFuncao(prev => ({ ...prev, intervalMonths: parseFloat(e.target.value) || 1 }))}
-              />
+              <Label htmlFor="interval-value">Intervalo de Reposição</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="interval-value"
+                  type="number"
+                  step="1"
+                  min="1"
+                  className="flex-1"
+                  value={newEpiToFuncao.intervalValue}
+                  onChange={(e) => setNewEpiToFuncao(prev => ({ ...prev, intervalValue: parseFloat(e.target.value) || 1 }))}
+                />
+                <Select 
+                  value={newEpiToFuncao.intervalUnit} 
+                  onValueChange={(value: 'dias' | 'semanas' | 'meses' | 'anos') => 
+                    setNewEpiToFuncao(prev => ({ ...prev, intervalUnit: value }))
+                  }
+                >
+                  <SelectTrigger className="w-[130px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="dias">Dias</SelectItem>
+                    <SelectItem value="semanas">Semanas</SelectItem>
+                    <SelectItem value="meses">Meses</SelectItem>
+                    <SelectItem value="anos">Anos</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <p className="text-xs text-muted-foreground">
-                Intervalo em meses para reposição de efetivos (ex: 3 = 1 EPI a cada 3 meses, 0.5 = 2 por mês)
+                Intervalo para reposição de efetivos. Exemplo: 3 meses = 1 EPI a cada 3 meses, 2 semanas = 1 EPI a cada 2 semanas
               </p>
             </div>
             
@@ -591,17 +733,36 @@ export function ConfiguracoesSupabaseDemo() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-interval-months">Intervalo de Reposição (meses)</Label>
-              <Input
-                id="edit-interval-months"
-                type="number"
-                step="0.01"
-                min="0.1"
-                value={editEpiItem.intervalMonths}
-                onChange={(e) => setEditEpiItem(prev => ({ ...prev, intervalMonths: parseFloat(e.target.value) || 1 }))}
-              />
+              <Label htmlFor="edit-interval-value">Intervalo de Reposição</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="edit-interval-value"
+                  type="number"
+                  step="1"
+                  min="1"
+                  className="flex-1"
+                  value={editEpiItem.intervalValue}
+                  onChange={(e) => setEditEpiItem(prev => ({ ...prev, intervalValue: parseFloat(e.target.value) || 1 }))}
+                />
+                <Select 
+                  value={editEpiItem.intervalUnit} 
+                  onValueChange={(value: 'dias' | 'semanas' | 'meses' | 'anos') => 
+                    setEditEpiItem(prev => ({ ...prev, intervalUnit: value }))
+                  }
+                >
+                  <SelectTrigger className="w-[130px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="dias">Dias</SelectItem>
+                    <SelectItem value="semanas">Semanas</SelectItem>
+                    <SelectItem value="meses">Meses</SelectItem>
+                    <SelectItem value="anos">Anos</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <p className="text-xs text-muted-foreground">
-                Intervalo em meses para reposição de efetivos (ex: 3 = 1 EPI a cada 3 meses, 0.364 ≈ 2.75 por mês)
+                Intervalo para reposição de efetivos. Exemplo: 3 meses = 1 EPI a cada 3 meses, 15 dias = 1 EPI a cada 15 dias
               </p>
             </div>
             

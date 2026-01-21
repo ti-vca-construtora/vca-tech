@@ -38,7 +38,7 @@ const DEFAULT_OBRAS: Array<Omit<Obra, "id">> = [
     name: "Obra Exemplo - Incorporadora",
     state: "SP",
     city: "São Paulo",
-    empreendimentoType: "INCORPORADORA",
+    empreendimentoType: "INCORPORACAO",
   },
   {
     name: "Obra Exemplo - Loteamento",
@@ -55,7 +55,7 @@ export function ObrasConfiguracoes() {
   const [name, setName] = useState("");
   const [state, setState] = useState("");
   const [city, setCity] = useState("");
-  const [type, setType] = useState<ObraEmpreendimentoTipo>("INCORPORADORA");
+  const [type, setType] = useState<ObraEmpreendimentoTipo>("INCORPORACAO");
 
   useEffect(() => {
     const loaded = loadObras();
@@ -107,7 +107,7 @@ export function ObrasConfiguracoes() {
     setName("");
     setState("");
     setCity("");
-    setType("INCORPORADORA");
+    setType("INCORPORACAO");
 
     toast({ title: "Obra cadastrada" });
   }
@@ -196,7 +196,7 @@ export function ObrasConfiguracoes() {
                     <TableCell>{o.state}</TableCell>
                     <TableCell>{o.city}</TableCell>
                     <TableCell>
-                      {o.empreendimentoType === "INCORPORADORA"
+                      {o.empreendimentoType === "INCORPORACAO"
                         ? "Incorporadora"
                         : "Loteamento"}
                     </TableCell>
