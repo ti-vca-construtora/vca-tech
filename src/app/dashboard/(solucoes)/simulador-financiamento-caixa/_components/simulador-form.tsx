@@ -59,6 +59,7 @@ export function SimuladorForm() {
   const [dataNascimentoCliente, setDataNascimentoCliente] = useState("");
   const [cidade, setCidade] = useState("Vitória da Conquista");
   const [rendaFamiliar, setRendaFamiliar] = useState("");
+  const [showRendaAttention, setShowRendaAttention] = useState(false);
   const [possuiTresAnosFGTS, setPossuiTresAnosFGTS] = useState(false);
   const [possuiDependentes, setPossuiDependentes] = useState(false);
   const [origemRecurso, setOrigemRecurso] = useState<"FGTS" | "SBPE">("FGTS");
@@ -653,7 +654,16 @@ export function SimuladorForm() {
           id="rendaFamiliar"
           value={rendaFamiliar}
           onChange={(e) => {
-            setRendaFamiliar(formatCurrency(e.target.value));
+            const raw = e.target.value;
+            const cents = parseCurrencyToCents(raw);
+            const maxCents = 860000; // R$ 8.600,00 em centavos
+            if (cents > maxCents) {
+              setRendaFamiliar(formatCurrency(String(maxCents)));
+              setShowRendaAttention(true);
+            } else {
+              setRendaFamiliar(formatCurrency(raw));
+              setShowRendaAttention(false);
+            }
             clearFieldError("rendaFamiliar");
           }}
           placeholder="R$ 5.000,00"
@@ -661,6 +671,11 @@ export function SimuladorForm() {
         />
         {fieldErrors.rendaFamiliar && (
           <p className="text-[0.8rem] font-medium text-destructive">{fieldErrors.rendaFamiliar}</p>
+        )}
+        {showRendaAttention && (
+          <div className="mt-2 p-2 rounded bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 text-sm">
+            Para rendas acima da faixa 4, realizar simulação na W8
+          </div>
         )}
       </div>
       <div className="space-y-2">
