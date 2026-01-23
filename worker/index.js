@@ -565,9 +565,15 @@ async function processSimulacao(job) {
     }
 
     if (dados.possuiDependentes) {
-      console.log('✅ Marcando: Possui dependentes')
-      await page.locator('//*[@id="checkbox_1"]').check()
-      await page.waitForTimeout(500)
+      if (dados.origemRecurso === 'FGTS') {
+        console.log('✅ Marcando: Possui dependentes')
+        await page.locator('//*[@id="checkbox_1"]').check()
+        await page.waitForTimeout(500)
+      } else {
+        console.log(
+          '⚠️ Ignorando flag "Possui dependentes" pois origem não é FGTS (SBPE). Continuando automação...'
+        )
+      }
     }
 
     await page.waitForTimeout(2000) // Aguardar página processar dados
