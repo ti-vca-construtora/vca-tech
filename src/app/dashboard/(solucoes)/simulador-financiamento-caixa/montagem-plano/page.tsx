@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/hooks/use-user";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -83,6 +83,7 @@ export default function MontagemPlanoPage() {
   const [editandoValorId, setEditandoValorId] = useState<string | null>(null);
   const [modalAvisosAberto, setModalAvisosAberto] = useState(false);
   const [avisosLidos, setAvisosLidos] = useState(false);
+  const [editingEntradaDate, setEditingEntradaDate] = useState(false);
 
   useEffect(() => {
     const dadosStr = sessionStorage.getItem("dadosSimulacao");
@@ -98,14 +99,158 @@ export default function MontagemPlanoPage() {
   }, [router]);
 
   // Abrir modal automaticamente quando houver avisos
+  const calcularValidacaoProsoluto = useCallback(() => {
+    if (!dadosSimulacao) {
+      return { 
+        valido: true, 
+        excedente: 0, 
+        valorDevedor: 0,
+        avisos: [] as string[]
+      };
+    }
+
+    const valorImovelNum = parseFloat(dadosSimulacao.valorImovel.replace(/\D/g, '')) / 100;
+    const prosoluto = valorImovelNum * 0.1;
+
+    const avisos: string[] = [];
+
+    const linhaEntrada = linhasPlano.find(l => l.serieId === 'entrada' && l.serie && l.valorOriginal > 0);
+    
+    if (!linhaEntrada || !linhaEntrada.data) {
+      return {
+        valido: true,
+        excedente: 0,
+        valorDevedor: 0,
+        avisos
+      };
+    }
+
+    const [diaEntrada, mesEntrada, anoEntrada] = linhaEntrada.data.split('/').map(Number);
+    if (!diaEntrada || !mesEntrada || !anoEntrada) {
+      return {
+        valido: true,
+        excedente: 0,
+        valorDevedor: 0,
+        avisos
+      };
+    }
+
+    const dataInicioEntrada = new Date(anoEntrada, mesEntrada - 1, diaEntrada);
+    let dataEntregaFinal: Date;
+    let prazoEntregaMeses: number;
+    
+    if (!prazoEntrega || prazoEntrega.length === 0) {
+      // Se prazo de entrega não foi informado, usar 36 meses a partir de HOJE
+      avisos.push('Prazo de entrega não definido. Usando padrão de 36 meses a partir de hoje.');
+      dataEntregaFinal = new Date();
+      dataEntregaFinal.setMonth(dataEntregaFinal.getMonth() + 36);
+      
+      // Calcular meses entre início da entrada e a data de entrega padrão
+      prazoEntregaMeses = (dataEntregaFinal.getFullYear() - dataInicioEntrada.getFullYear()) * 12 + 
+                         (dataEntregaFinal.getMonth() - dataInicioEntrada.getMonth());
+    } else if (prazoEntrega.length === 10) {
+      const [diaEntregaInput, mesEntregaInput, anoEntregaInput] = prazoEntrega.split('/').map(Number);
+      if (diaEntregaInput && mesEntregaInput && anoEntregaInput) {
+        dataEntregaFinal = new Date(anoEntregaInput, mesEntregaInput - 1, diaEntregaInput);
+        
+        // Calcular meses entre início da entrada e data de entrega informada
+        prazoEntregaMeses = (dataEntregaFinal.getFullYear() - dataInicioEntrada.getFullYear()) * 12 + 
+                           (dataEntregaFinal.getMonth() - dataInicioEntrada.getMonth());
+        
+        if (prazoEntregaMeses > 36) {
+          prazoEntregaMeses = 36;
+          avisos.push('Prazo de entrega excede 36 meses a partir da data de início da entrada. Usando limite de 36 meses.');
+        }
+        
+        if (prazoEntregaMeses < 0) {
+          prazoEntregaMeses = 0;
+          avisos.push('Data de entrega é anterior ao início da entrada.');
+        }
+      } else {
+        // Data inválida - usar 36 meses a partir de hoje
+        avisos.push('Prazo de entrega inválido. Usando padrão de 36 meses a partir de hoje.');
+        dataEntregaFinal = new Date();
+        dataEntregaFinal.setMonth(dataEntregaFinal.getMonth() + 36);
+        prazoEntregaMeses = (dataEntregaFinal.getFullYear() - dataInicioEntrada.getFullYear()) * 12 + 
+                           (dataEntregaFinal.getMonth() - dataInicioEntrada.getMonth());
+      }
+    } else {
+      // Prazo de entrega incompleto - não calcular ainda
+      return {
+        valido: true,
+        excedente: 0,
+        valorDevedor: 0,
+        avisos
+      };
+    }
+
+    let statusProsoluto = false;
+    let valorDevedor = 0;
+
+    const parcelamento = linhaEntrada.parcelas;
+    const parcEntrada = linhaEntrada.valorOriginal / parcelamento;
+    
+    if ((parcelamento - prazoEntregaMeses) <= 0) {
+      statusProsoluto = true;
+      valorDevedor = 0;
+    } else {
+      const parcelasRestantes = parcelamento - prazoEntregaMeses;
+      valorDevedor = parcEntrada * parcelasRestantes;
+      
+      if (valorDevedor <= prosoluto) {
+        statusProsoluto = true;
+      } else {
+        statusProsoluto = false;
+      }
+    }
+
+    const excedente = statusProsoluto ? 0 : (valorDevedor - prosoluto);
+
+    return {
+      valido: statusProsoluto,
+      excedente: excedente > 0 ? excedente : 0,
+      valorDevedor,
+      avisos
+    };
+  }, [dadosSimulacao, linhasPlano, prazoEntrega]);
+
   useEffect(() => {
     const validacao = calcularValidacaoProsoluto();
-    if (validacao.avisos && validacao.avisos.length > 0 && !avisosLidos) {
+    if (!editingEntradaDate && validacao.avisos && validacao.avisos.length > 0 && !avisosLidos) {
       setModalAvisosAberto(true);
     }
-  }, [prazoEntrega, linhasPlano, avisosLidos]);
+  }, [prazoEntrega, linhasPlano, avisosLidos, editingEntradaDate, calcularValidacaoProsoluto]);
 
   // Atualizar valor da Entrada quando Sinal ou Intermediária mudam
+  const sinaisChangedKey = linhasPlano.filter(l => l.serieId === 'sinal' || l.serieId === 'intermediaria').map(l => l.valorOriginal).join(',');
+
+  const calcularEntrada = useCallback(() => {
+    if (!dadosSimulacao || !resultados) return "R$ 0,00";
+    
+    const valorImovelNum = parseFloat(
+      dadosSimulacao.valorImovel.replace(/\D/g, "")
+    ) / 100;
+    const valorFinanciadoNum = parseFloat(
+      resultados.valorFinanciado.replace(/\D/g, "")
+    ) / 100;
+    const subsidioNum = parseFloat(
+      resultados.subsidio.replace(/[R$\s.]/g, "").replace(",", ".")
+    );
+
+    let entrada = valorImovelNum - valorFinanciadoNum - subsidioNum;
+
+    linhasPlano.forEach(linha => {
+      if ((linha.serieId === 'sinal' || linha.serieId === 'intermediaria') && linha.valorOriginal > 0) {
+        entrada -= linha.valorOriginal;
+      }
+    });
+
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(entrada);
+  }, [dadosSimulacao, resultados, linhasPlano]);
+
   useEffect(() => {
     const linhaEntrada = linhasPlano.find(l => l.serieId === 'entrada');
     if (!linhaEntrada) return;
@@ -131,34 +276,7 @@ export default function MontagemPlanoPage() {
       });
       setLinhasPlano(novasLinhas);
     }
-  }, [linhasPlano.filter(l => l.serieId === 'sinal' || l.serieId === 'intermediaria').map(l => l.valorOriginal).join(',')]);
-
-  const calcularEntrada = () => {
-    if (!dadosSimulacao || !resultados) return "R$ 0,00";
-    
-    const valorImovelNum = parseFloat(
-      dadosSimulacao.valorImovel.replace(/\D/g, "")
-    ) / 100;
-    const valorFinanciadoNum = parseFloat(
-      resultados.valorFinanciado.replace(/\D/g, "")
-    ) / 100;
-    const subsidioNum = parseFloat(
-      resultados.subsidio.replace(/[R$\s.]/g, "").replace(",", ".")
-    );
-
-    let entrada = valorImovelNum - valorFinanciadoNum - subsidioNum;
-
-    linhasPlano.forEach(linha => {
-      if ((linha.serieId === 'sinal' || linha.serieId === 'intermediaria') && linha.valorOriginal > 0) {
-        entrada -= linha.valorOriginal;
-      }
-    });
-
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(entrada);
-  };
+  }, [sinaisChangedKey, calcularEntrada, linhasPlano]);
 
   const calcularProsoluto = () => {
     if (!dadosSimulacao) return "R$ 0,00";
@@ -450,120 +568,6 @@ export default function MontagemPlanoPage() {
     });
   };
 
-  const calcularValidacaoProsoluto = () => {
-    if (!dadosSimulacao) {
-      return { 
-        valido: true, 
-        excedente: 0, 
-        valorDevedor: 0,
-        avisos: [] as string[]
-      };
-    }
-
-    const valorImovelNum = parseFloat(dadosSimulacao.valorImovel.replace(/\D/g, '')) / 100;
-    const prosoluto = valorImovelNum * 0.1;
-
-    const avisos: string[] = [];
-
-    const linhaEntrada = linhasPlano.find(l => l.serieId === 'entrada' && l.serie && l.valorOriginal > 0);
-    
-    if (!linhaEntrada || !linhaEntrada.data) {
-      return {
-        valido: true,
-        excedente: 0,
-        valorDevedor: 0,
-        avisos
-      };
-    }
-
-    const [diaEntrada, mesEntrada, anoEntrada] = linhaEntrada.data.split('/').map(Number);
-    if (!diaEntrada || !mesEntrada || !anoEntrada) {
-      return {
-        valido: true,
-        excedente: 0,
-        valorDevedor: 0,
-        avisos
-      };
-    }
-
-    const dataInicioEntrada = new Date(anoEntrada, mesEntrada - 1, diaEntrada);
-    let dataEntregaFinal: Date;
-    let prazoEntregaMeses: number;
-    
-    if (!prazoEntrega || prazoEntrega.length === 0) {
-      // Se prazo de entrega não foi informado, usar 36 meses a partir de HOJE
-      avisos.push('Prazo de entrega não definido. Usando padrão de 36 meses a partir de hoje.');
-      dataEntregaFinal = new Date();
-      dataEntregaFinal.setMonth(dataEntregaFinal.getMonth() + 36);
-      
-      // Calcular meses entre início da entrada e a data de entrega padrão
-      prazoEntregaMeses = (dataEntregaFinal.getFullYear() - dataInicioEntrada.getFullYear()) * 12 + 
-                         (dataEntregaFinal.getMonth() - dataInicioEntrada.getMonth());
-    } else if (prazoEntrega.length === 10) {
-      const [diaEntregaInput, mesEntregaInput, anoEntregaInput] = prazoEntrega.split('/').map(Number);
-      if (diaEntregaInput && mesEntregaInput && anoEntregaInput) {
-        dataEntregaFinal = new Date(anoEntregaInput, mesEntregaInput - 1, diaEntregaInput);
-        
-        // Calcular meses entre início da entrada e data de entrega informada
-        prazoEntregaMeses = (dataEntregaFinal.getFullYear() - dataInicioEntrada.getFullYear()) * 12 + 
-                           (dataEntregaFinal.getMonth() - dataInicioEntrada.getMonth());
-        
-        if (prazoEntregaMeses > 36) {
-          prazoEntregaMeses = 36;
-          avisos.push('Prazo de entrega excede 36 meses a partir da data de início da entrada. Usando limite de 36 meses.');
-        }
-        
-        if (prazoEntregaMeses < 0) {
-          prazoEntregaMeses = 0;
-          avisos.push('Data de entrega é anterior ao início da entrada.');
-        }
-      } else {
-        // Data inválida - usar 36 meses a partir de hoje
-        avisos.push('Prazo de entrega inválido. Usando padrão de 36 meses a partir de hoje.');
-        dataEntregaFinal = new Date();
-        dataEntregaFinal.setMonth(dataEntregaFinal.getMonth() + 36);
-        prazoEntregaMeses = (dataEntregaFinal.getFullYear() - dataInicioEntrada.getFullYear()) * 12 + 
-                           (dataEntregaFinal.getMonth() - dataInicioEntrada.getMonth());
-      }
-    } else {
-      // Prazo de entrega incompleto - não calcular ainda
-      return {
-        valido: true,
-        excedente: 0,
-        valorDevedor: 0,
-        avisos
-      };
-    }
-
-    let statusProsoluto = false;
-    let valorDevedor = 0;
-
-    const parcelamento = linhaEntrada.parcelas;
-    const parcEntrada = linhaEntrada.valorOriginal / parcelamento;
-    
-    if ((parcelamento - prazoEntregaMeses) <= 0) {
-      statusProsoluto = true;
-      valorDevedor = 0;
-    } else {
-      const parcelasRestantes = parcelamento - prazoEntregaMeses;
-      valorDevedor = parcEntrada * parcelasRestantes;
-      
-      if (valorDevedor <= prosoluto) {
-        statusProsoluto = true;
-      } else {
-        statusProsoluto = false;
-      }
-    }
-
-    const excedente = statusProsoluto ? 0 : (valorDevedor - prosoluto);
-
-    return {
-      valido: statusProsoluto,
-      excedente: excedente > 0 ? excedente : 0,
-      valorDevedor,
-      avisos
-    };
-  };
 
   const calcularTotalSinais = () => {
     let total = 0;
@@ -1036,8 +1040,8 @@ export default function MontagemPlanoPage() {
                   <thead className="bg-muted sticky top-0 z-10">
                     <tr className="border-b">
                       <th className="text-left p-1.5 font-semibold text-[10px]">SÉRIE</th>
-                      <th className="text-left p-1.5 font-semibold text-[10px]">PARCELAS</th>
                       <th className="text-center p-1.5 font-semibold text-[10px]">VALOR</th>
+                      <th className="text-left p-1.5 font-semibold text-[10px]">PARCELAS</th>
                       <th className="text-center p-1.5 font-semibold text-[10px]">DATA</th>
                       <th className="text-right p-1.5 font-semibold text-[10px]">AÇÕES</th>
                     </tr>
@@ -1096,16 +1100,6 @@ export default function MontagemPlanoPage() {
                         <td className="p-1.5">
                           {linha.serie || <span className="text-muted-foreground text-[10px] italic">Arraste uma série aqui</span>}
                         </td>
-                        <td className="p-1.5">
-                          <Input
-                            type="number"
-                            min="1"
-                            value={linha.parcelas}
-                            onChange={(e) => atualizarParcelas(linha.id, parseInt(e.target.value) || 1)}
-                            disabled={!linha.serie}
-                            className="w-16 h-7 text-[10px]"
-                          />
-                        </td>
                         <td className="p-1.5 font-semibold text-[10px] text-center">
                           {linha.valorEditavel ? (
                             editandoValorId === linha.id ? (
@@ -1140,6 +1134,16 @@ export default function MontagemPlanoPage() {
                         </td>
                         <td className="p-1.5">
                           <Input
+                            type="number"
+                            min="1"
+                            value={linha.parcelas}
+                            onChange={(e) => atualizarParcelas(linha.id, parseInt(e.target.value) || 1)}
+                            disabled={!linha.serie || linha.valorOriginal <= 0}
+                            className="w-16 h-7 text-[10px]"
+                          />
+                        </td>
+                        <td className="p-1.5">
+                          <Input
                             type="text"
                             placeholder={linha.data ? "" : "DD/MM/AAAA"}
                             maxLength={10}
@@ -1160,8 +1164,8 @@ export default function MontagemPlanoPage() {
                                 atualizarData(linha.id, '');
                               }
                             }}
-                            onFocus={(e) => { e.target.placeholder = ''; }}
-                            onBlur={(e) => { e.target.placeholder = linha.data ? '' : 'DD/MM/AAAA'; }}
+                            onFocus={(e) => { if (linha.serieId === 'entrada') setEditingEntradaDate(true); e.target.placeholder = ''; }}
+                            onBlur={(e) => { if (linha.serieId === 'entrada') setEditingEntradaDate(false); e.target.placeholder = linha.data ? '' : 'DD/MM/AAAA'; }}
                             disabled={!linha.serie}
                             className={`w-full h-7 text-[10px] text-center ${linha.serieId === 'entrada' && !validacaoDataEntrada.valido ? 'border-red-500 border-2 bg-red-50 dark:bg-red-950' : ''}`}
                           />

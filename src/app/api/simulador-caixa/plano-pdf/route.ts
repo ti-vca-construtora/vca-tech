@@ -55,21 +55,27 @@ interface RequestBody {
 
 function getHtmlContent({ dadosSimulacao, resultados, linhasPlano, prazoEntrega, nomeUsuario }: RequestBody): string {
   const logoBase64 = LOGO_BASE64;
+    // Ícones SVG embutidos para garantir renderização consistente no PDF
+    const iconCheck = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="12" cy="12" r="12" fill="#4caf50" />
+        <path d="M7 13l3 3 7-8" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
 
-    // Calcular entrada
+    const iconCross = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="12" cy="12" r="12" fill="#f44336" />
+        <path d="M8 8l8 8M16 8l-8 8" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
+
+    // Calcular entrada (valor cheio: NÃO subtrai Sinal/Intermediária)
     const calcularEntrada = () => {
       const valorImovelNum = parseFloat(dadosSimulacao.valorImovel.replace(/\D/g, '')) / 100;
       const valorFinanciadoNum = parseFloat(resultados.valorFinanciado.replace(/\D/g, '')) / 100;
       const subsidioNum = parseFloat(resultados.subsidio.replace(/[R$\s.]/g, '').replace(',', '.'));
-      
-      let entrada = valorImovelNum - valorFinanciadoNum - subsidioNum;
-      
-      linhasPlano.forEach((linha: LinhaPlano) => {
-        if ((linha.serieId === 'sinal' || linha.serieId === 'intermediaria') && linha.valorOriginal > 0) {
-          entrada -= linha.valorOriginal;
-        }
-      });
-      
+
+      const entrada = valorImovelNum - valorFinanciadoNum - subsidioNum;
+
       return new Intl.NumberFormat('pt-BR', {
         style: 'currency',
         currency: 'BRL',
@@ -416,14 +422,17 @@ function getHtmlContent({ dadosSimulacao, resultados, linhasPlano, prazoEntrega,
       <div style="margin-top: 12px;">
         <div class="field-label" style="margin-bottom: 8px;">Condições Especiais</div>
         <div>
-          <span class="badge ${dadosSimulacao.possuiTresAnosFGTS ? 'badge-success' : 'badge-false'}">
-            ${dadosSimulacao.possuiTresAnosFGTS ? '✓' : '✗'} 3 anos de FGTS
+          <span class="badge ${dadosSimulacao.possuiTresAnosFGTS ? 'badge-success' : 'badge-false'}" style="display:inline-flex;align-items:center;gap:8px;">
+            ${dadosSimulacao.possuiTresAnosFGTS ? iconCheck : iconCross}
+            <span style="font-weight:600; margin-left:4px;">3 anos de FGTS</span>
           </span>
-          <span class="badge ${dadosSimulacao.jaBeneficiadoSubsidio ? 'badge-success' : 'badge-false'}">
-            ${dadosSimulacao.jaBeneficiadoSubsidio ? '✓' : '✗'} Já beneficiado
+          <span class="badge ${dadosSimulacao.jaBeneficiadoSubsidio ? 'badge-success' : 'badge-false'}" style="display:inline-flex;align-items:center;gap:8px;">
+            ${dadosSimulacao.jaBeneficiadoSubsidio ? iconCheck : iconCross}
+            <span style="font-weight:600; margin-left:4px;">Já beneficiado</span>
           </span>
-          <span class="badge ${dadosSimulacao.possuiDependentes ? 'badge-success' : 'badge-false'}">
-            ${dadosSimulacao.possuiDependentes ? '✓' : '✗'} Possui dependentes
+          <span class="badge ${dadosSimulacao.possuiDependentes ? 'badge-success' : 'badge-false'}" style="display:inline-flex;align-items:center;gap:8px;">
+            ${dadosSimulacao.possuiDependentes ? iconCheck : iconCross}
+            <span style="font-weight:600; margin-left:4px;">Possui dependentes</span>
           </span>
         </div>
       </div>
@@ -575,7 +584,7 @@ function getHtmlContent({ dadosSimulacao, resultados, linhasPlano, prazoEntrega,
 
     <div class="footer">
       <p><strong>Observações importantes:</strong></p>
-      <p>• O valor da Entrada já considera os descontos de Sinal e Intermediárias.</p>
+      <p>• O valor da Entrada não considera os descontos de Sinal e Intermediárias (apresentado aqui no valor cheio).</p>
       <p>• O valor da prestação poderá sofrer reajustes durante o pagamento com o banco.</p>
       <p>• Este plano está sujeito à aprovação da instituição financeira.</p>
     </div>

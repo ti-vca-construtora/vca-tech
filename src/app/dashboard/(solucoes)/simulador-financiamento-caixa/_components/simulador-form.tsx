@@ -674,7 +674,7 @@ export function SimuladorForm() {
         )}
         {showRendaAttention && (
           <div className="mt-2 p-2 rounded bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 text-sm">
-            Para rendas acima da faixa 4, realizar simulação na W8
+            Para rendas a partir da faixa 4, realizar simulação na W8
           </div>
         )}
       </div>
