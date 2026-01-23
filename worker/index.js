@@ -221,9 +221,9 @@ async function processSimulacao(job) {
     ],
   })
 
+  let context
+  let page
   try {
-    let context
-    let page
     context = await browser.newContext({
       userAgent:
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
@@ -570,9 +570,7 @@ async function processSimulacao(job) {
 
     if (dados.possuiDependentes) {
       if (dados.origemRecurso === 'FGTS') {
-        console.log('✅ Marcando: Possui dependentes')
-        await page.locator('//*[@id="possuiMaisUmParticipante"]').check()
-        await page.waitForTimeout(500)
+        console.log('✅ Flag possuiDependentes: será aplicada quando o checkbox estiver disponível')
       } else {
         console.log(
           '⚠️ Ignorando flag "Possui dependentes" pois origem não é FGTS (SBPE). Continuando automação...'
