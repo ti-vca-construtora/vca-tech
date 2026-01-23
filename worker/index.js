@@ -473,8 +473,14 @@ async function processSimulacao(job) {
     await page.waitForTimeout(1500)
 
     if (dados.possuiTresAnosFGTS) {
-      console.log('✅ Marcando: 3 anos de FGTS')
-      await page.locator('//*[@id="checkbox"]').check()
+      if (dados.origemRecurso === 'FGTS') {
+        console.log('✅ Marcando: 3 anos de FGTS')
+        await page.locator('//*[@id="checkbox"]').check()
+      } else {
+        console.log(
+          '⚠️ Ignorando flag "3 anos de FGTS" pois origem não é FGTS (SBPE). Continuando automação...'
+        )
+      }
     }
 
     if (dados.jaBeneficiadoSubsidio) {
