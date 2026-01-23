@@ -576,6 +576,20 @@ async function processSimulacao(job) {
       }
     }
 
+    // Tentar marcar o checkbox '#possuiMaisUmParticipante' aqui, após definir participantes.
+    // Em algumas versões da página esse checkbox aparece na mesma etapa que o sistema de amortização,
+    // mas marcar aqui garante que a preferência do usuário seja aplicada antes.
+    if (dados.possuiDependentes && dados.origemRecurso === 'FGTS') {
+      try {
+        await page.waitForSelector('#possuiMaisUmParticipante', { state: 'visible', timeout: 3000 })
+        await page.check('#possuiMaisUmParticipante')
+        console.log('✅ Checkbox "possuiMaisUmParticipante" marcado (agora após participantes)')
+        await page.waitForTimeout(500)
+      } catch (e) {
+        console.log('⚠️ Checkbox #possuiMaisUmParticipante não encontrado agora — continuará sem marcação até aparecer')
+      }
+    }
+
     await page.waitForTimeout(2000) // Aguardar página processar dados
     console.log('✅ Dados dos participantes preenchidos')
 
@@ -673,16 +687,7 @@ async function processSimulacao(job) {
         `👨‍👩‍👧‍👦 Possui dependentes: ${dados.possuiDependentes ? 'Sim' : 'Não'}`
       )
 
-      if (dados.possuiDependentes) {
-        await page.waitForSelector('#possuiMaisUmParticipante', {
-          state: 'visible',
-          timeout: 5000,
-        })
-        await page.check('#possuiMaisUmParticipante')
-        console.log('✅ Checkbox "Possui dependentes" marcado')
-        await page.waitForTimeout(500)
-      }
-
+      // Área útil: permanece nesta etapa
       await job.updateProgress(65)
       console.log('📐 Preenchendo área útil: 0')
 
