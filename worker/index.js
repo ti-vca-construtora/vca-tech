@@ -16,6 +16,8 @@ const queueEvents = new QueueEvents('simulador-caixa', {
 })
 
 const http = require('http')
+const fs = require('fs')
+const path = require('path')
 
 // O Railway injeta a porta automaticamente na variável process.env.PORT
 const port = process.env.PORT || 3000
@@ -220,7 +222,9 @@ async function processSimulacao(job) {
   })
 
   try {
-    const context = await browser.newContext({
+    let context
+    let page
+    context = await browser.newContext({
       userAgent:
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
       viewport: { width: 1920, height: 1080 },
@@ -241,7 +245,7 @@ async function processSimulacao(job) {
         'Upgrade-Insecure-Requests': '1',
       },
     })
-    const page = await context.newPage()
+    page = await context.newPage()
 
     // Remover sinais de webdriver/automação
     await page.addInitScript(() => {
@@ -1128,7 +1132,34 @@ async function processSimulacao(job) {
     }
   } catch (error) {
     console.error('❌ Erro ao processar job:', error)
-    await browser.close()
+
+    // Tentar capturar screenshot para debug
+    try {
+      const screenshotsDir = path.join(__dirname, 'error-screenshots')
+      fs.mkdirSync(screenshotsDir, { recursive: true })
+      const filename = path.join(screenshotsDir, `${Date.now()}-job-${job.id}.png`)
+      if (page && typeof page.screenshot === 'function') {
+        await page.screenshot({ path: filename, fullPage: true })
+        console.log(`✅ Screenshot de erro salvo: ${filename}`)
+      } else if (context && typeof context.pages === 'function') {
+        // fallback: tentar pegar a primeira página do contexto
+        const pages = await context.pages()
+        if (pages && pages[0] && typeof pages[0].screenshot === 'function') {
+          await pages[0].screenshot({ path: filename, fullPage: true })
+          console.log(`✅ Screenshot de erro salvo (fallback): ${filename}`)
+        }
+      }
+    } catch (sErr) {
+      console.error('⚠️ Falha ao salvar screenshot de erro:', sErr)
+    }
+
+    try {
+      if (context && typeof context.close === 'function') await context.close()
+      if (browser && typeof browser.close === 'function') await browser.close()
+    } catch (closeErr) {
+      console.error('⚠️ Erro ao fechar browser/context após falha:', closeErr)
+    }
+
     // Sempre lançar mensagem padrão para o front
     throw new Error('Erro no processamento dos dados, tente novamente!')
   }
