@@ -567,7 +567,7 @@ async function processSimulacao(job) {
     if (dados.possuiDependentes) {
       if (dados.origemRecurso === 'FGTS') {
         console.log('✅ Marcando: Possui dependentes')
-        await page.locator('//*[@id="checkbox_1"]').check()
+        await page.locator('//*[@id="possuiMaisUmParticipante"]').check()
         await page.waitForTimeout(500)
       } else {
         console.log(
