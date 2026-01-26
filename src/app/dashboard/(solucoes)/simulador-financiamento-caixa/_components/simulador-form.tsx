@@ -298,7 +298,7 @@ export function SimuladorForm() {
         valorImovel: valorImovel.replace(/\D/g, ""),
         valorAvaliacao: valorAvaliacao.replace(/\D/g, ""),
         cidade,
-        rendaFamiliar: rendaFamiliar.replace(/\D/g, ""),
+        rendaFamiliar: parseCurrencyToCents(rendaFamiliar),
         dataNascimento: dataNascimentoCliente,
         possuiTresAnosFGTS,
         possuiDependentes,
@@ -656,7 +656,7 @@ export function SimuladorForm() {
           onChange={(e) => {
             const raw = e.target.value;
             const cents = parseCurrencyToCents(raw);
-            const maxCents = 860000; // R$ 8.600,00 em centavos
+            const maxCents = 800000; // R$ 8.000,00 em centavos (novo limite)
             if (cents > maxCents) {
               setRendaFamiliar(formatCurrency(String(maxCents)));
               setShowRendaAttention(true);
@@ -674,7 +674,7 @@ export function SimuladorForm() {
         )}
         {showRendaAttention && (
           <div className="mt-2 p-2 rounded bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 text-sm">
-            Para rendas a partir da faixa 4, realizar simulação na W8
+            Para rendas a partir de R$ 8.000,00, realizar simulação na W8
           </div>
         )}
       </div>
