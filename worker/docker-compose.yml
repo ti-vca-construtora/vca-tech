@@ -28,6 +28,7 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379
       - NODE_ENV=production
+      - START_WORKER=true
     volumes:
       - playwright_cache:/root/.cache/ms-playwright
     networks:

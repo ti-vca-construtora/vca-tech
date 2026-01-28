@@ -18,6 +18,7 @@ const queueEvents = new QueueEvents('simulador-caixa', {
 const http = require('http')
 const fs = require('fs')
 const path = require('path')
+const pkg = require('./package.json')
 
 // O Railway injeta a porta automaticamente na variável process.env.PORT
 const port = process.env.PORT || 3000
@@ -276,6 +277,14 @@ async function processSimulacao(job) {
     page.setDefaultNavigationTimeout(60000)
 
     console.log('📝 Dados recebidos:', dados)
+
+      // Log da versão do worker (útil para validar que o container está atualizado)
+      try {
+        console.log(`ℹ️ Worker package version: ${pkg.version || 'unknown'}`)
+        console.log(`ℹ️ NODE_ENV=${process.env.NODE_ENV || 'undefined'} START_WORKER=${process.env.START_WORKER || 'undefined'}`)
+      } catch (e) {
+        // não falhar por causa do log
+      }
 
     // ========== ETAPA 1: Navegação ==========
     try {
@@ -1176,50 +1185,59 @@ async function processSimulacao(job) {
   }
 }
 
-const worker = new Worker('simulador-caixa', processSimulacao, {
-  connection: {
-    url: process.env.REDIS_URL,
-    maxRetriesPerRequest: null,
-  },
-  concurrency: 2,
-  limiter: {
-    max: 10,
-    duration: 60000,
-  },
-  attempts: 1,
-  backoff: {
-    type: 'fixed',
-    delay: 0,
-  },
-})
+// Controle de inicialização do worker via variável de ambiente
+// Define START_WORKER=false para não iniciar o worker neste processo
+const shouldStartWorker = (process.env.START_WORKER || 'true').toLowerCase() !== 'false'
+let worker = null
 
-// Event listeners
-worker.on('completed', (job) => {
-  console.log(`✅ Job ${job.id} completado com sucesso\n`)
-})
+if (shouldStartWorker) {
+  worker = new Worker('simulador-caixa', processSimulacao, {
+    connection: {
+      url: process.env.REDIS_URL,
+      maxRetriesPerRequest: null,
+    },
+    concurrency: 2,
+    limiter: {
+      max: 10,
+      duration: 60000,
+    },
+    attempts: 1,
+    backoff: {
+      type: 'fixed',
+      delay: 0,
+    },
+  })
 
-worker.on('failed', (job, err) => {
-  console.error(`❌ Job ${job?.id} falhou:`, err.message)
-})
+  // Event listeners
+  worker.on('completed', (job) => {
+    console.log(`✅ Job ${job.id} completado com sucesso\n`)
+  })
 
-worker.on('error', (err) => {
-  console.error('❌ Erro no worker:', err)
-})
+  worker.on('failed', (job, err) => {
+    console.error(`❌ Job ${job?.id} falhou:`, err.message)
+  })
 
-console.log('🚀 Worker iniciado e aguardando jobs...')
-console.log('⚙️  Concorrência: 2 jobs simultâneos')
-console.log('⏱️  Rate limit: 10 jobs/minuto')
+  worker.on('error', (err) => {
+    console.error('❌ Erro no worker:', err)
+  })
+
+  console.log('🚀 Worker iniciado e aguardando jobs...')
+  console.log('⚙️  Concorrência: 2 jobs simultâneos')
+  console.log('⏱️  Rate limit: 10 jobs/minuto')
+} else {
+  console.log('⚠️ START_WORKER=false -> worker não iniciado neste processo')
+}
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('\n🛑 Recebido SIGTERM, encerrando worker...')
-  await worker.close()
+  if (worker) await worker.close()
   process.exit(0)
 })
 
 process.on('SIGINT', async () => {
   console.log('\n🛑 Recebido SIGINT, encerrando worker...')
-  await worker.close()
+  if (worker) await worker.close()
   process.exit(0)
 })
 
