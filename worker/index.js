@@ -682,6 +682,19 @@ async function processSimulacao(job) {
     console.log(`✅ Sistema selecionado: ${amortizacaoSelecionada.texto}`)
     await page.waitForTimeout(2000) // Aumentado para aguardar processamento
 
+    // Garantir que o checkbox de dependentes seja marcado após a seleção do sistema
+    // Alguns fluxos apresentam o checkbox apenas depois que o sistema de amortização é aplicado
+    if (dados.possuiDependentes && dados.origemRecurso === 'FGTS') {
+      try {
+        await page.waitForSelector('#possuiMaisUmParticipante', { state: 'visible', timeout: 3000 })
+        await page.check('#possuiMaisUmParticipante')
+        console.log('✅ Checkbox "possuiMaisUmParticipante" marcado (após seleção do sistema de amortização)')
+        await page.waitForTimeout(500)
+      } catch (e) {
+        console.log('⚠️ Checkbox #possuiMaisUmParticipante não encontrado após amortização — continuará sem marcação')
+      }
+    }
+
     // ========== ETAPA 10 e 11: Possui dependentes e Área útil (APENAS PARA FGTS) ==========
     if (dados.origemRecurso === 'FGTS') {
       await job.updateProgress(70)

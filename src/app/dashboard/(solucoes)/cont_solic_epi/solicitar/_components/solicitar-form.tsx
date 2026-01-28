@@ -57,6 +57,7 @@ export function SolicitarForm() {
   const [epiCounts, setEpiCounts] = useState<Record<string, string>>({}); // Estoque manual
   const [currentFunctionCounts, setCurrentFunctionCounts] = useState<Record<string, string>>({}); // Efetivos
   const [projectedFunctionCounts, setProjectedFunctionCounts] = useState<Record<string, string>>({}); // Projetados
+  const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -387,7 +388,16 @@ export function SolicitarForm() {
             </div>
 
             <div className="space-y-2">
-              <div className="text-sm font-semibold">EPIs (estoque disponível)</div>
+              <div className="mb-4">
+                <div className="text-sm font-semibold">EPIs (estoque disponível)</div>
+                <div className="mt-2">
+                  <Input
+                    placeholder="Pesquisar EPI..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </div>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -403,7 +413,9 @@ export function SolicitarForm() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    epiItems.map((item) => (
+                    epiItems
+                      .filter((i) => i.toLowerCase().includes(searchQuery.trim().toLowerCase()))
+                      .map((item) => (
                       <TableRow key={item}>
                         <TableCell className="border border-gray-400 rounded-lg px-2 py-1">{item}</TableCell>
                         <TableCell className="border border-gray-400 rounded-lg">

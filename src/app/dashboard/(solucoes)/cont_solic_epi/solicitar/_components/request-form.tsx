@@ -72,6 +72,8 @@ export function RequestForm({ collectedData, onBack }: RequestFormProps) {
   >([]);
   const [availableEpis, setAvailableEpis] = useState<string[]>([]);
 
+  const [addForms, setAddForms] = useState<Record<string, { query: string; selected?: string; count: string; justification: string }>>({});
+
   const [functionRequests, setFunctionRequests] = useState<FunctionRequest[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -176,6 +178,48 @@ export function RequestForm({ collectedData, onBack }: RequestFormProps) {
     );
   }
 
+  function addManualEpiToFunction(funcName: string, epi: string, count: number, justification: string) {
+    setFunctionRequests((prev) => {
+      const found = prev.some((r) => r.functionName === funcName);
+      const stock = parseInt(collectedData.epiCounts[epi] || "0", 10);
+      const newNeed = {
+        epi,
+        intervalMonths: 0,
+        quantityPerEmployee: 0,
+        currentNeed: 0,
+        projectedNeed: 0,
+        totalNeed: 0,
+        stock,
+        shortage: Math.max(0, 0 - stock),
+        manualAdjust: count,
+        justification: justification || "",
+      };
+
+      if (!found) {
+        return [
+          ...prev,
+          {
+            functionName: funcName,
+            currentEmployees: 0,
+            projectedEmployees: 0,
+            epiNeeds: [newNeed],
+          },
+        ];
+      }
+
+      return prev.map((r) => {
+        if (r.functionName !== funcName) return r;
+        return { ...r, epiNeeds: [...r.epiNeeds, newNeed] };
+      });
+    });
+    // close form for that function
+    setAddForms((prev) => {
+      const copy = { ...prev };
+      delete copy[funcName];
+      return copy;
+    });
+  }
+
   const totalRequests = useMemo(() => {
     const summary: Record<string, { shortage: number; adjusted: number }> = {};
     for (const req of functionRequests) {
@@ -194,10 +238,21 @@ export function RequestForm({ collectedData, onBack }: RequestFormProps) {
     // validar ajustes manuais (se > 0, precisa justificativa)
     for (const req of functionRequests) {
       for (const need of req.epiNeeds) {
+        const isKnown = availableEpis.includes(need.epi);
         if (need.manualAdjust !== 0 && !need.justification.trim()) {
           toast({
             title: "Justificativa obrigatória",
             description: `Informe a justificativa para o ajuste manual de "${need.epi}" na função "${req.functionName}".`,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // justificativa obrigatória para EPIs que não existem no banco
+        if (!isKnown && !need.justification.trim()) {
+          toast({
+            title: "Justificativa obrigatória",
+            description: `O item "${need.epi}" não está cadastrado. Informe uma justificativa para solicitar materiais não cadastrados (função: ${req.functionName}).`,
             variant: "destructive",
           });
           return;
@@ -351,7 +406,7 @@ export function RequestForm({ collectedData, onBack }: RequestFormProps) {
         row.font = { size: 11 };
         row.alignment = { horizontal: 'left', vertical: 'middle' };
         row.height = 20;
-        
+
         // Linhas alternadas
         const bgColor = index % 2 === 0 ? colors.white : colors.lightGray;
         ['A', 'B'].forEach(col => {
@@ -367,9 +422,21 @@ export function RequestForm({ collectedData, onBack }: RequestFormProps) {
             bottom: { style: 'thin', color: { argb: colors.border } }
           };
         });
-        
-        // Alinhamento da quantidade
-        summarySheet.getCell(`B${currentRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+
+        // Alinhamento e formatação da quantidade
+        const qtyCell = summarySheet.getCell(`B${currentRow}`);
+        qtyCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        qtyCell.numFmt = '0';
+        if (details.adjusted > 0) {
+          qtyCell.font = { bold: true, color: { argb: colors.accent } };
+        }
+
+        // Destacar nome do EPI quando for material extra (não cadastrado)
+        const epiCell = summarySheet.getCell(`A${currentRow}`);
+        if (!availableEpis.includes(epi)) {
+          epiCell.font = { italic: true, color: { argb: 'FF92400E' } };
+        }
+
         currentRow++;
       });
 
@@ -499,11 +566,29 @@ export function RequestForm({ collectedData, onBack }: RequestFormProps) {
             
             // Alinhamento
             if (colIndex === 0 || colIndex === 9) {
-              cell.alignment = { horizontal: 'left', vertical: 'middle' };
+              cell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: colIndex === 9 };
             } else {
               cell.alignment = { horizontal: 'center', vertical: 'middle' };
             }
           });
+
+          // Destacar faltas
+          const faltaCell = detailSheet.getCell(`H${detailRow}`);
+          if (need.shortage > 0) {
+            faltaCell.font = { color: { argb: 'FFDC2626' }, bold: true };
+          } else {
+            faltaCell.font = { color: { argb: 'FF16A34A' } };
+          }
+
+          // Ajustar formatação numérica
+          detailSheet.getCell(`B${detailRow}`).numFmt = '0';
+          detailSheet.getCell(`C${detailRow}`).numFmt = '0';
+          detailSheet.getCell(`D${detailRow}`).numFmt = '0';
+          detailSheet.getCell(`E${detailRow}`).numFmt = '0';
+          detailSheet.getCell(`F${detailRow}`).numFmt = '0';
+          detailSheet.getCell(`G${detailRow}`).numFmt = '0';
+          detailSheet.getCell(`I${detailRow}`).numFmt = '0';
+
           detailRow++;
         });
 
@@ -563,7 +648,8 @@ export function RequestForm({ collectedData, onBack }: RequestFormProps) {
       
       stockItems.forEach(([epi, qty], index) => {
         const row = stockSheet.getRow(stockRow);
-        row.values = [epi, parseInt(qty as string) || 0];
+        const q = parseInt(qty as string) || 0;
+        row.values = [epi, q];
         row.font = { size: 11 };
         row.alignment = { vertical: 'middle' };
         row.height = 20;
@@ -585,6 +671,7 @@ export function RequestForm({ collectedData, onBack }: RequestFormProps) {
         
         stockSheet.getCell(`A${stockRow}`).alignment = { horizontal: 'left', vertical: 'middle' };
         stockSheet.getCell(`B${stockRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
+        stockSheet.getCell(`B${stockRow}`).numFmt = '0';
         stockRow++;
       });
 
@@ -732,9 +819,14 @@ export function RequestForm({ collectedData, onBack }: RequestFormProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {req.epiNeeds.map((need) => (
-                      <TableRow key={need.epi}>
-                        <TableCell className="font-medium">{need.epi}</TableCell>
+                    {req.epiNeeds.map((need, idx) => (
+                      <TableRow key={`${req.functionName}-${need.epi}-${idx}`}>
+                        <TableCell className="font-medium">
+                          {need.epi}
+                          {!availableEpis.includes(need.epi) && (
+                            <div className="text-xs text-amber-700 font-medium mt-1">Material não cadastrado — justificativa obrigatória</div>
+                          )}
+                        </TableCell>
                         <TableCell className="text-muted-foreground">{need.intervalMonths} {need.intervalMonths === 1 ? 'mês' : 'meses'}</TableCell>
                         <TableCell className="text-muted-foreground">{need.quantityPerEmployee}</TableCell>
                         <TableCell>{need.currentNeed}</TableCell>
@@ -769,6 +861,92 @@ export function RequestForm({ collectedData, onBack }: RequestFormProps) {
                     ))}
                   </TableBody>
                 </Table>
+                {/* Adicionar item manualmente */}
+                <div className="mt-3">
+                  {!addForms[req.functionName] ? (
+                    <Button
+                      variant="outline"
+                      onClick={() => setAddForms((prev) => ({ ...prev, [req.functionName]: { query: "", count: "", justification: "" } }))}
+                    >
+                      + Adicionar item
+                    </Button>
+                  ) : (
+                    <div className="mt-2 border rounded-md p-3 bg-white">
+                      <div className="flex gap-2 items-start">
+                        <div className="flex-1">
+                          <Input
+                            placeholder="Pesquisar EPI..."
+                            value={addForms[req.functionName].query}
+                            onChange={(e) => setAddForms((prev) => ({ ...prev, [req.functionName]: { ...prev[req.functionName], query: e.target.value } }))}
+                          />
+                          {addForms[req.functionName].query && (
+                            <div className="mt-2 max-h-36 overflow-auto border rounded-md bg-white">
+                              {availableEpis
+                                .filter((i) => i.toLowerCase().includes((addForms[req.functionName].query || "").toLowerCase()))
+                                .slice(0, 8)
+                                .map((item) => (
+                                  <div
+                                    key={item}
+                                    className="p-2 hover:bg-slate-100 cursor-pointer text-sm"
+                                    onClick={() => setAddForms((prev) => ({ ...prev, [req.functionName]: { ...prev[req.functionName], query: item, selected: item } }))}
+                                  >
+                                    {item}
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="w-24">
+                          <Input
+                            type="number"
+                            placeholder="Qtd"
+                            value={addForms[req.functionName].count}
+                            onChange={(e) => setAddForms((prev) => ({ ...prev, [req.functionName]: { ...prev[req.functionName], count: e.target.value } }))}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-2">
+                        <Textarea
+                          placeholder="Justificativa (opcional)"
+                          value={addForms[req.functionName].justification}
+                          onChange={(e) => setAddForms((prev) => ({ ...prev, [req.functionName]: { ...prev[req.functionName], justification: e.target.value } }))}
+                          rows={2}
+                        />
+                      </div>
+
+                      <div className="mt-2 flex gap-2">
+                        <Button
+                          onClick={() => {
+                            const form = addForms[req.functionName];
+                            const epi = (form.selected || form.query || "").trim();
+                            const qty = parseInt(form.count || "0", 10) || 0;
+                            const justification = (form.justification || "").trim();
+                            if (!epi || qty <= 0) {
+                              toast({ title: "Preencha item e quantidade", variant: "destructive" });
+                              return;
+                            }
+                            const isKnown = availableEpis.includes(epi);
+                            if (!isKnown && !justification) {
+                              toast({ title: "Justificativa obrigatória", description: `O item "${epi}" não está cadastrado. Informe uma justificativa.`, variant: "destructive" });
+                              return; // keep form open
+                            }
+                            addManualEpiToFunction(req.functionName, epi, qty, justification);
+                          }}
+                        >
+                          Adicionar
+                        </Button>
+                        <Button variant="outline" onClick={() => setAddForms((prev) => {
+                          const copy = { ...prev };
+                          delete copy[req.functionName];
+                          return copy;
+                        })}>
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
