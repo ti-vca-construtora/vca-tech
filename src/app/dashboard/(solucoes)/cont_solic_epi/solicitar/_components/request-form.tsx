@@ -8,6 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -77,6 +84,7 @@ export function RequestForm({ collectedData, onBack }: RequestFormProps) {
   const [functionRequests, setFunctionRequests] = useState<FunctionRequest[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [monthsMultiplier, setMonthsMultiplier] = useState<number>(1);
 
   useEffect(() => {
     async function loadData() {
@@ -119,7 +127,8 @@ export function RequestForm({ collectedData, onBack }: RequestFormProps) {
           const taxaMensal = item.intervalMonths > 0 ? 1 / item.intervalMonths : 0;
           const currentNeed = Math.ceil(currentEmp * taxaMensal); 
           const projectedNeed = projectedEmp * item.quantityPerEmployee; 
-          const totalNeed = currentNeed + projectedNeed;
+          // Aplicar o multiplicador de meses ao total necessário
+          const totalNeed = (currentNeed + projectedNeed) * monthsMultiplier;
           
           // Usar estoque coletado na Etapa 1
           const stock = parseInt(collectedData.epiCounts[item.epi] || "0", 10);
@@ -148,7 +157,7 @@ export function RequestForm({ collectedData, onBack }: RequestFormProps) {
     }
 
     setFunctionRequests(requests);
-  }, [funcoes, collectedData, availableEpis]);
+  }, [funcoes, collectedData, availableEpis, monthsMultiplier]);
 
   function updateManualAdjust(funcName: string, epi: string, value: string) {
     setFunctionRequests((prev) =>
@@ -274,6 +283,7 @@ export function RequestForm({ collectedData, onBack }: RequestFormProps) {
       projectedFunctionCounts: collectedData.projectedFunctionCounts,
       functionRequests,
       totalSummary,
+      monthsMultiplier, // Salvar o multiplicador usado
       createdAt: new Date().toISOString(),
       createdBy: collectedData.createdBy,
     };
@@ -714,7 +724,7 @@ export function RequestForm({ collectedData, onBack }: RequestFormProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="flex-1">
           <h3 className="text-lg font-semibold">Etapa 4: Resultado do Cálculo</h3>
           <p className="text-sm text-muted-foreground">
             Obra: {collectedData.obraName} — {collectedData.obraCity}/{collectedData.obraState}
@@ -723,9 +733,29 @@ export function RequestForm({ collectedData, onBack }: RequestFormProps) {
             Confira as necessidades de EPIs calculadas e faça ajustes se necessário
           </p>
         </div>
-        <Button variant="outline" onClick={onBack}>
-          Voltar
-        </Button>
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="months-multiplier" className="text-xs font-semibold">
+              Quantidade de Meses
+            </Label>
+            <Select
+              value={monthsMultiplier.toString()}
+              onValueChange={(value) => setMonthsMultiplier(parseInt(value, 10))}
+            >
+              <SelectTrigger id="months-multiplier" className="w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1 mês</SelectItem>
+                <SelectItem value="2">2 meses (x2)</SelectItem>
+                <SelectItem value="3">3 meses (x3)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button variant="outline" onClick={onBack}>
+            Voltar
+          </Button>
+        </div>
       </div>
 
       {/* RESUMO DA SOLICITAÇÃO - NO TOPO */}
@@ -771,11 +801,16 @@ export function RequestForm({ collectedData, onBack }: RequestFormProps) {
             • <strong>Projetados</strong>: quantidade inteira para equipar os novos (ex: 5 novos = 5 unidades)
           </p>
           <p className="text-xs text-muted-foreground">
-            • <strong>Total</strong>: Efetivos + Projetados
+            • <strong>Total</strong>: (Efetivos + Projetados) × {monthsMultiplier} {monthsMultiplier === 1 ? 'mês' : 'meses'}
           </p>
           <p className="text-xs text-muted-foreground">
             • <strong>Falta</strong>: Total necessário - Estoque disponível (informado na Etapa 1)
           </p>
+          {monthsMultiplier > 1 && (
+            <p className="text-xs text-blue-600 font-semibold mt-2">
+              ℹ️ Multiplicador ativo: calculando para {monthsMultiplier} meses
+            </p>
+          )}
         </div>
       </div>
 
