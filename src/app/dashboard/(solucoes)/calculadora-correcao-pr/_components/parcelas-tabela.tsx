@@ -38,6 +38,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
+import { supabaseEpi } from "@/lib/supabase-epi";
 
 type ParcelasTabelaProps = {
   cliente: Cliente;
@@ -80,33 +81,66 @@ export function ParcelasTabela({
   const [mostrarCalculo, setMostrarCalculo] = useState(false);
   const [mostrarAlertaIpc, setMostrarAlertaIpc] = useState(false);
   const [mesesSemTaxa, setMesesSemTaxa] = useState<string[]>([]);
+  const [parcelasDesconsiderar, setParcelasDesconsiderar] = useState<string[]>([]);
+  const [isLoadingParcelas, setIsLoadingParcelas] = useState(true);
+  const [isLoadingIndices, setIsLoadingIndices] = useState(true);
+
+  // Carregar índices do Supabase para o localStorage (para que getIndexRate funcione)
+  useEffect(() => {
+    const loadIndexEntries = async () => {
+      try {
+        const { data, error } = await supabaseEpi
+          .from("index_entries")
+          .select("*");
+
+        if (error) {
+          console.error("Error loading index entries:", error);
+        } else if (data) {
+          // Armazenar no localStorage para que getIndexRate possa usar
+          localStorage.setItem("index-entries", JSON.stringify(data));
+          console.log(`✅ ${data.length} índices carregados do Supabase para cache local`);
+        }
+      } catch (error) {
+        console.error("Error loading index entries:", error);
+      } finally {
+        setIsLoadingIndices(false);
+      }
+    };
+
+    loadIndexEntries();
+  }, []);
+
+  // Buscar parcelas a desconsiderar do Supabase
+  useEffect(() => {
+    const loadParcelasDesconsiderar = async () => {
+      try {
+        const { data, error } = await supabaseEpi
+          .from("parcelas_desconsiderar")
+          .select("descricao");
+
+        if (error) {
+          console.error("Error loading parcelas desconsiderar:", error);
+          setParcelasDesconsiderar([]);
+        } else {
+          const descricoes = (data || []).map((p) => p.descricao.toUpperCase());
+          setParcelasDesconsiderar(descricoes);
+          console.log("📋 Parcelas configuradas para desconsiderar:", descricoes);
+        }
+      } catch (error) {
+        console.error("Error loading parcelas desconsiderar:", error);
+        setParcelasDesconsiderar([]);
+      } finally {
+        setIsLoadingParcelas(false);
+      }
+    };
+
+    loadParcelasDesconsiderar();
+  }, []);
 
   // Extrair parcelas pagas do currentDebitBalance
   const parcelasPagas: ParcelaCurrentDebit[] =
     (currentDebitBalance.data[0]?.paidInstallments as unknown as ParcelaCurrentDebit[]) ||
     [];
-
-  // Obter lista de parcelas a desconsiderar do localStorage
-  const getParcelasDesconsiderar = (): string[] => {
-    try {
-      const stored = localStorage.getItem("parcelas-desconsiderar");
-      if (!stored) return [];
-      const parcelas = JSON.parse(stored);
-      return parcelas.map((p: { descricao: string }) =>
-        p.descricao.toUpperCase()
-      );
-    } catch {
-      return [];
-    }
-  };
-
-  const parcelasDesconsiderar = getParcelasDesconsiderar();
-
-  // Debug: mostrar parcelas a desconsiderar
-  console.log(
-    "📋 Parcelas configuradas para desconsiderar:",
-    parcelasDesconsiderar
-  );
 
   // Filtrar parcelas com receipts e até a data de referência
   const parcelasFiltradas = dataReferencia
@@ -382,6 +416,15 @@ export function ParcelasTabela({
             </div>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  // Mostrar loading enquanto carrega as parcelas a desconsiderar e os índices
+  if (isLoadingParcelas || isLoadingIndices) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <Loader2Icon className="size-8 animate-spin text-azul-claro-vca" />
       </div>
     );
   }

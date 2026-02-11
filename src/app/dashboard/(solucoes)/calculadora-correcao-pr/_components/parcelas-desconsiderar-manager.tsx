@@ -20,11 +20,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, Loader2 } from "lucide-react";
+import { supabaseEpi } from "@/lib/supabase-epi";
 
 type ParcelaDesconsiderar = {
   id: string;
   descricao: string;
-  criadoEm: string;
+  created_at: string;
 };
 
 export function ParcelasDesconsiderarManager() {
@@ -39,46 +40,29 @@ export function ParcelasDesconsiderarManager() {
     loadEntries();
   }, []);
 
-  const getInitialData = (): ParcelaDesconsiderar[] => {
-    const baseDate = new Date().toISOString();
-    const parcelas = [
-      "Entrada",
-      "Financiamento CEF",
-      "Financiamento Outros Bancos",
-      "FGTS Financiável",
-      "Subsídio Financiável",
-      "Parcela Única",
-      "Permuta",
-      "Morar Bem - PE",
-    ];
-
-    return parcelas.map((descricao, index) => ({
-      id: `initial-${index}`,
-      descricao: descricao,
-      criadoEm: baseDate,
-    }));
-  };
-
-  const loadEntries = () => {
+  const loadEntries = async () => {
     setIsLoading(true);
-    const stored = localStorage.getItem("parcelas-desconsiderar");
+    try {
+      const { data, error } = await supabaseEpi
+        .from("parcelas_desconsiderar")
+        .select("*")
+        .order("descricao", { ascending: true });
 
-    if (stored) {
-      setEntries(JSON.parse(stored));
-    } else {
-      // Carregar dados iniciais se não houver nada no localStorage
-      const initialData = getInitialData();
-      setEntries(initialData);
-      localStorage.setItem(
-        "parcelas-desconsiderar",
-        JSON.stringify(initialData)
-      );
+      if (error) {
+        console.error("Error loading entries:", error);
+        alert("Erro ao carregar dados do Supabase.");
+      } else {
+        setEntries(data || []);
+      }
+    } catch (error) {
+      console.error("Error loading entries:", error);
+      alert("Erro ao carregar dados do Supabase.");
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Verificar se a descrição já existe
@@ -92,39 +76,54 @@ export function ParcelasDesconsiderarManager() {
       return;
     }
 
-    const newEntry: ParcelaDesconsiderar = {
-      id: Date.now().toString(),
-      descricao: formData.descricao,
-      criadoEm: new Date().toISOString(),
-    };
+    try {
+      const { data, error } = await supabaseEpi
+        .from("parcelas_desconsiderar")
+        .insert([{ descricao: formData.descricao }])
+        .select();
 
-    const updatedEntries = [...entries, newEntry].sort((a, b) =>
-      a.descricao.localeCompare(b.descricao)
-    );
+      if (error) {
+        console.error("Error inserting entry:", error);
+        alert("Erro ao salvar no Supabase.");
+        return;
+      }
 
-    setEntries(updatedEntries);
-    localStorage.setItem(
-      "parcelas-desconsiderar",
-      JSON.stringify(updatedEntries)
-    );
+      alert(
+        `Parcela "${formData.descricao}" adicionada com sucesso à lista de parcelas a desconsiderar!`
+      );
 
-    alert(
-      `Parcela "${formData.descricao}" adicionada com sucesso à lista de parcelas a desconsiderar!`
-    );
-
-    setFormData({ descricao: "" });
-    setShowForm(false);
+      setFormData({ descricao: "" });
+      setShowForm(false);
+      
+      // Recarregar os dados
+      loadEntries();
+    } catch (error) {
+      console.error("Error inserting entry:", error);
+      alert("Erro ao salvar no Supabase.");
+    }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("Tem certeza que deseja excluir esta parcela?")) return;
 
-    const updatedEntries = entries.filter((entry) => entry.id !== id);
-    setEntries(updatedEntries);
-    localStorage.setItem(
-      "parcelas-desconsiderar",
-      JSON.stringify(updatedEntries)
-    );
+    try {
+      const { error } = await supabaseEpi
+        .from("parcelas_desconsiderar")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        console.error("Error deleting entry:", error);
+        alert("Erro ao excluir do Supabase.");
+        return;
+      }
+
+      // Recarregar os dados
+      loadEntries();
+    } catch (error) {
+      console.error("Error deleting entry:", error);
+      alert("Erro ao excluir do Supabase.");
+    }
   };
 
   const formatDate = (isoString: string) => {
@@ -227,7 +226,7 @@ export function ParcelasDesconsiderarManager() {
                         {entry.descricao}
                       </TableCell>
                       <TableCell className="text-sm text-neutral-500">
-                        {formatDate(entry.criadoEm)}
+                        {formatDate(entry.created_at)}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button

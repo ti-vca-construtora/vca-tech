@@ -104,7 +104,11 @@ INSERT INTO public.index_entries (mes, ano, valor, tipo) VALUES
 (7, 2025, 0.37, 'IPC-DI'),
 (8, 2025, -0.44, 'IPC-DI'),
 (9, 2025, 0.65, 'IPC-DI'),
-(10, 2025, 0.14, 'IPC-DI')
+(10, 2025, 0.14, 'IPC-DI'),
+(11, 2025, 0.28, 'IPC-DI'),
+(12, 2025, 0.51, 'IPC-DI'),
+(1, 2026, 0.38, 'IPC-DI'),
+(2, 2026, 0.82, 'IPC-DI')
 ON CONFLICT (mes, ano, tipo) DO NOTHING;
 
 -- Insert initial IGP-M data (2024-2025)
@@ -121,7 +125,10 @@ INSERT INTO public.index_entries (mes, ano, valor, tipo) VALUES
 (8, 2025, 0.36, 'IGP-M'),
 (9, 2025, 0.42, 'IGP-M'),
 (10, 2025, -0.36, 'IGP-M'),
-(11, 2025, 0.27, 'IGP-M')
+(11, 2025, 0.27, 'IGP-M'),
+(12, 2025, 0.45, 'IGP-M'),
+(1, 2026, 0.32, 'IGP-M'),
+(2, 2026, 0.89, 'IGP-M')
 ON CONFLICT (mes, ano, tipo) DO NOTHING;
 
 -- Insert initial IPCA data (2024-2025)
@@ -138,5 +145,20 @@ INSERT INTO public.index_entries (mes, ano, valor, tipo) VALUES
 (8, 2025, -0.11, 'IPCA'),
 (9, 2025, 0.48, 'IPCA'),
 (10, 2025, 0.09, 'IPCA'),
-(11, 2025, 0.18, 'IPCA')
+(11, 2025, 0.18, 'IPCA'),
+(12, 2025, 0.42, 'IPCA'),
+(1, 2026, 0.29, 'IPCA'),
+(2, 2026, 0.76, 'IPCA')
 ON CONFLICT (mes, ano, tipo) DO NOTHING;
+
+-- Insert initial parcelas a desconsiderar data
+INSERT INTO public.parcelas_desconsiderar (descricao) VALUES
+('Entrada'),
+('Financiamento CEF'),
+('Financiamento Outros Bancos'),
+('FGTS Financiável'),
+('Subsídio Financiável'),
+('Parcela Única'),
+('Permuta'),
+('Morar Bem - PE')
+ON CONFLICT (descricao) DO NOTHING;
