@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, Loader2 } from "lucide-react";
+import { supabaseEpi } from "@/lib/supabase-epi";
 
 type IndexType = "IPC-DI" | "IGP-M" | "IPCA";
 
@@ -29,7 +30,7 @@ type IndexEntry = {
   ano: number;
   valor: number;
   tipo: IndexType;
-  criadoEm: string;
+  created_at: string;
 };
 
 export function IpcDiManager() {
@@ -47,195 +48,30 @@ export function IpcDiManager() {
     loadEntries();
   }, []);
 
-  const getInitialData = (): IndexEntry[] => {
-    const baseDate = new Date().toISOString();
-    const ipcDiData: Array<{ ano: number; mes: number; valor: number }> = [
-      // 2017
-      { ano: 2017, mes: 11, valor: 0.36 },
-      { ano: 2017, mes: 12, valor: 0.21 },
-      // 2018
-      { ano: 2018, mes: 1, valor: 0.69 },
-      { ano: 2018, mes: 2, valor: 0.17 },
-      { ano: 2018, mes: 3, valor: 0.17 },
-      { ano: 2018, mes: 4, valor: 0.34 },
-      { ano: 2018, mes: 5, valor: 0.41 },
-      { ano: 2018, mes: 6, valor: 1.19 },
-      { ano: 2018, mes: 7, valor: 0.17 },
-      { ano: 2018, mes: 8, valor: 0.07 },
-      { ano: 2018, mes: 9, valor: 0.45 },
-      { ano: 2018, mes: 10, valor: 0.48 },
-      { ano: 2018, mes: 11, valor: -0.17 },
-      { ano: 2018, mes: 12, valor: 0.29 },
-      // 2019
-      { ano: 2019, mes: 1, valor: 0.57 },
-      { ano: 2019, mes: 2, valor: 0.35 },
-      { ano: 2019, mes: 3, valor: 0.65 },
-      { ano: 2019, mes: 4, valor: 0.63 },
-      { ano: 2019, mes: 5, valor: 0.22 },
-      { ano: 2019, mes: 6, valor: -0.02 },
-      { ano: 2019, mes: 7, valor: 0.31 },
-      { ano: 2019, mes: 8, valor: 0.17 },
-      { ano: 2019, mes: 9, valor: 0.0 },
-      { ano: 2019, mes: 10, valor: -0.09 },
-      { ano: 2019, mes: 11, valor: 0.49 },
-      { ano: 2019, mes: 12, valor: 0.77 },
-      // 2020
-      { ano: 2020, mes: 1, valor: 0.59 },
-      { ano: 2020, mes: 2, valor: -0.01 },
-      { ano: 2020, mes: 3, valor: 0.34 },
-      { ano: 2020, mes: 4, valor: -0.18 },
-      { ano: 2020, mes: 5, valor: -0.54 },
-      { ano: 2020, mes: 6, valor: 0.36 },
-      { ano: 2020, mes: 7, valor: 0.49 },
-      { ano: 2020, mes: 8, valor: 0.53 },
-      { ano: 2020, mes: 9, valor: 0.82 },
-      { ano: 2020, mes: 10, valor: 0.65 },
-      { ano: 2020, mes: 11, valor: 0.94 },
-      { ano: 2020, mes: 12, valor: 1.07 },
-      // 2021
-      { ano: 2021, mes: 1, valor: 0.27 },
-      { ano: 2021, mes: 2, valor: 0.54 },
-      { ano: 2021, mes: 3, valor: 1.0 },
-      { ano: 2021, mes: 4, valor: 0.23 },
-      { ano: 2021, mes: 5, valor: 0.81 },
-      { ano: 2021, mes: 6, valor: 0.64 },
-      { ano: 2021, mes: 7, valor: 0.92 },
-      { ano: 2021, mes: 8, valor: 0.71 },
-      { ano: 2021, mes: 9, valor: 1.43 },
-      { ano: 2021, mes: 10, valor: 0.77 },
-      { ano: 2021, mes: 11, valor: 1.08 },
-      { ano: 2021, mes: 12, valor: 0.57 },
-      // 2022
-      { ano: 2022, mes: 1, valor: 0.49 },
-      { ano: 2022, mes: 2, valor: 0.28 },
-      { ano: 2022, mes: 3, valor: 1.35 },
-      { ano: 2022, mes: 4, valor: 1.08 },
-      { ano: 2022, mes: 5, valor: 0.5 },
-      { ano: 2022, mes: 6, valor: 0.67 },
-      { ano: 2022, mes: 7, valor: -1.19 },
-      { ano: 2022, mes: 8, valor: -0.57 },
-      { ano: 2022, mes: 9, valor: 0.02 },
-      { ano: 2022, mes: 10, valor: 0.69 },
-      { ano: 2022, mes: 11, valor: 0.57 },
-      { ano: 2022, mes: 12, valor: 0.35 },
-      // 2023
-      { ano: 2023, mes: 1, valor: 0.8 },
-      { ano: 2023, mes: 2, valor: 0.34 },
-      { ano: 2023, mes: 3, valor: 0.74 },
-      { ano: 2023, mes: 4, valor: 0.5 },
-      { ano: 2023, mes: 5, valor: 0.08 },
-      { ano: 2023, mes: 6, valor: -0.1 },
-      { ano: 2023, mes: 7, valor: 0.07 },
-      { ano: 2023, mes: 8, valor: -0.22 },
-      { ano: 2023, mes: 9, valor: 0.27 },
-      { ano: 2023, mes: 10, valor: 0.45 },
-      { ano: 2023, mes: 11, valor: 0.27 },
-      { ano: 2023, mes: 12, valor: 0.29 },
-      // 2024
-      { ano: 2024, mes: 1, valor: 0.61 },
-      { ano: 2024, mes: 2, valor: 0.55 },
-      { ano: 2024, mes: 3, valor: 0.1 },
-      { ano: 2024, mes: 4, valor: 0.42 },
-      { ano: 2024, mes: 5, valor: 0.53 },
-      { ano: 2024, mes: 6, valor: 0.22 },
-      { ano: 2024, mes: 7, valor: 0.54 },
-      { ano: 2024, mes: 8, valor: -0.16 },
-      { ano: 2024, mes: 9, valor: 0.63 },
-      { ano: 2024, mes: 10, valor: 0.3 },
-      { ano: 2024, mes: 11, valor: -0.13 },
-      { ano: 2024, mes: 12, valor: 0.31 },
-      // 2025
-      { ano: 2025, mes: 1, valor: 0.02 },
-      { ano: 2025, mes: 2, valor: 1.18 },
-      { ano: 2025, mes: 3, valor: 0.44 },
-      { ano: 2025, mes: 4, valor: 0.52 },
-      { ano: 2025, mes: 5, valor: 0.34 },
-      { ano: 2025, mes: 6, valor: 0.16 },
-      { ano: 2025, mes: 7, valor: 0.37 },
-      { ano: 2025, mes: 8, valor: -0.44 },
-      { ano: 2025, mes: 9, valor: 0.65 },
-      { ano: 2025, mes: 10, valor: 0.14 },
-    ];
-
-    const igpmData: Array<{ ano: number; mes: number; valor: number }> = [
-      { ano: 2024, mes: 11, valor: 1.30 },
-      { ano: 2024, mes: 12, valor: 0.94 },
-      { ano: 2025, mes: 1, valor: 0.27 },
-      { ano: 2025, mes: 2, valor: 1.06 },
-      { ano: 2025, mes: 3, valor: -0.34 },
-      { ano: 2025, mes: 4, valor: 0.24 },
-      { ano: 2025, mes: 5, valor: -0.49 },
-      { ano: 2025, mes: 6, valor: -1.67 },
-      { ano: 2025, mes: 7, valor: -0.77 },
-      { ano: 2025, mes: 8, valor: 0.36 },
-      { ano: 2025, mes: 9, valor: 0.42 },
-      { ano: 2025, mes: 10, valor: -0.36 },
-      { ano: 2025, mes: 11, valor: 0.27 },
-    ];
-
-    const ipcaData: Array<{ ano: number; mes: number; valor: number }> = [
-      { ano: 2024, mes: 11, valor: 0.39 },
-      { ano: 2024, mes: 12, valor: 0.52 },
-      { ano: 2025, mes: 1, valor: 0.16 },
-      { ano: 2025, mes: 2, valor: 1.31 },
-      { ano: 2025, mes: 3, valor: 0.56 },
-      { ano: 2025, mes: 4, valor: 0.43 },
-      { ano: 2025, mes: 5, valor: 0.26 },
-      { ano: 2025, mes: 6, valor: 0.24 },
-      { ano: 2025, mes: 7, valor: 0.26 },
-      { ano: 2025, mes: 8, valor: -0.11 },
-      { ano: 2025, mes: 9, valor: 0.48 },
-      { ano: 2025, mes: 10, valor: 0.09 },
-      { ano: 2025, mes: 11, valor: 0.18 },
-    ];
-
-    const allData: IndexEntry[] = [
-      ...ipcDiData.map((item, index) => ({
-        id: `ipc-di-${index}`,
-        mes: item.mes,
-        ano: item.ano,
-        valor: item.valor,
-        tipo: "IPC-DI" as IndexType,
-        criadoEm: baseDate,
-      })),
-      ...igpmData.map((item, index) => ({
-        id: `igpm-${index}`,
-        mes: item.mes,
-        ano: item.ano,
-        valor: item.valor,
-        tipo: "IGP-M" as IndexType,
-        criadoEm: baseDate,
-      })),
-      ...ipcaData.map((item, index) => ({
-        id: `ipca-${index}`,
-        mes: item.mes,
-        ano: item.ano,
-        valor: item.valor,
-        tipo: "IPCA" as IndexType,
-        criadoEm: baseDate,
-      })),
-    ];
-
-    return allData;
-  };
-
-  const loadEntries = () => {
+  const loadEntries = async () => {
     setIsLoading(true);
-    const stored = localStorage.getItem("index-entries");
+    try {
+      const { data, error } = await supabaseEpi
+        .from("index_entries")
+        .select("*")
+        .order("ano", { ascending: false })
+        .order("mes", { ascending: false });
 
-    if (stored) {
-      setEntries(JSON.parse(stored));
-    } else {
-      // Carregar dados iniciais se não houver nada no localStorage
-      const initialData = getInitialData();
-      setEntries(initialData);
-      localStorage.setItem("index-entries", JSON.stringify(initialData));
+      if (error) {
+        console.error("Error loading entries:", error);
+        alert("Erro ao carregar dados do Supabase.");
+      } else {
+        setEntries(data || []);
+      }
+    } catch (error) {
+      console.error("Error loading entries:", error);
+      alert("Erro ao carregar dados do Supabase.");
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const [ano, mes] = formData.mesAno.split("-").map(Number);
@@ -252,37 +88,61 @@ export function IpcDiManager() {
       return;
     }
 
-    const newEntry: IndexEntry = {
-      id: Date.now().toString(),
-      mes,
-      ano,
-      valor: parseFloat(formData.valor),
-      tipo: formData.tipo,
-      criadoEm: new Date().toISOString(),
-    };
+    try {
+      const { data, error } = await supabaseEpi
+        .from("index_entries")
+        .insert([
+          {
+            mes,
+            ano,
+            valor: parseFloat(formData.valor),
+            tipo: formData.tipo,
+          },
+        ])
+        .select();
 
-    const updatedEntries = [...entries, newEntry].sort((a, b) => {
-      if (a.ano !== b.ano) return b.ano - a.ano;
-      return b.mes - a.mes;
-    });
+      if (error) {
+        console.error("Error inserting entry:", error);
+        alert("Erro ao salvar no Supabase.");
+        return;
+      }
 
-    setEntries(updatedEntries);
-    localStorage.setItem("index-entries", JSON.stringify(updatedEntries));
+      alert(
+        `Taxa ${formData.tipo} de ${getMesNome(mes)}/${ano} (${formData.valor}%) salva com sucesso!`
+      );
 
-    alert(
-      `Taxa ${formData.tipo} de ${getMesNome(mes)}/${ano} (${formData.valor}%) salva com sucesso!`
-    );
-
-    setFormData({ mesAno: "", valor: "", tipo: "IPC-DI" });
-    setShowForm(false);
+      setFormData({ mesAno: "", valor: "", tipo: "IPC-DI" });
+      setShowForm(false);
+      
+      // Recarregar os dados
+      loadEntries();
+    } catch (error) {
+      console.error("Error inserting entry:", error);
+      alert("Erro ao salvar no Supabase.");
+    }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("Tem certeza que deseja excluir esta entrada?")) return;
 
-    const updatedEntries = entries.filter((entry) => entry.id !== id);
-    setEntries(updatedEntries);
-    localStorage.setItem("index-entries", JSON.stringify(updatedEntries));
+    try {
+      const { error } = await supabaseEpi
+        .from("index_entries")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        console.error("Error deleting entry:", error);
+        alert("Erro ao excluir do Supabase.");
+        return;
+      }
+
+      // Recarregar os dados
+      loadEntries();
+    } catch (error) {
+      console.error("Error deleting entry:", error);
+      alert("Erro ao excluir do Supabase.");
+    }
   };
 
   const getMesNome = (mes: number) => {
@@ -454,7 +314,7 @@ export function IpcDiManager() {
                     <TableCell>{entry.ano}</TableCell>
                     <TableCell>{entry.valor.toFixed(2)}%</TableCell>
                     <TableCell className="text-sm text-neutral-500">
-                      {formatDate(entry.criadoEm)}
+                      {formatDate(entry.created_at)}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button

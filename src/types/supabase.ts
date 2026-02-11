@@ -198,6 +198,35 @@ export interface Database {
           updated_at?: string | null
         }
       }
+      index_entries: {
+        Row: {
+          id: string
+          mes: number
+          ano: number
+          valor: number
+          tipo: 'IPC-DI' | 'IGP-M' | 'IPCA'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          mes: number
+          ano: number
+          valor: number
+          tipo: 'IPC-DI' | 'IGP-M' | 'IPCA'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          mes?: number
+          ano?: number
+          valor?: number
+          tipo?: 'IPC-DI' | 'IGP-M' | 'IPCA'
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
