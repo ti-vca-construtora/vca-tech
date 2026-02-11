@@ -43,8 +43,8 @@ export function ParcelasDesconsiderarManager() {
   const loadEntries = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabaseEpi
-        .from("parcelas_desconsiderar")
+      const { data, error } = await (supabaseEpi
+        .from("parcelas_desconsiderar") as any)
         .select("*")
         .order("descricao", { ascending: true });
 
@@ -77,8 +77,8 @@ export function ParcelasDesconsiderarManager() {
     }
 
     try {
-      const { data, error } = await supabaseEpi
-        .from("parcelas_desconsiderar")
+      const { data, error } = await (supabaseEpi
+        .from("parcelas_desconsiderar") as any)
         .insert([{ descricao: formData.descricao }])
         .select();
 
@@ -107,8 +107,8 @@ export function ParcelasDesconsiderarManager() {
     if (!confirm("Tem certeza que deseja excluir esta parcela?")) return;
 
     try {
-      const { error } = await supabaseEpi
-        .from("parcelas_desconsiderar")
+      const { error } = await (supabaseEpi
+        .from("parcelas_desconsiderar") as any)
         .delete()
         .eq("id", id);
 

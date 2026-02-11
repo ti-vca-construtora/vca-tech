@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, Loader2 } from "lucide-react";
 import { supabaseEpi } from "@/lib/supabase-epi";
+import type { Database } from "@/types/supabase";
 
 type IndexType = "IPC-DI" | "IGP-M" | "IPCA";
 
@@ -51,8 +52,8 @@ export function IpcDiManager() {
   const loadEntries = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabaseEpi
-        .from("index_entries")
+      const { data, error } = await (supabaseEpi
+        .from("index_entries") as any)
         .select("*")
         .order("ano", { ascending: false })
         .order("mes", { ascending: false });
@@ -89,16 +90,16 @@ export function IpcDiManager() {
     }
 
     try {
-      const { data, error } = await supabaseEpi
-        .from("index_entries")
-        .insert([
-          {
-            mes,
-            ano,
-            valor: parseFloat(formData.valor),
-            tipo: formData.tipo,
-          },
-        ])
+      const insertData = {
+        mes,
+        ano,
+        valor: parseFloat(formData.valor),
+        tipo: formData.tipo,
+      };
+
+      const { data, error } = await (supabaseEpi
+        .from("index_entries") as any)
+        .insert([insertData])
         .select();
 
       if (error) {
@@ -126,8 +127,8 @@ export function IpcDiManager() {
     if (!confirm("Tem certeza que deseja excluir esta entrada?")) return;
 
     try {
-      const { error } = await supabaseEpi
-        .from("index_entries")
+      const { error } = await (supabaseEpi
+        .from("index_entries") as any)
         .delete()
         .eq("id", id);
 

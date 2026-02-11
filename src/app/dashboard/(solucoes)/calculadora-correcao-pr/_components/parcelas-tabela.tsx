@@ -89,8 +89,8 @@ export function ParcelasTabela({
   useEffect(() => {
     const loadIndexEntries = async () => {
       try {
-        const { data, error } = await supabaseEpi
-          .from("index_entries")
+        const { data, error } = await (supabaseEpi
+          .from("index_entries") as any)
           .select("*");
 
         if (error) {
@@ -114,15 +114,15 @@ export function ParcelasTabela({
   useEffect(() => {
     const loadParcelasDesconsiderar = async () => {
       try {
-        const { data, error } = await supabaseEpi
-          .from("parcelas_desconsiderar")
+        const { data, error } = await (supabaseEpi
+          .from("parcelas_desconsiderar") as any)
           .select("descricao");
 
         if (error) {
           console.error("Error loading parcelas desconsiderar:", error);
           setParcelasDesconsiderar([]);
         } else {
-          const descricoes = (data || []).map((p) => p.descricao.toUpperCase());
+          const descricoes = (data || []).map((p: any) => p.descricao.toUpperCase());
           setParcelasDesconsiderar(descricoes);
           console.log("📋 Parcelas configuradas para desconsiderar:", descricoes);
         }
