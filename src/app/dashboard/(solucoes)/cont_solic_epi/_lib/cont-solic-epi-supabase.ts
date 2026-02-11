@@ -80,7 +80,7 @@ export async function loadObrasFromDB(): Promise<Obra[]> {
         name: obra.name,
         state: obra.state || obra.STATE || '',
         city: obra.city || obra.CITY || '',
-        empreendimentoType: obra.empreendimento_type || obra.EMPREENDIMENTO_TYPE || 'INCORPORADORA',
+        empreendimentoType: obra.empreendimento_type || obra.EMPREENDIMENTO_TYPE || 'INCORPORACAO',
       };
     });
   } catch (error) {

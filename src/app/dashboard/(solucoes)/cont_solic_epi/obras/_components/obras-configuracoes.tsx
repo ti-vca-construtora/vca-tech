@@ -26,10 +26,10 @@ import { useToast } from "@/hooks/use-toast";
 
 import {
   genId,
-  loadObras,
+  loadObrasAsync,
   Obra,
   ObraEmpreendimentoTipo,
-  saveObras,
+  saveObrasAsync,
   normalizeText,
 } from "../../_lib/cont-solic-epi-storage";
 
@@ -51,6 +51,7 @@ const DEFAULT_OBRAS: Array<Omit<Obra, "id">> = [
 export function ObrasConfiguracoes() {
   const { toast } = useToast();
   const [obras, setObras] = useState<Obra[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [name, setName] = useState("");
   const [state, setState] = useState("");
@@ -58,27 +59,34 @@ export function ObrasConfiguracoes() {
   const [type, setType] = useState<ObraEmpreendimentoTipo>("INCORPORACAO");
 
   useEffect(() => {
-    const loaded = loadObras();
-    if (loaded.length > 0) {
-      setObras(loaded);
-      return;
-    }
+    async function loadData() {
+      try {
+        const loaded = await loadObrasAsync();
+        if (loaded.length > 0) {
+          setObras(loaded);
+          return;
+        }
 
-    const seeded: Obra[] = DEFAULT_OBRAS.map((o) => ({ ...o, id: genId() }));
-    setObras(seeded);
-    saveObras(seeded);
+        const seeded: Obra[] = DEFAULT_OBRAS.map((o) => ({ ...o, id: genId() }));
+        setObras(seeded);
+        await saveObrasAsync(seeded);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadData();
   }, []);
 
   const sortedObras = useMemo(() => {
     return [...obras].sort((a, b) => a.name.localeCompare(b.name));
   }, [obras]);
 
-  function persist(next: Obra[]) {
+  async function persist(next: Obra[]) {
     setObras(next);
-    saveObras(next);
+    await saveObrasAsync(next);
   }
 
-  function addObra() {
+  async function addObra() {
     const cleanName = normalizeText(name);
     const cleanState = normalizeText(state).toUpperCase();
     const cleanCity = normalizeText(city);
@@ -102,7 +110,7 @@ export function ObrasConfiguracoes() {
         empreendimentoType: type,
       },
     ];
-    persist(next);
+    await persist(next);
 
     setName("");
     setState("");
@@ -112,9 +120,9 @@ export function ObrasConfiguracoes() {
     toast({ title: "Obra cadastrada" });
   }
 
-  function removeObra(id: string) {
+  async function removeObra(id: string) {
     const next = obras.filter((o) => o.id !== id);
-    persist(next);
+    await persist(next);
     toast({ title: "Obra removida" });
   }
 
@@ -153,7 +161,7 @@ export function ObrasConfiguracoes() {
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="INCORPORADORA">Incorporadora</SelectItem>
+                  <SelectItem value="INCORPORACAO">Incorporadora</SelectItem>
                   <SelectItem value="LOTEAMENTO">Loteamento</SelectItem>
                 </SelectContent>
               </Select>
@@ -172,6 +180,11 @@ export function ObrasConfiguracoes() {
           <CardTitle>Obras cadastradas</CardTitle>
         </CardHeader>
         <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -214,6 +227,7 @@ export function ObrasConfiguracoes() {
               )}
             </TableBody>
           </Table>
+          )}
         </CardContent>
       </Card>
     </div>
