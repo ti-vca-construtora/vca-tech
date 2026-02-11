@@ -108,6 +108,10 @@ const PERMISSIONS_BY_AREA: Record<AreaKey, string[]> = {
     // "gerenciar-usuarios",
     // "gerenciar-equipamentos",
   ],
+  sesmt: [
+    "epi",
+    "adm-sesmt",
+  ],
 };
 
 const ALL_PERMISSIONS = Array.from(
@@ -137,8 +141,8 @@ function ManagePermissionsDialog({
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(false);
 
   const availablePermissions =
-    area && (PERMISSIONS_BY_AREA as Record<string, string[]>)[area]
-      ? (PERMISSIONS_BY_AREA as Record<string, string[]>)[area]
+    area && area in PERMISSIONS_BY_AREA
+      ? PERMISSIONS_BY_AREA[area as AreaKey]
       : ALL_PERMISSIONS;
 
   useEffect(() => {
