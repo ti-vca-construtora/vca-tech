@@ -72,7 +72,8 @@ const AREAS = [
   "relacionamento",
   "entregas",
   "obras",
-  "sesmt"
+  "sesmt",
+  "administrativo"
 ];
 
 type AreaKey = (typeof AREAS)[number];
@@ -111,6 +112,9 @@ const PERMISSIONS_BY_AREA: Record<AreaKey, string[]> = {
   sesmt: [
     "epi",
     "adm-sesmt",
+  ],
+  administrativo: [
+    "gerador-rps"
   ],
 };
 

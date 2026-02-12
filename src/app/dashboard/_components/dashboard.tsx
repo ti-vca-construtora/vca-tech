@@ -107,6 +107,12 @@ export function Dashboard({ children }: DashboardProps) {
                         >
                           SESMT
                         </Link>
+                        <Link
+                          href="/dashboard/setores/administrativo?title=Painel de Soluções - Administrativo"
+                          className="rounded-md px-2 py-1 text-sm hover:bg-muted"
+                        >
+                          Administrativo
+                        </Link>
                       </div>
                     </details>
 

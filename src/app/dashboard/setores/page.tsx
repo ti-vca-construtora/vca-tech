@@ -6,10 +6,9 @@ import {
   MdHowToReg,
   MdOutlineRealEstateAgent,
 } from "react-icons/md";
-import { FaRegHandshake } from "react-icons/fa";
+import { FaArchive, FaRegHandshake } from "react-icons/fa";
 import { FaHelmetSafety } from "react-icons/fa6";
-// import { BsPeopleFill } from 'react-icons/bs'
-// import { GoLaw } from 'react-icons/go'
+
 
 type Setor = {
   title: string;
@@ -48,31 +47,16 @@ const setoresData: Setor[] = [
     href: "/dashboard/setores/sesmt?title=Painel de Soluções - SESMT",
     Icon: FaHelmetSafety,
   },
-  // {
-  //   title: "Controladoria",
-  //   href: "/dashboard/setores/controladoria?title=Painel de Soluções - Controladoria",
-  //   Icon: MdAccountBalance,
-  // },
-  // {
-  //   title: 'Jurídico',
-  //   href: '/app/relacionamento',
-  //   Icon: GoLaw,
-  // },
-  // {
-  //   title: 'RH',
-  //   href: '/app/relacionamento',
-  //   Icon: BsPeopleFill,
-  // },
-  // {
-  //   title: 'Contabilidade',
-  //   href: '/app/relacionamento',
-  //   Icon: MdAccountBalance,
-  // },
+        {
+    title: "Administrativo",
+    href: "/dashboard/setores/administrativo?title=Painel de Soluções - Administrativo",
+    Icon: FaArchive,
+  },
 ];
 
 export default function Setores() {
   return (
-    <section className="flex items-start gap-6 w-full h-full p-6">
+    <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6 w-full h-full p-3 sm:p-4 md:p-6">
       {setoresData.map((item, index) => (
         <SetorCard
           key={index}
@@ -89,10 +73,10 @@ function SetorCard({ title, href, Icon }: Setor) {
   return (
     <Link
       href={href}
-      className="shadow-md bg-neutral-50 text-azul-vca hover:text-verde-vca transition-colors rounded-md p-6 aspect-square size-44 text-lg font-bold flex flex-col gap-3 items-center justify-center"
+      className="shadow-md bg-neutral-50 text-azul-vca hover:text-verde-vca transition-colors rounded-md p-3 sm:p-4 md:p-6 aspect-square w-full text-sm sm:text-base md:text-lg font-bold flex flex-col gap-2 sm:gap-3 items-center justify-center"
     >
-      <Icon className="size-24" />
-      <span>{title}</span>
+      <Icon className="size-12 sm:size-16 md:size-20 lg:size-24" />
+      <span className="text-center">{title}</span>
     </Link>
   );
 }

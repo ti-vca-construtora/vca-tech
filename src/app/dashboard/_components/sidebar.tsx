@@ -49,6 +49,10 @@ const data = {
           title: "SESMT",
           url: "/dashboard/setores/sesmt?title=Painel de Soluções - SESMT",
         },
+                                {
+          title: "Administrativo",
+          url: "/dashboard/setores/administrativo?title=Painel de Soluções - Administrativo",
+        },
         ],
       },
     {
