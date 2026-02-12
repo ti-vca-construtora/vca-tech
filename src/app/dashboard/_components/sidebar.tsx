@@ -26,35 +26,35 @@ const data = {
       isActive: true,
       items: [
         {
-          title: "Financeiro",
-          url: "/dashboard/setores/financeiro?title=Painel de Soluções - Financeiro",
+          title: "Administrativo",
+          url: "/dashboard/setores/administrativo?title=Painel de Soluções - Administrativo",
         },
         {
-          title: "Relacionamento",
-          url: "/dashboard/setores/relacionamento?title=Painel de Soluções - Relacionamento",
+          title: "Comercial",
+          url: "/dashboard/setores/comercial?title=Painel de Soluções - Comercial",
         },
         {
           title: "Entregas",
           url: "/dashboard/setores/entregas?title=Painel de Soluções - Entregas",
         },
         {
+          title: "Financeiro",
+          url: "/dashboard/setores/financeiro?title=Painel de Soluções - Financeiro",
+        },
+        {
           title: "Obras",
           url: "/dashboard/setores/obras?title=Painel de Soluções - Obras",
         },
-                {
-          title: "Comercial",
-          url: "/dashboard/setores/comercial?title=Painel de Soluções - Comercial",
+        {
+          title: "Relacionamento",
+          url: "/dashboard/setores/relacionamento?title=Painel de Soluções - Relacionamento",
         },
-                        {
+        {
           title: "SESMT",
           url: "/dashboard/setores/sesmt?title=Painel de Soluções - SESMT",
         },
-                                {
-          title: "Administrativo",
-          url: "/dashboard/setores/administrativo?title=Painel de Soluções - Administrativo",
-        },
-        ],
-      },
+      ],
+    },
     {
       title: "Configurações",
       url: "/dashboard/settings",

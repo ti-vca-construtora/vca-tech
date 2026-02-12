@@ -9,9 +9,11 @@ import { useEffect, useState, useRef } from "react";
 
 interface PreviewPDFProps {
   formData: FormData;
+  triggerGenerate?: boolean;
+  onGenerateComplete?: () => void;
 }
 
-export function PreviewPDF({ formData }: PreviewPDFProps) {
+export function PreviewPDF({ formData, triggerGenerate = false, onGenerateComplete }: PreviewPDFProps) {
   const { toast } = useToast();
   const [pdfUrl, setPdfUrl] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -28,14 +30,15 @@ export function PreviewPDF({ formData }: PreviewPDFProps) {
                          formData.valorServico &&
                          formData.formaPagamento;
 
-  // Gerar PDF automaticamente quando todos os campos obrigatórios estiverem preenchidos
+  // Gerar PDF quando triggerGenerate mudar ou quando formulário estiver completo
   useEffect(() => {
-    if (isFormComplete && shouldGenerate) {
+    if (isFormComplete && (triggerGenerate || shouldGenerate)) {
       generatePDF();
       setShouldGenerate(false);
+      onGenerateComplete?.();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData, shouldGenerate, isFormComplete]);
+  }, [formData, shouldGenerate, triggerGenerate, isFormComplete]);
 
   const generatePDF = async () => {
     setLoading(true);
@@ -150,25 +153,8 @@ export function PreviewPDF({ formData }: PreviewPDFProps) {
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <FileText className="h-16 w-16 mb-4 opacity-20 text-muted-foreground" />
             <p className="text-sm text-muted-foreground mb-4">
-              Clique no botão abaixo para gerar o preview do RPS
+              O preview será exibido aqui quando você clicar em &quot;Gerar Preview&quot; no formulário
             </p>
-            <Button
-              onClick={handleGeneratePreview}
-              disabled={!isFormComplete || loading}
-              size="sm"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Gerando PDF...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Gerar Preview
-                </>
-              )}
-            </Button>
           </div>
         ) : (
           <>

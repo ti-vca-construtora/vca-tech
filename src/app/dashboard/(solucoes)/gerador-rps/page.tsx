@@ -53,14 +53,28 @@ export default function GeradorRPSPage() {
     dadosTerceiros: false
   });
 
+  const [triggerGenerate, setTriggerGenerate] = useState(false);
+
+  const handleGeneratePreview = () => {
+    setTriggerGenerate(true);
+  };
+
   return (
     <RouteGuard requiredArea="administrativo" requiredPermission="gerador-rps">
       <div className="w-full h-full flex flex-col lg:flex-row gap-4 md:gap-6 p-3 sm:p-4 md:p-6">
         <div className="w-full lg:w-1/2">
-          <GeradorRPSForm formData={formData} setFormData={setFormData} />
+          <GeradorRPSForm 
+            formData={formData} 
+            setFormData={setFormData}
+            onGeneratePreview={handleGeneratePreview}
+          />
         </div>
         <div className="w-full lg:w-1/2">
-          <PreviewPDF formData={formData} />
+          <PreviewPDF 
+            formData={formData}
+            triggerGenerate={triggerGenerate}
+            onGenerateComplete={() => setTriggerGenerate(false)}
+          />
         </div>
       </div>
     </RouteGuard>

@@ -13,16 +13,17 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronLeft, ChevronRight, FileText, User, Calculator } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, User, Calculator, Eye } from "lucide-react";
 import { useState, useMemo } from "react";
 import { FormData } from "../page";
 
 interface GeradorRPSFormProps {
   formData: FormData;
   setFormData: (data: FormData) => void;
+  onGeneratePreview?: () => void;
 }
 
-export function GeradorRPSForm({ formData, setFormData }: GeradorRPSFormProps) {
+export function GeradorRPSForm({ formData, setFormData, onGeneratePreview }: GeradorRPSFormProps) {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -621,6 +622,17 @@ export function GeradorRPSForm({ formData, setFormData }: GeradorRPSFormProps) {
               <Button type="button" onClick={handleNextStep} className="ml-auto">
                 Próximo
                 <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            )}
+
+            {currentStep === 2 && (
+              <Button 
+                type="button" 
+                onClick={onGeneratePreview} 
+                className="ml-auto"
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                Gerar Preview
               </Button>
             )}
           </div>
