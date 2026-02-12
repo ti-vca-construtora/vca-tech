@@ -29,16 +29,14 @@ interface FormData {
 function generateRPSNumber(): string {
   const now = new Date();
   
-  // Obter o horário em Brasília usando o offset do timezone local
-  const offset = now.getTimezoneOffset(); // retorna em minutos
-  const brasiliaOffset = -180; // Brasília é UTC-3 (em minutos)
-  const adjustedTime = new Date(now.getTime() + (offset - brasiliaOffset) * 60 * 1000);
+  // Converter para horário de Brasília usando toLocaleString
+  const brasiliaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
   
-  const year = adjustedTime.getFullYear();
-  const month = String(adjustedTime.getMonth() + 1).padStart(2, '0');
-  const day = String(adjustedTime.getDate()).padStart(2, '0');
-  const hours = String(adjustedTime.getHours()).padStart(2, '0');
-  const minutes = String(adjustedTime.getMinutes()).padStart(2, '0');
+  const year = brasiliaTime.getFullYear();
+  const month = String(brasiliaTime.getMonth() + 1).padStart(2, '0');
+  const day = String(brasiliaTime.getDate()).padStart(2, '0');
+  const hours = String(brasiliaTime.getHours()).padStart(2, '0');
+  const minutes = String(brasiliaTime.getMinutes()).padStart(2, '0');
   
   return `${year}${month}${day}${hours}${minutes}`;
 }
@@ -110,9 +108,7 @@ function generateRPSHTML(data: FormData, rpsNumber: string, logoBase64: string) 
   
   // Obter data e hora de emissão em Brasília
   const now = new Date();
-  const offset = now.getTimezoneOffset();
-  const brasiliaOffset = -180;
-  const brasiliaTime = new Date(now.getTime() + (offset - brasiliaOffset) * 60 * 1000);
+  const brasiliaTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
   
   const dataEmissao = brasiliaTime.toLocaleDateString('pt-BR');
   const horaEmissao = `${String(brasiliaTime.getHours()).padStart(2, '0')}:${String(brasiliaTime.getMinutes()).padStart(2, '0')}`;
