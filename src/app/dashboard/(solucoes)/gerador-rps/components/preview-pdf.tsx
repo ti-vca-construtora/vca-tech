@@ -149,6 +149,12 @@ export function PreviewPDF({ formData, triggerGenerate = false, onGenerateComple
             <FileText className="h-16 w-16 mb-4 opacity-20" />
             <p className="text-sm">Preencha o formulário para gerar o preview</p>
           </div>
+        ) : loading ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <Loader2 className="h-16 w-16 mb-4 text-primary animate-spin" />
+            <p className="text-sm font-medium">Gerando PDF...</p>
+            <p className="text-xs text-muted-foreground mt-2">Aguarde enquanto processamos seu recibo</p>
+          </div>
         ) : !pdfUrl ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <FileText className="h-16 w-16 mb-4 opacity-20 text-muted-foreground" />
