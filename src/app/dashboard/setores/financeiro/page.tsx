@@ -3,6 +3,7 @@
 import React from "react";
 import { CiCalculator1 } from "react-icons/ci";
 import { PiPixLogo } from "react-icons/pi";
+import { IoDocumentTextSharp } from "react-icons/io5";
 
 import { Solucoes, SolucoesCard } from "@/components/solucoes-card";
 
@@ -32,6 +33,15 @@ const solucoesData: Solucoes[] = [
     area: "financeiro",
     permission: "calculadora-correcao-pr",
   },
+      {
+    titulo: "Gerador de DAC",
+    descricao:
+      "Efetua a geração de um Documento a Classificar.",
+    Icon: IoDocumentTextSharp,
+    href: "gerador-dac?title=Gerador de DAC",
+    area: "financeiro",
+    permission: "gerador-dac",
+  },  
 ];
 
 const Financeiro = () => {

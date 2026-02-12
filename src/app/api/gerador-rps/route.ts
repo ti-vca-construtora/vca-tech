@@ -129,30 +129,30 @@ function generateRPSHTML(data: FormData, rpsNumber: string, logoBase64: string) 
     
     body {
       font-family: 'Arial', sans-serif;
-      font-size: 11px;
-      line-height: 1.4;
+      font-size: 10px;
+      line-height: 1.3;
       color: #333;
-      padding: 20px;
+      padding: 15px;
     }
     
     .container {
       max-width: 210mm;
       margin: 0 auto;
       border: 2px solid #003366;
-      padding: 15px;
+      padding: 12px;
     }
     
     .header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 15px;
-      padding-bottom: 10px;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
       border-bottom: 2px solid #003366;
     }
     
     .logo {
-      max-width: 120px;
+      max-width: 100px;
       height: auto;
     }
     
@@ -183,50 +183,50 @@ function generateRPSHTML(data: FormData, rpsNumber: string, logoBase64: string) 
     }
     
     .section {
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
     
     .section-title {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: bold;
       color: #fff;
       background: #003366;
-      padding: 4px 8px;
-      margin-bottom: 6px;
+      padding: 3px 6px;
+      margin-bottom: 4px;
     }
     
     .grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
+      gap: 6px;
     }
     
     .grid-3 {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
+      gap: 6px;
     }
     
     .field {
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
     
     .field-label {
       font-weight: bold;
-      font-size: 10px;
+      font-size: 9px;
       color: #555;
       display: block;
-      margin-bottom: 2px;
+      margin-bottom: 1px;
     }
     
     .field-value {
-      font-size: 11px;
+      font-size: 10px;
       color: #000;
-      padding: 3px 6px;
+      padding: 2px 5px;
       background: #f9f9f9;
       border: 1px solid #ddd;
       border-radius: 2px;
-      min-height: 20px;
+      min-height: 18px;
       display: block;
     }
     
@@ -237,8 +237,8 @@ function generateRPSHTML(data: FormData, rpsNumber: string, logoBase64: string) 
     .description-box {
       background: #f9f9f9;
       border: 1px solid #ddd;
-      padding: 8px;
-      min-height: 60px;
+      padding: 6px;
+      min-height: 50px;
       border-radius: 2px;
       white-space: pre-wrap;
     }
@@ -246,14 +246,15 @@ function generateRPSHTML(data: FormData, rpsNumber: string, logoBase64: string) 
     .values-table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 8px;
+      margin-top: 6px;
     }
     
     .values-table th,
     .values-table td {
-      padding: 6px;
+      padding: 4px;
       text-align: right;
       border: 1px solid #ddd;
+      font-size: 10px;
     }
     
     .values-table th {
@@ -271,26 +272,26 @@ function generateRPSHTML(data: FormData, rpsNumber: string, logoBase64: string) 
     .alert-box {
       background: #fff3cd;
       border: 1px solid #ffc107;
-      padding: 6px 8px;
-      margin-top: 6px;
+      padding: 4px 6px;
+      margin-top: 4px;
       border-radius: 3px;
-      font-size: 10px;
+      font-size: 9px;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
     }
     
     .footer {
-      margin-top: 15px;
-      padding-top: 10px;
+      margin-top: 10px;
+      padding-top: 8px;
       border-top: 1px solid #ddd;
       text-align: center;
-      font-size: 9px;
+      font-size: 8px;
       color: #666;
     }
     
     .signature-area {
-      margin-top: 40px;
+      margin-top: 20px;
       display: flex;
       justify-content: space-around;
     }
@@ -354,6 +355,37 @@ function generateRPSHTML(data: FormData, rpsNumber: string, logoBase64: string) 
         <div class="field">
           <span class="field-label">Município/Estado:</span>
           <span class="field-value">${data.municipio || '-'} / ${data.estado || '-'}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dados do Tomador -->
+        <div class="section">
+      <div class="section-title">DADOS DO TOMADOR</div>
+      <div class="grid">
+        <div class="field full-width">
+          <span class="field-label">Nome/Razão Social:</span>
+          <span class="field-value">VCA SERVIÇOS DE CONSTRUÇÕES LTDA</span>
+        </div>
+        <div class="field">
+          <span class="field-label">CNPJ:</span>
+          <span class="field-value">53.267.895/0001-91</span>
+        </div>
+        <div class="field">
+          <span class="field-label">Endereço:</span>
+          <span class="field-value">AVENIDA OLIVIA FLORES, N° 1265, CANDEIAS</span>
+        </div>
+        <div class="field">
+          <span class="field-label">CEP</span>
+          <span class="field-value">45028-610</span>
+        </div>
+        <div class="field">
+          <span class="field-label">Município/Estado:</span>
+          <span class="field-value">Vitória da Conquista / BA</span>
+        </div>
+          <div class="field">
+          <span class="field-label">E-mail:</span>
+          <span class="field-value">adm01@vcaconstrutora.com.br</span>
         </div>
       </div>
     </div>

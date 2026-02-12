@@ -141,6 +141,42 @@ export function GeradorRPSForm({ formData, setFormData, onGeneratePreview }: Ger
     return errors;
   };
 
+  const validateEtapa2 = () => {
+    const errors: Record<string, string> = {};
+
+    // Validar campos básicos da etapa 2
+    if (!formData.descricaoServico.trim())
+      errors.descricaoServico = "Informe a descrição do serviço";
+    if (!formData.valorServico.trim() || formData.valorServico === "R$ 0,00")
+      errors.valorServico = "Informe o valor do serviço";
+    if (!formData.formaPagamento)
+      errors.formaPagamento = "Selecione a forma de pagamento";
+
+    // Validar campos condicionais de PIX
+    if (formData.formaPagamento === "PIX") {
+      if (!formData.tipoChavePix)
+        errors.tipoChavePix = "Selecione o tipo de chave PIX";
+      if (!formData.chavePix.trim())
+        errors.chavePix = "Informe a chave PIX";
+    }
+
+    // Validar campos condicionais de TED
+    if (formData.formaPagamento === "TED") {
+      if (!formData.banco)
+        errors.banco = "Selecione o banco";
+      if (!formData.tipoConta)
+        errors.tipoConta = "Selecione o tipo de conta";
+      if (!formData.agencia.trim())
+        errors.agencia = "Informe a agência";
+      if (!formData.conta.trim())
+        errors.conta = "Informe a conta";
+      if (!formData.cpfCnpjConta.trim())
+        errors.cpfCnpjConta = "Informe o CPF/CNPJ da conta";
+    }
+
+    return errors;
+  };
+
   const handleNextStep = () => {
     if (currentStep === 1) {
       const errors = validateEtapa1();
@@ -628,7 +664,21 @@ export function GeradorRPSForm({ formData, setFormData, onGeneratePreview }: Ger
             {currentStep === 2 && (
               <Button 
                 type="button" 
-                onClick={onGeneratePreview} 
+                onClick={() => {
+                  const errors = validateEtapa2();
+                  setFieldErrors(errors);
+                  
+                  if (Object.keys(errors).length > 0) {
+                    toast({
+                      title: "Campos obrigatórios",
+                      description: "Preencha todos os campos destacados antes de gerar o preview",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  
+                  onGeneratePreview?.();
+                }} 
                 className="ml-auto"
               >
                 <Eye className="mr-2 h-4 w-4" />

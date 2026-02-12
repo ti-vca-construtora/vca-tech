@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/supabase';
 
 // Cliente Supabase específico para a solução de EPIs
@@ -11,9 +11,14 @@ if (!supabaseEpiUrl || !supabaseEpiAnonKey) {
   );
 }
 
-export const supabaseEpi = createClient<Database>(supabaseEpiUrl, supabaseEpiAnonKey, {
+export const supabaseEpi = createSupabaseClient<Database>(supabaseEpiUrl, supabaseEpiAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
   },
 });
+
+// Função para criar nova instância do cliente (para compatibilidade)
+export function createClient(): SupabaseClient<Database> {
+  return supabaseEpi;
+}

@@ -247,6 +247,67 @@ export interface Database {
           updated_at?: string
         }
       }
+      tb_dac: {
+        Row: {
+          id: string
+          dac_number: string
+          nome_pessoa: string
+          cpf_cnpj_pessoa: string
+          valor_liquido: number
+          descricao_servico: string
+          nome_empresa: string
+          cnpj_empresa: string
+          usuario_email: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          dac_number: string
+          nome_pessoa: string
+          cpf_cnpj_pessoa: string
+          valor_liquido: number
+          descricao_servico: string
+          nome_empresa: string
+          cnpj_empresa: string
+          usuario_email?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          dac_number?: string
+          nome_pessoa?: string
+          cpf_cnpj_pessoa?: string
+          valor_liquido?: number
+          descricao_servico?: string
+          nome_empresa?: string
+          cnpj_empresa?: string
+          usuario_email?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      tb_dac_config: {
+        Row: {
+          id: string
+          intervalo_dias: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          intervalo_dias?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          intervalo_dias?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
