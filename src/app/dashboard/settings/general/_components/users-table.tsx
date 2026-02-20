@@ -87,10 +87,9 @@ const PERMISSIONS_BY_AREA: Record<AreaKey, string[]> = {
   ],
   financeiro: ["avp", "gerador-pix", "calculadora-correcao-pr"],
   relacionamento: [
-    // Alguns trechos usam a área como permissão
     "relacionamento",
-    // Card/menu do setor usa AVP também
     "avp",
+    "gerador-dac",
   ],
   entregas: [
     "agendamento-vistorias",
@@ -114,7 +113,8 @@ const PERMISSIONS_BY_AREA: Record<AreaKey, string[]> = {
     "adm-sesmt",
   ],
   administrativo: [
-    "gerador-rps"
+    "gerador-rps",
+    "gerador-dac"
   ],
 };
 

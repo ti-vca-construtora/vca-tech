@@ -12,7 +12,7 @@ const solucoesData: Solucoes[] = [
     descricao: "Efetua o cálculo de juros para antecipação de parcelas.",
     Icon: CiCalculator1,
     href: "calculadora-juros?title=AVP - Calculadora de Juros de Parcelas",
-    area: "financeiro",
+    area: "relacionamento",
     permission: "avp",
   },
   {

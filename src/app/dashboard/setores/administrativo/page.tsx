@@ -15,6 +15,15 @@ const solucoesData: Solucoes[] = [
     area: "administrativo",
     permission: "gerador-rps",
   },
+        {
+    titulo: "Gerador de DAC",
+    descricao:
+      "Efetua a geração de um Documento a Classificar.",
+    Icon: IoDocumentTextSharp,
+    href: "gerador-dac?title=Gerador de DAC",
+    area: "administrativo",
+    permission: "gerador-dac",
+  },  
 ];
 
 const Administrativo = () => {
