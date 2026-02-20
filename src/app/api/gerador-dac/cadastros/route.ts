@@ -27,3 +27,38 @@ export async function GET() {
     );
   }
 }
+
+export async function PATCH(request: Request) {
+  try {
+    const supabase = createClient();
+    const body = await request.json();
+    const { id, nome_razao_social, rg, data_nascimento, nome_mae, pis, estado, municipio } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "ID é obrigatório" }, { status: 400 });
+    }
+
+    const { error } = await (supabase.from('tb_dac_cadastros') as any)
+      .update({
+        nome_razao_social,
+        rg,
+        data_nascimento: data_nascimento || null,
+        nome_mae,
+        pis: pis || null,
+        estado,
+        municipio,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Erro ao atualizar cadastro:', error);
+      return NextResponse.json({ error: "Erro ao atualizar cadastro" }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Erro ao atualizar cadastro:", error);
+    return NextResponse.json({ error: "Erro ao atualizar cadastro" }, { status: 500 });
+  }
+}

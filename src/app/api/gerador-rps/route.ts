@@ -549,9 +549,12 @@ export async function POST(request: Request) {
     await browser.close();
 
     // Salvar no banco de dados
+    let cadastroError: string | null = null;
     try {
       const supabase = createClient();
       const valorNumerico = parseMonetaryValue(formData.valorServico);
+      const stripMask = (v: string | null | undefined) => v ? (v.replace(/\D/g, '') || null) : null;
+      const cpfStripped = stripMask(formData.cpf) ?? formData.cpf;
 
       // Salvar RPS
       const { error: insertRPSError } = await (supabase
@@ -559,16 +562,16 @@ export async function POST(request: Request) {
         .insert({
           rps_number: rpsNumber,
           nome_razao_social: formData.nomeRazaoSocial,
-          cpf: formData.cpf,
-          rg: formData.rg,
+          cpf: cpfStripped,
+          rg: stripMask(formData.rg),
           data_nascimento: formData.dataNascimento || null,
           nome_mae: formData.nomeMae,
-          pis: formData.pis || null,
+          pis: stripMask(formData.pis),
           estado: formData.estado,
           municipio: formData.municipio,
           company_id: formData.companyId,
           nome_empresa: formData.nomeEmpresa,
-          cnpj_empresa: formData.cnpjEmpresa,
+          cnpj_empresa: stripMask(formData.cnpjEmpresa) ?? formData.cnpjEmpresa,
           descricao_servico: formData.descricaoServico,
           valor_liquido: valorNumerico,
           forma_pagamento: formData.formaPagamento,
@@ -578,76 +581,88 @@ export async function POST(request: Request) {
           tipo_conta: formData.tipoConta || null,
           agencia: formData.agencia || null,
           conta: formData.conta || null,
-          cpf_cnpj_conta: formData.cpfCnpjConta || null,
+          cpf_cnpj_conta: stripMask(formData.cpfCnpjConta),
           dados_terceiros: formData.dadosTerceiros || false,
         });
 
       if (insertRPSError) {
-        console.error('Erro ao salvar RPS no banco:', insertRPSError);
-        // Não interrompe o fluxo, apenas loga o erro
+        const msg = `INSERT tb_rps error: ${JSON.stringify(insertRPSError)}`;
+        console.error(msg);
+        cadastroError = (cadastroError ? cadastroError + ' | ' : '') + msg;
       }
 
       // Salvar ou atualizar cadastro da pessoa
-      const { data: cadastroExistente, error: selectError } = await supabase
-        .from('tb_rps_cadastros')
-        .select('id')
-        .eq('cpf', formData.cpf)
-        .maybeSingle<{ id: string }>();
+      try {
+        const { data: cadastroExistente, error: selectError } = await supabase
+          .from('tb_rps_cadastros')
+          .select('id')
+          .eq('cpf', cpfStripped)
+          .maybeSingle<{ id: string }>();
 
-      if (selectError && selectError.code !== 'PGRST116') {
-        console.error('Erro ao buscar cadastro:', selectError);
-      }
+        if (selectError) {
+          const msg = `SELECT cadastro error: ${JSON.stringify(selectError)}`;
+          console.error(msg);
+          cadastroError = msg;
+        } else if (cadastroExistente) {
+          // Atualizar cadastro existente
+          const { error: updateError } = await (supabase
+            .from('tb_rps_cadastros') as any)
+            .update({
+              nome_razao_social: formData.nomeRazaoSocial,
+              rg: stripMask(formData.rg),
+              data_nascimento: formData.dataNascimento || null,
+              nome_mae: formData.nomeMae,
+              pis: stripMask(formData.pis),
+              estado: formData.estado,
+              municipio: formData.municipio,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', cadastroExistente.id);
 
-      if (cadastroExistente) {
-        // Atualizar cadastro existente
-        const { error: updateError } = await (supabase
-          .from('tb_rps_cadastros') as any)
-          .update({
-            nome_razao_social: formData.nomeRazaoSocial,
-            rg: formData.rg,
-            data_nascimento: formData.dataNascimento || null,
-            nome_mae: formData.nomeMae,
-            pis: formData.pis || null,
-            estado: formData.estado,
-            municipio: formData.municipio,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', cadastroExistente.id);
+          if (updateError) {
+            const msg = `UPDATE cadastro error: ${JSON.stringify(updateError)}`;
+            console.error(msg);
+            cadastroError = msg;
+          }
+        } else {
+          // Criar novo cadastro
+          const { error: insertCadastroError } = await (supabase
+            .from('tb_rps_cadastros') as any)
+            .insert({
+              nome_razao_social: formData.nomeRazaoSocial,
+              cpf: cpfStripped,
+              rg: stripMask(formData.rg),
+              data_nascimento: formData.dataNascimento || null,
+              nome_mae: formData.nomeMae,
+              pis: stripMask(formData.pis),
+              estado: formData.estado,
+              municipio: formData.municipio,
+            });
 
-        if (updateError) {
-          console.error('Erro ao atualizar cadastro:', updateError);
+          if (insertCadastroError) {
+            const msg = `INSERT cadastro error: ${JSON.stringify(insertCadastroError)}`;
+            console.error(msg);
+            cadastroError = msg;
+          }
         }
-      } else {
-        // Criar novo cadastro
-        const { error: insertCadastroError } = await (supabase
-          .from('tb_rps_cadastros') as any)
-          .insert({
-            nome_razao_social: formData.nomeRazaoSocial,
-            cpf: formData.cpf,
-            rg: formData.rg,
-            data_nascimento: formData.dataNascimento || null,
-            nome_mae: formData.nomeMae,
-            pis: formData.pis || null,
-            estado: formData.estado,
-            municipio: formData.municipio,
-          });
-
-        if (insertCadastroError) {
-          console.error('Erro ao criar cadastro:', insertCadastroError);
-        }
+      } catch (cadastroDbError) {
+        const msg = `Cadastro DB exception: ${cadastroDbError instanceof Error ? cadastroDbError.message : String(cadastroDbError)}`;
+        console.error(msg);
+        cadastroError = msg;
       }
     } catch (dbError) {
       console.error('Erro ao conectar ao banco:', dbError);
-      // Não interrompe o fluxo, apenas loga o erro
     }
 
     // Retornar PDF
-    return new NextResponse(Buffer.from(pdf), {
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="RPS-${rpsNumber}.pdf"`,
-      },
-    });
+    const responseHeaders: Record<string, string> = {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="RPS-${rpsNumber}.pdf"`,
+    };
+    if (cadastroError) {
+      responseHeaders['X-Cadastro-Error'] = cadastroError.substring(0, 500);
+    }
+    return new NextResponse(Buffer.from(pdf), { headers: responseHeaders });
   } catch (error) {
     console.error('Erro ao gerar PDF:', error);
     return NextResponse.json(

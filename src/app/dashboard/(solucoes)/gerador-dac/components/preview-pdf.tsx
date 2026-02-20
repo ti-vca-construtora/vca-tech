@@ -21,6 +21,7 @@ interface PreviewPDFProps {
   formData: FormData;
   triggerGenerate?: boolean;
   onGenerateComplete?: () => void;
+  onCadastroSaved?: () => void;
 }
 
 interface DuplicityInfo {
@@ -36,7 +37,7 @@ interface DuplicityInfo {
   };
 }
 
-export function PreviewPDF({ formData, triggerGenerate = false, onGenerateComplete }: PreviewPDFProps) {
+export function PreviewPDF({ formData, triggerGenerate = false, onGenerateComplete, onCadastroSaved }: PreviewPDFProps) {
   const { toast } = useToast();
   const [pdfUrl, setPdfUrl] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -74,6 +75,7 @@ export function PreviewPDF({ formData, triggerGenerate = false, onGenerateComple
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          cpf: formData.cpf,
           cnpjEmpresa: formData.cnpjEmpresa,
           valorLiquido: formData.valorLiquido,
         }),
@@ -133,10 +135,22 @@ export function PreviewPDF({ formData, triggerGenerate = false, onGenerateComple
       const url = URL.createObjectURL(blob);
       setPdfUrl(url);
 
-      toast({
-        title: "PDF gerado com sucesso!",
-        description: "Visualize o recibo no preview ao lado",
-      });
+      // Verificar se houve erro ao salvar o cadastro
+      const cadastroErrorHeader = response.headers.get('X-Cadastro-Error');
+      if (cadastroErrorHeader) {
+        console.error('Erro ao salvar cadastro:', cadastroErrorHeader);
+        toast({
+          title: "Aviso: cadastro não salvo",
+          description: `O PDF foi gerado, mas houve um erro ao salvar o cadastro: ${cadastroErrorHeader}`,
+          variant: "destructive",
+        });
+      } else {
+        onCadastroSaved?.();
+        toast({
+          title: "PDF gerado com sucesso!",
+          description: "Visualize o recibo no preview ao lado",
+        });
+      }
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
       toast({

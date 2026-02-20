@@ -49,6 +49,13 @@ function parseMonetaryValue(value: string): number {
   return parseFloat(cleaned) || 0;
 }
 
+// Remover máscara de campos formatados antes de inserir no banco
+function stripMask(value: string | null | undefined): string | null {
+  if (!value) return null;
+  return value.replace(/\D/g, '') || null;
+}
+
+
 function formatCurrency(value: number): string {
   return value.toLocaleString('pt-BR', {
     style: 'currency',
@@ -389,7 +396,7 @@ function generateReciboHTML(data: FormData, dacNumber: string, logoBase64: strin
           </div>
           ${data.formaPagamento === 'PIX' ? `
           <div class="info-row">
-            <div class="info-label">Tipo de Chave PIX:</div>
+            <div class="info-label">Tipo de Chave:</div>
             <div class="info-value">${data.tipoChavePix || '-'}</div>
           </div>
           <div class="info-row">
@@ -518,26 +525,28 @@ export async function POST(request: Request) {
     await browser.close();
 
     // Salvar no banco de dados
+    let cadastroError: string | null = null;
     try {
       const supabase = createClient();
       const valorNumerico = parseMonetaryValue(data.valorLiquido);
 
+      const cpfStripped = stripMask(data.cpf) ?? data.cpf;
       const { error: insertError } = await (supabase
         .from('tb_dac') as any)
         .insert({
           dac_number: dacNumber,
           nome_razao_social: data.nomeRazaoSocial,
-          cpf: data.cpf,
-          rg: data.rg || null,
+          cpf: cpfStripped,
+          rg: stripMask(data.rg),
           nome_mae: data.nomeMae || null,
           data_nascimento: data.dataNascimento || null,
-          pis: data.pis || null,
+          pis: stripMask(data.pis),
           estado: data.estado || null,
           municipio: data.municipio || null,
           valor_liquido: valorNumerico,
           descricao_servico: data.descricaoServico,
           nome_empresa: data.nomeEmpresa,
-          cnpj_empresa: data.cnpjEmpresa,
+          cnpj_empresa: stripMask(data.cnpjEmpresa) ?? data.cnpjEmpresa,
           company_id: data.companyId,
           usuario_email: data.usuarioEmail || null,
           forma_pagamento: data.formaPagamento || null,
@@ -547,25 +556,27 @@ export async function POST(request: Request) {
           agencia: data.agencia || null,
           conta: data.conta || null,
           tipo_conta: data.tipoConta || null,
-          cpf_cnpj_conta: data.cpfCnpjConta || null,
+          cpf_cnpj_conta: stripMask(data.cpfCnpjConta),
         });
 
       if (insertError) {
-        console.error('Erro ao salvar DAC no banco:', insertError);
-        // Não interrompe o fluxo, apenas loga o erro
+        const msg = `INSERT tb_dac error: ${JSON.stringify(insertError)}`;
+        console.error(msg);
+        cadastroError = msg;
       }
     } catch (dbError) {
       console.error('Erro ao conectar ao banco:', dbError);
-      // Não interrompe o fluxo, apenas loga o erro
     }
 
     // Retornar PDF
-    return new NextResponse(Buffer.from(pdfBuffer), {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="Recibo-${dacNumber}.pdf"`,
-      },
-    });
+    const responseHeaders: Record<string, string> = {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="Recibo-${dacNumber}.pdf"`,
+    };
+    if (cadastroError) {
+      responseHeaders['X-Cadastro-Error'] = cadastroError.substring(0, 500);
+    }
+    return new NextResponse(Buffer.from(pdfBuffer), { headers: responseHeaders });
   } catch (error) {
     console.error("Erro ao gerar PDF:", error);
     

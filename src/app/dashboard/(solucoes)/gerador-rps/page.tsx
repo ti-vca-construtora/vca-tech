@@ -66,6 +66,7 @@ export default function GeradorRPSPage() {
   });
 
   const [triggerGenerate, setTriggerGenerate] = useState(false);
+  const [cadastroRefreshKey, setCadastroRefreshKey] = useState(0);
 
   const handleGeneratePreview = () => {
     setTriggerGenerate(true);
@@ -79,6 +80,7 @@ export default function GeradorRPSPage() {
             formData={formData} 
             setFormData={setFormData}
             onGeneratePreview={handleGeneratePreview}
+            cadastroRefreshKey={cadastroRefreshKey}
           />
         </div>
         <div className="w-full lg:w-1/2">
@@ -86,6 +88,7 @@ export default function GeradorRPSPage() {
             formData={formData}
             triggerGenerate={triggerGenerate}
             onGenerateComplete={() => setTriggerGenerate(false)}
+            onCadastroSaved={() => setCadastroRefreshKey(k => k + 1)}
           />
         </div>
       </div>

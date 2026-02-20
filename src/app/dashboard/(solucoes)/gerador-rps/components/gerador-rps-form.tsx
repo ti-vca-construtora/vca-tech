@@ -13,8 +13,16 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronLeft, ChevronRight, FileText, User, Calculator, Eye, Search, UserPlus, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, User, Calculator, Eye, Search, UserPlus, RefreshCw, AlertTriangle } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { FormData } from "../page";
 import {
   Command,
@@ -35,6 +43,7 @@ interface GeradorRPSFormProps {
   formData: FormData;
   setFormData: (data: FormData) => void;
   onGeneratePreview?: () => void;
+  cadastroRefreshKey?: number;
 }
 
 interface Cadastro {
@@ -49,7 +58,7 @@ interface Cadastro {
   municipio: string;
 }
 
-export function GeradorRPSForm({ formData, setFormData, onGeneratePreview }: GeradorRPSFormProps) {
+export function GeradorRPSForm({ formData, setFormData, onGeneratePreview, cadastroRefreshKey }: GeradorRPSFormProps) {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -58,11 +67,23 @@ export function GeradorRPSForm({ formData, setFormData, onGeneratePreview }: Ger
   const [openCombobox, setOpenCombobox] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [syncLoading, setSyncLoading] = useState(false);
+  const [selectedCadastroId, setSelectedCadastroId] = useState<string | null>(null);
+  const [originalCadastroData, setOriginalCadastroData] = useState<Partial<FormData> | null>(null);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [updatingCadastro, setUpdatingCadastro] = useState(false);
 
   // Carregar cadastros ao montar o componente
   useEffect(() => {
     loadCadastros();
   }, []);
+
+  // Recarregar cadastros quando um novo PDF for gerado com sucesso
+  useEffect(() => {
+    if (cadastroRefreshKey && cadastroRefreshKey > 0) {
+      loadCadastros();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cadastroRefreshKey]);
 
   const loadCadastros = async () => {
     try {
@@ -112,8 +133,7 @@ export function GeradorRPSForm({ formData, setFormData, onGeneratePreview }: Ger
   };
 
   const handleSelectCadastro = (cadastro: Cadastro) => {
-    setFormData({
-      ...formData,
+    const snapshot: Partial<FormData> = {
       nomeRazaoSocial: cadastro.nome_razao_social,
       cpf: cadastro.cpf,
       rg: cadastro.rg,
@@ -122,13 +142,65 @@ export function GeradorRPSForm({ formData, setFormData, onGeneratePreview }: Ger
       pis: cadastro.pis || "",
       estado: cadastro.estado,
       municipio: cadastro.municipio,
-    });
+    };
+    setFormData({ ...formData, ...snapshot });
+    setSelectedCadastroId(cadastro.id);
+    setOriginalCadastroData(snapshot);
     setOpenCombobox(false);
     setSearchValue("");
     toast({
       title: "Cadastro selecionado",
       description: `Dados de ${cadastro.nome_razao_social} preenchidos automaticamente`,
     });
+  };
+
+  const hasCadastroDataChanged = (): boolean => {
+    if (!selectedCadastroId || !originalCadastroData) return false;
+    const fields: (keyof FormData)[] = ["nomeRazaoSocial", "rg", "dataNascimento", "nomeMae", "pis", "estado", "municipio"];
+    return fields.some((f) => formData[f] !== originalCadastroData[f]);
+  };
+
+  const handleUpdateCadastro = async (andAdvance: () => void) => {
+    if (!selectedCadastroId) { andAdvance(); return; }
+    setUpdatingCadastro(true);
+    try {
+      const response = await fetch("/api/gerador-rps/cadastros", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: selectedCadastroId,
+          nome_razao_social: formData.nomeRazaoSocial,
+          rg: formData.rg,
+          data_nascimento: formData.dataNascimento || null,
+          nome_mae: formData.nomeMae,
+          pis: formData.pis || null,
+          estado: formData.estado,
+          municipio: formData.municipio,
+        }),
+      });
+      if (response.ok) {
+        setOriginalCadastroData({
+          nomeRazaoSocial: formData.nomeRazaoSocial,
+          cpf: formData.cpf,
+          rg: formData.rg,
+          dataNascimento: formData.dataNascimento,
+          nomeMae: formData.nomeMae,
+          pis: formData.pis,
+          estado: formData.estado,
+          municipio: formData.municipio,
+        });
+        toast({ title: "Cadastro atualizado", description: "Os dados do cadastro foram atualizados com sucesso." });
+        await loadCadastros();
+      } else {
+        toast({ title: "Erro ao atualizar", description: "Não foi possível atualizar o cadastro.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Erro ao atualizar", description: "Erro de conexão ao atualizar o cadastro.", variant: "destructive" });
+    } finally {
+      setUpdatingCadastro(false);
+      setShowUpdateModal(false);
+      andAdvance();
+    }
   };
 
   const filteredCadastros = cadastros.filter((cadastro) =>
@@ -304,6 +376,11 @@ export function GeradorRPSForm({ formData, setFormData, onGeneratePreview }: Ger
         });
         return;
       }
+
+      if (hasCadastroDataChanged()) {
+        setShowUpdateModal(true);
+        return;
+      }
       
       setCurrentStep(2);
     }
@@ -319,6 +396,13 @@ export function GeradorRPSForm({ formData, setFormData, onGeneratePreview }: Ger
   const handleInputChange = (field: keyof FormData, value: string | boolean) => {
     setFormData({ ...formData, [field]: value });
     clearFieldError(field);
+    // Se o usuário alterar manualmente um campo pessoal, limpar o cadastro selecionado
+    // para evitar PATCH indesejado em outro registro
+    const personalFields: (keyof FormData)[] = ['nomeRazaoSocial', 'cpf', 'rg', 'dataNascimento', 'nomeMae', 'pis', 'estado', 'municipio'];
+    if (personalFields.includes(field as keyof FormData)) {
+      setSelectedCadastroId(null);
+      setOriginalCadastroData(null);
+    }
   };
 
   const estados = [
@@ -397,7 +481,7 @@ export function GeradorRPSForm({ formData, setFormData, onGeneratePreview }: Ger
       <CardContent>
         <form className="space-y-6">
           {/* Seleção de Cadastro Existente */}
-          {currentStep === 1 && cadastros.length > 0 && (
+          {currentStep === 1 && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
               <div className="flex items-center gap-2 text-blue-900 font-semibold text-sm">
                 <UserPlus className="h-4 w-4" />
@@ -406,48 +490,56 @@ export function GeradorRPSForm({ formData, setFormData, onGeneratePreview }: Ger
               <p className="text-xs text-blue-700">
                 Selecione um cadastro previamente salvo para preencher automaticamente os dados
               </p>
-              <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={openCombobox}
-                    className="w-full justify-between"
-                    type="button"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Search className="h-4 w-4" />
-                      {searchValue || "Buscar por nome ou CPF..."}
-                    </span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-full p-0" align="start">
-                  <Command>
-                    <CommandInput 
-                      placeholder="Buscar cadastro..." 
-                      value={searchValue}
-                      onValueChange={setSearchValue}
-                    />
-                    <CommandList>
-                      <CommandEmpty>Nenhum cadastro encontrado.</CommandEmpty>
-                      <CommandGroup>
-                        {filteredCadastros.map((cadastro) => (
-                          <CommandItem
-                            key={cadastro.id}
-                            value={cadastro.id}
-                            onSelect={() => handleSelectCadastro(cadastro)}
-                          >
-                            <div className="flex flex-col">
-                              <span className="font-medium">{cadastro.nome_razao_social}</span>
-                              <span className="text-xs text-gray-500">CPF: {cadastro.cpf}</span>
-                            </div>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              {loadingCadastros ? (
+                <p className="text-xs text-blue-600 italic">Carregando cadastros...</p>
+              ) : cadastros.length === 0 ? (
+                <p className="text-xs text-blue-600 italic">
+                  Nenhum cadastro salvo ainda. Preencha os dados e gere um RPS para salvar automaticamente.
+                </p>
+              ) : (
+                <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openCombobox}
+                      className="w-full justify-between"
+                      type="button"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Search className="h-4 w-4" />
+                        {searchValue || "Buscar por nome ou CPF..."}
+                      </span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput 
+                        placeholder="Buscar cadastro..." 
+                        value={searchValue}
+                        onValueChange={setSearchValue}
+                      />
+                      <CommandList>
+                        <CommandEmpty>Nenhum cadastro encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          {filteredCadastros.map((cadastro) => (
+                            <CommandItem
+                              key={cadastro.id}
+                              value={cadastro.id}
+                              onSelect={() => handleSelectCadastro(cadastro)}
+                            >
+                              <div className="flex flex-col">
+                                <span className="font-medium">{cadastro.nome_razao_social}</span>
+                                <span className="text-xs text-gray-500">CPF: {cadastro.cpf}</span>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              )}
             </div>
           )}
 
@@ -972,6 +1064,39 @@ export function GeradorRPSForm({ formData, setFormData, onGeneratePreview }: Ger
             )}
           </div>
         </form>
+
+        {/* Modal de confirmação de atualização de cadastro */}
+        <Dialog open={showUpdateModal} onOpenChange={setShowUpdateModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                Dados alterados
+              </DialogTitle>
+              <DialogDescription>
+                Você alterou dados de um cadastro existente. Deseja atualizar o cadastro salvo com os novos dados?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowUpdateModal(false);
+                  setCurrentStep(2);
+                }}
+                disabled={updatingCadastro}
+              >
+                Não, manter original
+              </Button>
+              <Button
+                onClick={() => handleUpdateCadastro(() => setCurrentStep(2))}
+                disabled={updatingCadastro}
+              >
+                {updatingCadastro ? "Atualizando..." : "Sim, atualizar cadastro"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

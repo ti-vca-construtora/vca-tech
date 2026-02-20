@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-epi";
 
 interface CheckData {
+  cpf: string;
   cnpjEmpresa: string;
   valorLiquido: string;
 }
@@ -16,9 +17,9 @@ export async function POST(request: Request) {
   try {
     const data: CheckData = await request.json();
 
-    if (!data.cnpjEmpresa || !data.valorLiquido) {
+    if (!data.cpf || !data.cnpjEmpresa || !data.valorLiquido) {
       return NextResponse.json(
-        { error: "CNPJ e Valor são obrigatórios" },
+        { error: "CPF, CNPJ e Valor são obrigatórios" },
         { status: 400 }
       );
     }
@@ -46,10 +47,11 @@ export async function POST(request: Request) {
     const dataLimite = new Date();
     dataLimite.setDate(dataLimite.getDate() - intervaloDias);
 
-    // Buscar DACs similares - suportar tanto campos novos quanto antigos
+    // Buscar DACs similares — CPF + CNPJ empresa + valor devem corresponder
     const { data: dacsExistentes, error: searchError } = await supabase
       .from('tb_dac')
       .select('*')
+      .eq('cpf', data.cpf)
       .eq('cnpj_empresa', data.cnpjEmpresa)
       .eq('valor_liquido', valorNumerico)
       .gte('created_at', dataLimite.toISOString())
