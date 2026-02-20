@@ -12,7 +12,7 @@ export const RouteGuard = memo(
     requiredRole,
   }: {
     children: React.ReactNode;
-    requiredArea: string;
+    requiredArea: string | string[];
     requiredPermission: string;
     requiredRole?: "MASTER" | "ADMIN" | undefined;
   }) => {

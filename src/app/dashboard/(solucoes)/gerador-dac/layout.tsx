@@ -24,7 +24,7 @@ export default function GeradorDACLayout({
   };
 
   return (
-    <RouteGuard requiredArea="financeiro" requiredPermission="gerador-dac">
+    <RouteGuard requiredArea={["financeiro", "administrativo"]} requiredPermission="gerador-dac">
       <div className="w-full h-full flex flex-col p-3 sm:p-4 md:p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">

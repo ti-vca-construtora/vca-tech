@@ -30,7 +30,7 @@ export type AuthState = {
   loadUser: () => Promise<void>;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
-  hasPermission: (area: string, permission: string) => boolean;
+  hasPermission: (area: string | string[], permission: string) => boolean;
   hasRequiredRole: (requiredRole: string) => boolean;
   getToken: () => string | null;
   getAllUsers: (
@@ -138,8 +138,9 @@ export const useAuthStore = create<AuthState>()(
         if (!user) return false;
         if (user.role === "MASTER") return true;
 
+        const areas = Array.isArray(area) ? area : [area];
         return user.permissions.some(
-          (p) => p.area === area && p.permissions.includes(permission),
+          (p) => areas.includes(p.area) && p.permissions.includes(permission),
         );
       },
 

@@ -10,13 +10,14 @@ export type UserPermission = {
 
 export const checkPermissions = (
   user: User,
-  requiredArea: string,
+  requiredArea: string | string[],
   requiredPermission: string,
 ): boolean => {
   if (user.role === "MASTER") return true;
 
-  const areaPermissions = user.permissions.find(
-    (perm) => perm.area === requiredArea,
+  const areas = Array.isArray(requiredArea) ? requiredArea : [requiredArea];
+  const areaPermissions = user.permissions.find((perm) =>
+    areas.includes(perm.area),
   );
 
   return !!areaPermissions?.permissions.includes(requiredPermission);
@@ -41,7 +42,7 @@ export const usePermissions = () => {
     ? normalizePermissions(user.permissions)
     : {};
 
-  const hasPermission = (area: string, permission: string): boolean => {
+  const hasPermission = (area: string | string[], permission: string): boolean => {
     if (!user) return false;
     return checkPermissions(user, area, permission);
   };
