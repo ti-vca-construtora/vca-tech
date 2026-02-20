@@ -93,7 +93,7 @@ export function CompanySelector({ value, onChange, disabled, className }: Compan
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[500px] p-0" align="start">
-        <Command>
+        <Command shouldFilter={false}>
           <CommandInput
             placeholder="Buscar por nome ou CNPJ..."
             value={searchValue}
