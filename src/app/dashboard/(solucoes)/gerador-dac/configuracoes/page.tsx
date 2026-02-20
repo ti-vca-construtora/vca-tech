@@ -28,15 +28,20 @@ export default function ConfiguracoesPage() {
       setLoading(true);
       setError(null);
 
+      // Usar limit(1) para pegar apenas o primeiro registro, mesmo se houver duplicatas
       const { data, error: fetchError } = await supabase
         .from('tb_dac_config')
         .select('intervalo_dias')
-        .single<{ intervalo_dias: number }>();
+        .limit(1)
+        .maybeSingle<{ intervalo_dias: number }>();
 
       if (fetchError) throw fetchError;
 
       if (data) {
         setIntervaloDias(data.intervalo_dias);
+      } else {
+        // Se não houver configuração, usar padrão de 30 dias
+        setIntervaloDias(30);
       }
     } catch (err) {
       console.error('Erro ao carregar configurações:', err);
@@ -58,10 +63,14 @@ export default function ConfiguracoesPage() {
         return;
       }
 
-      // Atualizar configuração (sempre há apenas um registro)
-      const configId = (await supabase.from('tb_dac_config').select('id').single<{ id: string }>()).data?.id;
+      // Atualizar configuração (pegar o primeiro registro se houver múltiplos)
+      const { data: configData } = await supabase
+        .from('tb_dac_config')
+        .select('id')
+        .limit(1)
+        .maybeSingle<{ id: string }>();
       
-      if (!configId) {
+      if (!configData?.id) {
         throw new Error('Configuração não encontrada');
       }
       
@@ -72,7 +81,7 @@ export default function ConfiguracoesPage() {
           intervalo_dias: intervaloDias,
           updated_at: new Date().toISOString()
         })
-        .eq('id', configId);
+        .eq('id', configData.id);
 
       if (updateError) throw updateError;
 

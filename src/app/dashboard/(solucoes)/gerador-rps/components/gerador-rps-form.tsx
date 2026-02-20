@@ -13,9 +13,23 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronLeft, ChevronRight, FileText, User, Calculator, Eye } from "lucide-react";
-import { useState, useMemo } from "react";
+import { ChevronLeft, ChevronRight, FileText, User, Calculator, Eye, Search, UserPlus, RefreshCw } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
 import { FormData } from "../page";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { CompanySelector, Empresa } from "@/components/company-selector";
 
 interface GeradorRPSFormProps {
   formData: FormData;
@@ -23,10 +37,104 @@ interface GeradorRPSFormProps {
   onGeneratePreview?: () => void;
 }
 
+interface Cadastro {
+  id: string;
+  nome_razao_social: string;
+  cpf: string;
+  rg: string;
+  data_nascimento: string | null;
+  nome_mae: string;
+  pis: string | null;
+  estado: string;
+  municipio: string;
+}
+
 export function GeradorRPSForm({ formData, setFormData, onGeneratePreview }: GeradorRPSFormProps) {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [cadastros, setCadastros] = useState<Cadastro[]>([]);
+  const [loadingCadastros, setLoadingCadastros] = useState(false);
+  const [openCombobox, setOpenCombobox] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+  const [syncLoading, setSyncLoading] = useState(false);
+
+  // Carregar cadastros ao montar o componente
+  useEffect(() => {
+    loadCadastros();
+  }, []);
+
+  const loadCadastros = async () => {
+    try {
+      setLoadingCadastros(true);
+      const response = await fetch("/api/gerador-rps/cadastros");
+      if (response.ok) {
+        const data = await response.json();
+        setCadastros(data);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar cadastros:", error);
+    } finally {
+      setLoadingCadastros(false);
+    }
+  };
+
+  // Sincronizar empresas do Sienge
+  const handleSyncCompanies = async () => {
+    setSyncLoading(true);
+    try {
+      const response = await fetch("/api/empresas/sync", {
+        method: "POST",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erro ao sincronizar empresas");
+      }
+
+      toast({
+        title: "Sincronização concluída",
+        description: `${data.stats.total} empresas processadas. ${data.stats.inserted} inseridas, ${data.stats.updated} atualizadas.`,
+      });
+
+      // Recarregar a página para atualizar o selector
+      window.location.reload();
+    } catch (error) {
+      toast({
+        title: "Erro na sincronização",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
+  const handleSelectCadastro = (cadastro: Cadastro) => {
+    setFormData({
+      ...formData,
+      nomeRazaoSocial: cadastro.nome_razao_social,
+      cpf: cadastro.cpf,
+      rg: cadastro.rg,
+      dataNascimento: cadastro.data_nascimento || "",
+      nomeMae: cadastro.nome_mae,
+      pis: cadastro.pis || "",
+      estado: cadastro.estado,
+      municipio: cadastro.municipio,
+    });
+    setOpenCombobox(false);
+    setSearchValue("");
+    toast({
+      title: "Cadastro selecionado",
+      description: `Dados de ${cadastro.nome_razao_social} preenchidos automaticamente`,
+    });
+  };
+
+  const filteredCadastros = cadastros.filter((cadastro) =>
+    cadastro.nome_razao_social.toLowerCase().includes(searchValue.toLowerCase()) ||
+    cadastro.cpf.includes(searchValue)
+  );
 
   // Máscaras de formatação
   const maskCPF = (value: string) => {
@@ -45,6 +153,10 @@ export function GeradorRPSForm({ formData, setFormData, onGeneratePreview }: Ger
       .replace(/(\d{5})(\d)/, "$1.$2")
       .replace(/(\d{2})(\d{1})/, "$1-$2")
       .replace(/(-\d{1})\d+?$/, "$1");
+  };
+
+  const maskRG = (value: string) => {
+    return value.replace(/\D/g, "").slice(0, 15);
   };
 
   const maskCurrency = (value: string) => {
@@ -134,9 +246,11 @@ export function GeradorRPSForm({ formData, setFormData, onGeneratePreview }: Ger
     if (!formData.nomeRazaoSocial.trim())
       errors.nomeRazaoSocial = "Informe o nome/razão social";
     if (!formData.cpf.trim()) errors.cpf = "Informe o CPF";
-    if (!formData.pis.trim()) errors.pis = "Informe o PIS";
+    if (!formData.rg.trim()) errors.rg = "Informe o RG";
+    if (!formData.nomeMae.trim()) errors.nomeMae = "Informe o nome da mãe";
     if (!formData.estado) errors.estado = "Selecione o estado";
     if (!formData.municipio.trim()) errors.municipio = "Informe o município";
+    if (!formData.companyId.trim()) errors.companyId = "Selecione um centro de custo";
 
     return errors;
   };
@@ -282,6 +396,61 @@ export function GeradorRPSForm({ formData, setFormData, onGeneratePreview }: Ger
 
       <CardContent>
         <form className="space-y-6">
+          {/* Seleção de Cadastro Existente */}
+          {currentStep === 1 && cadastros.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2 text-blue-900 font-semibold text-sm">
+                <UserPlus className="h-4 w-4" />
+                Preencher com Cadastro Existente
+              </div>
+              <p className="text-xs text-blue-700">
+                Selecione um cadastro previamente salvo para preencher automaticamente os dados
+              </p>
+              <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openCombobox}
+                    className="w-full justify-between"
+                    type="button"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Search className="h-4 w-4" />
+                      {searchValue || "Buscar por nome ou CPF..."}
+                    </span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command>
+                    <CommandInput 
+                      placeholder="Buscar cadastro..." 
+                      value={searchValue}
+                      onValueChange={setSearchValue}
+                    />
+                    <CommandList>
+                      <CommandEmpty>Nenhum cadastro encontrado.</CommandEmpty>
+                      <CommandGroup>
+                        {filteredCadastros.map((cadastro) => (
+                          <CommandItem
+                            key={cadastro.id}
+                            value={cadastro.id}
+                            onSelect={() => handleSelectCadastro(cadastro)}
+                          >
+                            <div className="flex flex-col">
+                              <span className="font-medium">{cadastro.nome_razao_social}</span>
+                              <span className="text-xs text-gray-500">CPF: {cadastro.cpf}</span>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
+
           {/* Etapa 1: Dados do Prestador */}
           {currentStep === 1 && (
             <div className="space-y-4">
@@ -318,6 +487,37 @@ export function GeradorRPSForm({ formData, setFormData, onGeneratePreview }: Ger
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="rg">
+                    RG <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="rg"
+                    value={formData.rg}
+                    onChange={(e) => handleInputChange("rg", maskRG(e.target.value))}
+                    placeholder="Digite o RG"
+                    maxLength={15}
+                    className={fieldErrors.rg ? "border-red-500" : ""}
+                  />
+                  {fieldErrors.rg && <p className="text-xs text-red-500">{fieldErrors.rg}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="nomeMae">
+                    Nome da Mãe <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="nomeMae"
+                    value={formData.nomeMae}
+                    onChange={(e) => handleInputChange("nomeMae", e.target.value)}
+                    placeholder="Digite o nome completo da mãe"
+                    className={fieldErrors.nomeMae ? "border-red-500" : ""}
+                  />
+                  {fieldErrors.nomeMae && <p className="text-xs text-red-500">{fieldErrors.nomeMae}</p>}
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="dataNascimento">
                     Data de Nascimento
                   </Label>
@@ -337,7 +537,7 @@ export function GeradorRPSForm({ formData, setFormData, onGeneratePreview }: Ger
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="pis">
-                    PIS <span className="text-red-500">*</span>
+                    PIS
                   </Label>
                   <Input
                     id="pis"
@@ -391,6 +591,91 @@ export function GeradorRPSForm({ formData, setFormData, onGeneratePreview }: Ger
                     <p className="text-xs text-red-500">{fieldErrors.municipio}</p>
                   )}
                 </div>
+              </div>
+
+              {/* Centro de Custo */}
+              <div className="space-y-4 pt-4 border-t">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-sm text-muted-foreground uppercase">
+                      Centro de Custo
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Selecione a empresa do grupo VCA que será o centro de custo para este RPS
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSyncCompanies}
+                    disabled={syncLoading}
+                    className="shrink-0"
+                  >
+                    <RefreshCw className={`mr-2 h-3 w-3 ${syncLoading ? "animate-spin" : ""}`} />
+                    {syncLoading ? "Sincronizando..." : "Atualizar"}
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="company">
+                    Selecione o Centro de Custo <span className="text-red-500">*</span>
+                  </Label>
+                  <CompanySelector
+                    value={formData.companyId}
+                    onChange={(empresa: Empresa | null) => {
+                      if (empresa) {
+                        setFormData({
+                          ...formData,
+                          companyId: empresa.id,
+                          nomeEmpresa: empresa.name,
+                          cnpjEmpresa: empresa.cnpj
+                        });
+                        clearFieldError("companyId");
+                      } else {
+                        setFormData({
+                          ...formData,
+                          companyId: '',
+                          nomeEmpresa: '',
+                          cnpjEmpresa: ''
+                        });
+                      }
+                    }}
+                  />
+                  {fieldErrors.companyId && (
+                    <p className="text-xs text-red-500">{fieldErrors.companyId}</p>
+                  )}
+                </div>
+
+                {formData.companyId && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="nomeEmpresa">
+                        Nome do Centro de Custo
+                      </Label>
+                      <Input
+                        id="nomeEmpresa"
+                        value={formData.nomeEmpresa}
+                        readOnly
+                        disabled
+                        className="bg-muted"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="cnpjEmpresa">
+                        CNPJ do Centro de Custo
+                      </Label>
+                      <Input
+                        id="cnpjEmpresa"
+                        value={formData.cnpjEmpresa}
+                        readOnly
+                        disabled
+                        className="bg-muted"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}

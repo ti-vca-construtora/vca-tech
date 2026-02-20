@@ -9,10 +9,17 @@ export interface FormData {
   // Etapa 1
   nomeRazaoSocial: string;
   cpf: string;
+  rg: string;
   dataNascimento: string;
+  nomeMae: string;
   pis: string;
   estado: string;
   municipio: string;
+  
+  // Centro de Custo
+  companyId: string;
+  nomeEmpresa: string;
+  cnpjEmpresa: string;
   
   // Etapa 2
   descricaoServico: string;
@@ -36,10 +43,15 @@ export default function GeradorRPSPage() {
   const [formData, setFormData] = useState<FormData>({
     nomeRazaoSocial: '',
     cpf: '',
+    rg: '',
     dataNascimento: '',
+    nomeMae: '',
     pis: '',
     estado: '',
     municipio: '',
+    companyId: '',
+    nomeEmpresa: '',
+    cnpjEmpresa: '',
     descricaoServico: '',
     valorServico: '',
     formaPagamento: '',

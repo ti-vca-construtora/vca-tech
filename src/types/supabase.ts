@@ -257,6 +257,7 @@ export interface Database {
           descricao_servico: string
           nome_empresa: string
           cnpj_empresa: string
+          company_id: string | null
           usuario_email: string | null
           created_at: string
           updated_at: string
@@ -270,6 +271,7 @@ export interface Database {
           descricao_servico: string
           nome_empresa: string
           cnpj_empresa: string
+          company_id?: string | null
           usuario_email?: string | null
           created_at?: string
           updated_at?: string
@@ -283,6 +285,7 @@ export interface Database {
           descricao_servico?: string
           nome_empresa?: string
           cnpj_empresa?: string
+          company_id?: string | null
           usuario_email?: string | null
           created_at?: string
           updated_at?: string
@@ -304,6 +307,159 @@ export interface Database {
         Update: {
           id?: string
           intervalo_dias?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      tb_empresas: {
+        Row: {
+          id: string
+          external_id: number
+          name: string
+          cnpj: string
+          trade_name: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          external_id: number
+          name: string
+          cnpj: string
+          trade_name: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          external_id?: number
+          name?: string
+          cnpj?: string
+          trade_name?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      tb_rps: {
+        Row: {
+          id: string
+          rps_number: string
+          nome_razao_social: string
+          cpf: string
+          rg: string
+          data_nascimento: string | null
+          nome_mae: string
+          pis: string | null
+          estado: string
+          municipio: string
+          company_id: string | null
+          nome_empresa: string | null
+          cnpj_empresa: string | null
+          descricao_servico: string
+          valor_liquido: number
+          forma_pagamento: string
+          tipo_chave_pix: string | null
+          chave_pix: string | null
+          banco: string | null
+          tipo_conta: string | null
+          agencia: string | null
+          conta: string | null
+          cpf_cnpj_conta: string | null
+          dados_terceiros: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          rps_number: string
+          nome_razao_social: string
+          cpf: string
+          rg: string
+          data_nascimento?: string | null
+          nome_mae: string
+          pis?: string | null
+          estado: string
+          municipio: string
+          company_id?: string | null
+          nome_empresa?: string | null
+          cnpj_empresa?: string | null
+          descricao_servico: string
+          valor_liquido: number
+          forma_pagamento: string
+          tipo_chave_pix?: string | null
+          chave_pix?: string | null
+          banco?: string | null
+          tipo_conta?: string | null
+          agencia?: string | null
+          conta?: string | null
+          cpf_cnpj_conta?: string | null
+          dados_terceiros?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          rps_number?: string
+          nome_razao_social?: string
+          cpf?: string
+          rg?: string
+          data_nascimento?: string | null
+          nome_mae?: string
+          pis?: string | null
+          estado?: string
+          municipio?: string
+          company_id?: string | null
+          nome_empresa?: string | null
+          cnpj_empresa?: string | null
+          descricao_servico?: string
+          valor_liquido?: number
+          forma_pagamento?: string
+          tipo_chave_pix?: string | null
+          chave_pix?: string | null
+          banco?: string | null
+          tipo_conta?: string | null
+          agencia?: string | null
+          conta?: string | null
+          cpf_cnpj_conta?: string | null
+          dados_terceiros?: boolean
+          created_at?: string
+        }
+      }
+      tb_rps_cadastros: {
+        Row: {
+          id: string
+          nome_razao_social: string
+          cpf: string
+          rg: string
+          data_nascimento: string | null
+          nome_mae: string
+          pis: string | null
+          estado: string
+          municipio: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          nome_razao_social: string
+          cpf: string
+          rg: string
+          data_nascimento?: string | null
+          nome_mae: string
+          pis?: string | null
+          estado: string
+          municipio: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          nome_razao_social?: string
+          cpf?: string
+          rg?: string
+          data_nascimento?: string | null
+          nome_mae?: string
+          pis?: string | null
+          estado?: string
+          municipio?: string
           created_at?: string
           updated_at?: string
         }

@@ -7,12 +7,38 @@ import { join } from "path";
 import { createClient } from "@/lib/supabase-epi";
 
 interface FormData {
-  nomePessoa: string;
-  cpfCnpjPessoa: string;
-  valorLiquido: string;
-  descricaoServico: string;
+  // Etapa 1 - Dados do Recebedor
+  nomeRazaoSocial: string;
+  cpf: string;
+  rg: string;
+  dataNascimento: string;
+  nomeMae: string;
+  pis: string;
+  estado: string;
+  municipio: string;
+  
+  // Dados da Empresa Pagadora
+  companyId: string;
   nomeEmpresa: string;
   cnpjEmpresa: string;
+  
+  // Etapa 2 - Dados do Serviço e Pagamento
+  descricaoServico: string;
+  valorLiquido: string;
+  formaPagamento: string;
+  
+  // Pagamento PIX
+  tipoChavePix: string;
+  chavePix: string;
+  
+  // Pagamento Bancário
+  banco: string;
+  tipoConta: string;
+  agencia: string;
+  conta: string;
+  cpfCnpjConta: string;
+  
+  // Opcionais
   forceGenerate?: boolean;
   usuarioEmail?: string;
 }
@@ -355,12 +381,44 @@ function generateReciboHTML(data: FormData, dacNumber: string, logoBase64: strin
           <div class="info-header">Dados do Recebedor</div>
           <div class="info-row">
             <div class="info-label">Nome:</div>
-            <div class="info-value">${data.nomePessoa}</div>
+            <div class="info-value">${data.nomeRazaoSocial}</div>
           </div>
           <div class="info-row">
-            <div class="info-label">${data.cpfCnpjPessoa.length <= 14 ? 'CPF' : 'CNPJ'}:</div>
-            <div class="info-value">${data.cpfCnpjPessoa}</div>
+            <div class="info-label">CPF:</div>
+            <div class="info-value">${data.cpf}</div>
           </div>
+          ${data.formaPagamento === 'PIX' ? `
+          <div class="info-row">
+            <div class="info-label">Tipo de Chave PIX:</div>
+            <div class="info-value">${data.tipoChavePix || '-'}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Chave PIX:</div>
+            <div class="info-value">${data.chavePix || '-'}</div>
+          </div>
+          ` : ''}
+          ${data.formaPagamento === 'TED' ? `
+          <div class="info-row">
+            <div class="info-label">Banco:</div>
+            <div class="info-value">${data.banco || '-'}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Tipo de Conta:</div>
+            <div class="info-value">${data.tipoConta === 'CORRENTE' ? 'Conta Corrente' : data.tipoConta === 'POUPANCA' ? 'Conta Poupança' : '-'}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Agência:</div>
+            <div class="info-value">${data.agencia || '-'}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Conta:</div>
+            <div class="info-value">${data.conta || '-'}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">CPF/CNPJ da Conta:</div>
+            <div class="info-value">${data.cpfCnpjConta || '-'}</div>
+          </div>
+          ` : ''}
         </div>
       </div>
       
@@ -378,8 +436,8 @@ function generateReciboHTML(data: FormData, dacNumber: string, logoBase64: strin
         <div class="signature-box">
           <div class="signature-label">Assinatura do Recebedor</div>
           <div class="signature-line">
-            <div class="signature-name">${data.nomePessoa}</div>
-            <div class="signature-doc">${data.cpfCnpjPessoa.length <= 14 ? 'CPF' : 'CNPJ'}: ${data.cpfCnpjPessoa}</div>
+            <div class="signature-name">${data.nomeRazaoSocial}</div>
+            <div class="signature-doc">CPF: ${data.cpf}</div>
           </div>
         </div>
       </div>
@@ -404,8 +462,8 @@ export async function POST(request: Request) {
     const data: FormData = await request.json();
 
     // Validação básica
-    if (!data.nomePessoa || !data.cpfCnpjPessoa || !data.valorLiquido || 
-        !data.descricaoServico || !data.nomeEmpresa || !data.cnpjEmpresa) {
+    if (!data.nomeRazaoSocial || !data.cpf || !data.valorLiquido || 
+        !data.descricaoServico || !data.nomeEmpresa || !data.cnpjEmpresa || !data.companyId) {
       return NextResponse.json(
         { error: "Todos os campos são obrigatórios" },
         { status: 400 }
@@ -468,13 +526,28 @@ export async function POST(request: Request) {
         .from('tb_dac') as any)
         .insert({
           dac_number: dacNumber,
-          nome_pessoa: data.nomePessoa,
-          cpf_cnpj_pessoa: data.cpfCnpjPessoa,
+          nome_razao_social: data.nomeRazaoSocial,
+          cpf: data.cpf,
+          rg: data.rg || null,
+          nome_mae: data.nomeMae || null,
+          data_nascimento: data.dataNascimento || null,
+          pis: data.pis || null,
+          estado: data.estado || null,
+          municipio: data.municipio || null,
           valor_liquido: valorNumerico,
           descricao_servico: data.descricaoServico,
           nome_empresa: data.nomeEmpresa,
           cnpj_empresa: data.cnpjEmpresa,
+          company_id: data.companyId,
           usuario_email: data.usuarioEmail || null,
+          forma_pagamento: data.formaPagamento || null,
+          tipo_chave_pix: data.tipoChavePix || null,
+          chave_pix: data.chavePix || null,
+          banco: data.banco || null,
+          agencia: data.agencia || null,
+          conta: data.conta || null,
+          tipo_conta: data.tipoConta || null,
+          cpf_cnpj_conta: data.cpfCnpjConta || null,
         });
 
       if (insertError) {

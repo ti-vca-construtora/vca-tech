@@ -5,22 +5,61 @@ import { PreviewPDF } from "./components/preview-pdf";
 import { useState } from "react";
 
 export interface FormData {
-  nomePessoa: string;
-  cpfCnpjPessoa: string;
-  valorLiquido: string;
-  descricaoServico: string;
+  // Etapa 1 - Dados do Recebedor
+  nomeRazaoSocial: string;
+  cpf: string;
+  rg: string;
+  dataNascimento: string;
+  nomeMae: string;
+  pis: string;
+  estado: string;
+  municipio: string;
+  
+  // Dados da Empresa Pagadora
+  companyId: string;
   nomeEmpresa: string;
   cnpjEmpresa: string;
+  
+  // Etapa 2 - Dados do Serviço e Pagamento
+  descricaoServico: string;
+  valorLiquido: string;
+  formaPagamento: string;
+  
+  // Pagamento PIX
+  tipoChavePix: string;
+  chavePix: string;
+  
+  // Pagamento Bancário
+  banco: string;
+  tipoConta: string;
+  agencia: string;
+  conta: string;
+  cpfCnpjConta: string;
 }
 
 export default function GeradorDACPage() {
   const [formData, setFormData] = useState<FormData>({
-    nomePessoa: '',
-    cpfCnpjPessoa: '',
-    valorLiquido: '',
-    descricaoServico: '',
+    nomeRazaoSocial: '',
+    cpf: '',
+    rg: '',
+    dataNascimento: '',
+    nomeMae: '',
+    pis: '',
+    estado: '',
+    municipio: '',
+    companyId: '',
     nomeEmpresa: '',
-    cnpjEmpresa: ''
+    cnpjEmpresa: '',
+    descricaoServico: '',
+    valorLiquido: '',
+    formaPagamento: '',
+    tipoChavePix: '',
+    chavePix: '',
+    banco: '',
+    tipoConta: '',
+    agencia: '',
+    conta: '',
+    cpfCnpjConta: ''
   });
 
   const [triggerGenerate, setTriggerGenerate] = useState(false);

@@ -4,14 +4,20 @@ import puppeteer, { Browser } from "puppeteer";
 import puppeteerCore, { type Browser as BrowserCore } from "puppeteer-core";
 import { readFile } from "fs/promises";
 import { join } from "path";
+import { createClient } from "@/lib/supabase-epi";
 
 interface FormData {
   nomeRazaoSocial: string;
   cpf: string;
+  rg: string;
   dataNascimento: string;
+  nomeMae: string;
   pis: string;
   estado: string;
   municipio: string;
+  companyId: string;
+  nomeEmpresa: string;
+  cnpjEmpresa: string;
   descricaoServico: string;
   valorServico: string;
   formaPagamento: string;
@@ -345,8 +351,16 @@ function generateRPSHTML(data: FormData, rpsNumber: string, logoBase64: string) 
           <span class="field-value">${data.cpf || '-'}</span>
         </div>
         <div class="field">
+          <span class="field-label">RG:</span>
+          <span class="field-value">${data.rg || '-'}</span>
+        </div>
+        <div class="field">
           <span class="field-label">Data de Nascimento:</span>
           <span class="field-value">${formatDate(data.dataNascimento)}</span>
+        </div>
+        <div class="field">
+          <span class="field-label">Nome da Mãe:</span>
+          <span class="field-value">${data.nomeMae || '-'}</span>
         </div>
         <div class="field">
           <span class="field-label">PIS:</span>
@@ -365,11 +379,15 @@ function generateRPSHTML(data: FormData, rpsNumber: string, logoBase64: string) 
       <div class="grid">
         <div class="field full-width">
           <span class="field-label">Nome/Razão Social:</span>
-          <span class="field-value">VCA SERVIÇOS DE CONSTRUÇÕES LTDA</span>
+          <span class="field-value">VCA SERVIÇOS DE CONSTRUÇÃO LTDA</span>
         </div>
         <div class="field">
           <span class="field-label">CNPJ:</span>
           <span class="field-value">53.267.895/0001-91</span>
+        </div>
+        <div class="field">
+          <span class="field-label">Centro de Custo:</span>
+          <span class="field-value">${data.nomeEmpresa || '-'}</span>
         </div>
         <div class="field">
           <span class="field-label">Endereço:</span>
@@ -529,6 +547,99 @@ export async function POST(request: Request) {
     });
 
     await browser.close();
+
+    // Salvar no banco de dados
+    try {
+      const supabase = createClient();
+      const valorNumerico = parseMonetaryValue(formData.valorServico);
+
+      // Salvar RPS
+      const { error: insertRPSError } = await (supabase
+        .from('tb_rps') as any)
+        .insert({
+          rps_number: rpsNumber,
+          nome_razao_social: formData.nomeRazaoSocial,
+          cpf: formData.cpf,
+          rg: formData.rg,
+          data_nascimento: formData.dataNascimento || null,
+          nome_mae: formData.nomeMae,
+          pis: formData.pis || null,
+          estado: formData.estado,
+          municipio: formData.municipio,
+          company_id: formData.companyId,
+          nome_empresa: formData.nomeEmpresa,
+          cnpj_empresa: formData.cnpjEmpresa,
+          descricao_servico: formData.descricaoServico,
+          valor_liquido: valorNumerico,
+          forma_pagamento: formData.formaPagamento,
+          tipo_chave_pix: formData.tipoChavePix || null,
+          chave_pix: formData.chavePix || null,
+          banco: formData.banco || null,
+          tipo_conta: formData.tipoConta || null,
+          agencia: formData.agencia || null,
+          conta: formData.conta || null,
+          cpf_cnpj_conta: formData.cpfCnpjConta || null,
+          dados_terceiros: formData.dadosTerceiros || false,
+        });
+
+      if (insertRPSError) {
+        console.error('Erro ao salvar RPS no banco:', insertRPSError);
+        // Não interrompe o fluxo, apenas loga o erro
+      }
+
+      // Salvar ou atualizar cadastro da pessoa
+      const { data: cadastroExistente, error: selectError } = await supabase
+        .from('tb_rps_cadastros')
+        .select('id')
+        .eq('cpf', formData.cpf)
+        .maybeSingle<{ id: string }>();
+
+      if (selectError && selectError.code !== 'PGRST116') {
+        console.error('Erro ao buscar cadastro:', selectError);
+      }
+
+      if (cadastroExistente) {
+        // Atualizar cadastro existente
+        const { error: updateError } = await (supabase
+          .from('tb_rps_cadastros') as any)
+          .update({
+            nome_razao_social: formData.nomeRazaoSocial,
+            rg: formData.rg,
+            data_nascimento: formData.dataNascimento || null,
+            nome_mae: formData.nomeMae,
+            pis: formData.pis || null,
+            estado: formData.estado,
+            municipio: formData.municipio,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', cadastroExistente.id);
+
+        if (updateError) {
+          console.error('Erro ao atualizar cadastro:', updateError);
+        }
+      } else {
+        // Criar novo cadastro
+        const { error: insertCadastroError } = await (supabase
+          .from('tb_rps_cadastros') as any)
+          .insert({
+            nome_razao_social: formData.nomeRazaoSocial,
+            cpf: formData.cpf,
+            rg: formData.rg,
+            data_nascimento: formData.dataNascimento || null,
+            nome_mae: formData.nomeMae,
+            pis: formData.pis || null,
+            estado: formData.estado,
+            municipio: formData.municipio,
+          });
+
+        if (insertCadastroError) {
+          console.error('Erro ao criar cadastro:', insertCadastroError);
+        }
+      }
+    } catch (dbError) {
+      console.error('Erro ao conectar ao banco:', dbError);
+      // Não interrompe o fluxo, apenas loga o erro
+    }
 
     // Retornar PDF
     return new NextResponse(Buffer.from(pdf), {

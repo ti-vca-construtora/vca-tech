@@ -29,8 +29,8 @@ interface DuplicityInfo {
   diasDesdeUltimoDAC?: number;
   ultimoDAC?: {
     dacNumber: string;
-    nomePessoa: string;
-    cpfCnpjPessoa: string;
+    nomeRazaoSocial: string;
+    cpf: string;
     descricaoServico: string;
     createdAt: string;
   };
@@ -45,13 +45,16 @@ export function PreviewPDF({ formData, triggerGenerate = false, onGenerateComple
   const [duplicityInfo, setDuplicityInfo] = useState<DuplicityInfo | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const isFormEmpty = !formData.nomePessoa && !formData.cpfCnpjPessoa && !formData.descricaoServico;
-  const isFormComplete = formData.nomePessoa && 
-                         formData.cpfCnpjPessoa && 
+  const isFormEmpty = !formData.nomeRazaoSocial && !formData.cpf && !formData.descricaoServico;
+  const isFormComplete = formData.nomeRazaoSocial && 
+                         formData.cpf && 
                          formData.valorLiquido &&
                          formData.descricaoServico &&
                          formData.nomeEmpresa &&
-                         formData.cnpjEmpresa;
+                         formData.cnpjEmpresa &&
+                         formData.formaPagamento &&
+                         (formData.formaPagamento === 'PIX' ? (formData.tipoChavePix && formData.chavePix) : 
+                          (formData.banco && formData.agencia && formData.conta && formData.tipoConta));
 
   useEffect(() => {
     if (isFormComplete && (triggerGenerate || shouldGenerate)) {
@@ -298,10 +301,10 @@ export function PreviewPDF({ formData, triggerGenerate = false, onGenerateComple
                     <span className="font-semibold">Número:</span> {duplicityInfo.ultimoDAC.dacNumber}
                   </div>
                   <div>
-                    <span className="font-semibold">Recebedor:</span> {duplicityInfo.ultimoDAC.nomePessoa}
+                    <span className="font-semibold">Recebedor:</span> {duplicityInfo.ultimoDAC.nomeRazaoSocial}
                   </div>
                   <div>
-                    <span className="font-semibold">CPF/CNPJ:</span> {duplicityInfo.ultimoDAC.cpfCnpjPessoa}
+                    <span className="font-semibold">CPF:</span> {duplicityInfo.ultimoDAC.cpf}
                   </div>
                   <div>
                     <span className="font-semibold">Gerado em:</span>{" "}
