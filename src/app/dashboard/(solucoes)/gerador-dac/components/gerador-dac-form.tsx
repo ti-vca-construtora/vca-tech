@@ -290,8 +290,6 @@ export function GeradorDACForm({ formData, setFormData, onGeneratePreview, cadas
     if (!formData.nomeRazaoSocial.trim())
       errors.nomeRazaoSocial = "Informe o nome/razão social";
     if (!formData.cpf.trim()) errors.cpf = "Informe o CPF";
-    if (!formData.rg.trim()) errors.rg = "Informe o RG";
-    if (!formData.nomeMae.trim()) errors.nomeMae = "Informe o nome da mãe";
     if (!formData.estado) errors.estado = "Selecione o estado";
     if (!formData.municipio.trim()) errors.municipio = "Informe o município";
     if (!formData.companyId.trim()) errors.companyId = "Selecione uma empresa";
@@ -552,7 +550,7 @@ export function GeradorDACForm({ formData, setFormData, onGeneratePreview, cadas
 
                 <div className="space-y-2">
                   <Label htmlFor="rg">
-                    RG <span className="text-red-500">*</span>
+                    RG
                   </Label>
                   <Input
                     id="rg"
@@ -569,7 +567,7 @@ export function GeradorDACForm({ formData, setFormData, onGeneratePreview, cadas
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="nomeMae">
-                    Nome da Mãe <span className="text-red-500">*</span>
+                    Nome da Mãe
                   </Label>
                   <Input
                     id="nomeMae"
