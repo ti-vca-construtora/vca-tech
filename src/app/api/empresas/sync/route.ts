@@ -5,7 +5,7 @@ interface SiengeCompany {
   id: number;
   name: string;
   cnpj: string;
-  tradeName: string;
+  idCompany: number;
 }
 
 interface SiengeResponse {
@@ -18,32 +18,47 @@ interface SiengeResponse {
 export async function POST() {
   try {
     // Credenciais para autenticação Basic Auth
-    const username = "vca-tech";
-    const password = "8w7WKHD6i8A15jFcTj7ldGBHgzsYglU5";
-    const basicAuth = Buffer.from(`${username}:${password}`).toString("base64");
+    const basicAuth = process.env.NEXT_PUBLIC_HASH_BASIC;
 
-    // Buscar empresas do Sienge
-    const siengeResponse = await fetch(
-      "https://api.sienge.com.br/vca/public/api/v1/companies?limit=200",
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Basic ${basicAuth}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    let allCompanies: SiengeCompany[] = [];
+    let offset = 0;
+    const limit = 100;
+    let totalCount = 0;
 
-    if (!siengeResponse.ok) {
-      console.error("Erro na resposta do Sienge:", siengeResponse.status);
-      return NextResponse.json(
-        { error: "Erro ao buscar empresas no Sienge" },
-        { status: siengeResponse.status }
+    do {
+      const siengeResponse = await fetch(
+        `https://api.sienge.com.br/vca/public/api/v1/cost-centers?limit=${limit}&offset=${offset}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Basic ${basicAuth}`,
+            "Content-Type": "application/json",
+          },
+        }
       );
-    }
 
-    const siengeData: SiengeResponse = await siengeResponse.json();
-    const companies = siengeData.results;
+      if (!siengeResponse.ok) {
+        console.error("Erro na resposta do Sienge (offset " + offset + "):", siengeResponse.status);
+        return NextResponse.json(
+          { error: "Erro ao buscar empresas no Sienge" },
+          { status: siengeResponse.status }
+        );
+      }
+
+      const siengeData: SiengeResponse = await siengeResponse.json();
+      
+      if (siengeData.results) {
+        allCompanies = allCompanies.concat(siengeData.results);
+      }
+
+      if (offset === 0 && siengeData.resultSetMetadata) {
+        totalCount = siengeData.resultSetMetadata.count;
+      }
+
+      offset += limit;
+    } while (offset < totalCount);
+
+    const companies = allCompanies;
 
     if (!companies || companies.length === 0) {
       return NextResponse.json(
@@ -86,8 +101,8 @@ export async function POST() {
         toInsert.map((company) => ({
           external_id: company.id,
           name: company.name,
-          cnpj: company.cnpj,
-          trade_name: company.tradeName,
+          cnpj: company.cnpj || "",
+          trade_name: company.name, // mapeado do cost-center
         }))
       );
 
@@ -105,8 +120,8 @@ export async function POST() {
         .from("tb_empresas") as any)
         .update({
           name: company.name,
-          cnpj: company.cnpj,
-          trade_name: company.tradeName,
+          cnpj: company.cnpj || "",
+          trade_name: company.name, // mapeado do cost-center
           updated_at: new Date().toISOString(),
         })
         .eq("external_id", company.id);
