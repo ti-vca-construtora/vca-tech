@@ -58,7 +58,10 @@ export async function POST() {
       offset += limit;
     } while (offset < totalCount);
 
-    const companies = allCompanies;
+    // Filtro para conter apenas empresas referentes a 'VCA SERVIÇOS' (com normalização de duplos espaços/case)
+    const companies = allCompanies.filter((c) =>
+      c.name && c.name.replace(/\s+/g, ' ').toUpperCase().includes("VCA SERVIÇOS")
+    );
 
     if (!companies || companies.length === 0) {
       return NextResponse.json(

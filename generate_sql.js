@@ -45,7 +45,11 @@ async function main() {
 
   sql += "INSERT INTO tb_empresas (external_id, name, cnpj, trade_name) VALUES\n";
 
-  const values = allCompanies.map((c, index) => {
+  const filteredCompanies = allCompanies.filter(c => 
+    c.name && c.name.replace(/\s+/g, ' ').toUpperCase().includes("VCA SERVIÇOS")
+  );
+
+  const values = filteredCompanies.map((c, index) => {
     const external_id = c.id;
     const name = c.name ? c.name.replace(/'/g, "''") : "";
     const cnpj = c.cnpj ? c.cnpj.replace(/'/g, "''") : "";
