@@ -62,9 +62,9 @@ export function CompanySelector({ value, onChange, disabled, className }: Compan
   const filteredEmpresas = empresas.filter((empresa) => {
     const search = searchValue.toLowerCase();
     return (
-      empresa.trade_name.toLowerCase().includes(search) ||
-      empresa.name.toLowerCase().includes(search) ||
-      empresa.cnpj.includes(search)
+      (empresa.trade_name?.toLowerCase() || "").includes(search) ||
+      (empresa.name?.toLowerCase() || "").includes(search) ||
+      (empresa.cnpj || "").toLowerCase().includes(search)
     );
   });
 
