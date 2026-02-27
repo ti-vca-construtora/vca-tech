@@ -75,12 +75,18 @@ export async function loadObrasFromDB(): Promise<Obra[]> {
 
     return (data || []).map((obra: any) => {
       console.log('Processando obra:', obra);
+      
+      let finalType: "INCORPORACAO" | "LOTEAMENTO" = 'INCORPORACAO';
+      if (obra.empreendimento_type === 'LOTEAMENTO' || obra.empreendimento_tipo === 'LOTEAMENTO') {
+        finalType = 'LOTEAMENTO';
+      }
+
       return {
         id: obra.id,
         name: obra.name,
         state: obra.state || obra.STATE || '',
         city: obra.city || obra.CITY || '',
-        empreendimentoType: obra.empreendimento_type || obra.EMPREENDIMENTO_TYPE || 'INCORPORACAO',
+        empreendimentoType: finalType,
       };
     });
   } catch (error) {
@@ -100,7 +106,8 @@ export async function saveObrasToDB(obras: Obra[]): Promise<boolean> {
       name: obra.name,
       state: obra.state,
       city: obra.city,
-      empreendimento_type: obra.empreendimentoType,
+      empreendimento_type: obra.empreendimentoType === 'INCORPORACAO' ? 'INCORPORADORA' : obra.empreendimentoType,
+      empreendimento_tipo: obra.empreendimentoType,
     }));
 
     const { error } = await supabase
@@ -246,22 +253,28 @@ export async function loadInventorySnapshotsFromDB(): Promise<InventorySnapshot[
       return [];
     }
 
-    return (data || []).map((snapshot: any) => ({
-      id: snapshot.id,
-      obraId: snapshot.obra_id,
-      obraName: snapshot.obra_name,
-      obraState: snapshot.obra_state,
-      obraCity: snapshot.obra_city,
-      obraType: snapshot.obra_type as ObraEmpreendimentoTipo,
-      createdAt: snapshot.created_at,
-      createdBy: {
-        id: snapshot.created_by_id ?? undefined,
-        name: snapshot.created_by_name ?? undefined,
-        email: snapshot.created_by_email ?? undefined,
-      },
-      epiCounts: snapshot.epi_counts as Record<string, number>,
-      functionCounts: snapshot.function_counts as Record<string, number>,
-    }));
+    return (data || []).map((snapshot: any) => {
+      let obraType = snapshot.obra_type;
+      if (obraType === 'INCORPORADORA') {
+        obraType = 'INCORPORACAO';
+      }
+      return {
+        id: snapshot.id,
+        obraId: snapshot.obra_id,
+        obraName: snapshot.obra_name,
+        obraState: snapshot.obra_state,
+        obraCity: snapshot.obra_city,
+        obraType: obraType as ObraEmpreendimentoTipo,
+        createdAt: snapshot.created_at,
+        createdBy: {
+          id: snapshot.created_by_id ?? undefined,
+          name: snapshot.created_by_name ?? undefined,
+          email: snapshot.created_by_email ?? undefined,
+        },
+        epiCounts: snapshot.epi_counts as Record<string, number>,
+        functionCounts: snapshot.function_counts as Record<string, number>,
+      };
+    });
   } catch (error) {
     console.error('Error loading inventory snapshots:', error);
     return [];
@@ -274,20 +287,23 @@ export async function saveInventorySnapshotsToDB(snapshots: InventorySnapshot[])
     await supabase.from('inventory_snapshots').delete().neq('id', '');
 
     // Insert new snapshots
-    const dataToInsert = snapshots.map(snapshot => ({
-      id: snapshot.id,
-      obra_id: snapshot.obraId,
-      obra_name: snapshot.obraName,
-      obra_state: snapshot.obraState,
-      obra_city: snapshot.obraCity,
-      obra_type: snapshot.obraType,
-      created_at: snapshot.createdAt,
-      created_by_id: snapshot.createdBy?.id ?? null,
-      created_by_name: snapshot.createdBy?.name ?? null,
-      created_by_email: snapshot.createdBy?.email ?? null,
-      epi_counts: snapshot.epiCounts,
-      function_counts: snapshot.functionCounts,
-    }));
+    const dataToInsert = snapshots.map(snapshot => {
+      const dbObraType = snapshot.obraType === 'INCORPORACAO' ? 'INCORPORADORA' : snapshot.obraType;
+      return {
+        id: snapshot.id,
+        obra_id: snapshot.obraId,
+        obra_name: snapshot.obraName,
+        obra_state: snapshot.obraState,
+        obra_city: snapshot.obraCity,
+        obra_type: dbObraType,
+        created_at: snapshot.createdAt,
+        created_by_id: snapshot.createdBy?.id ?? null,
+        created_by_name: snapshot.createdBy?.name ?? null,
+        created_by_email: snapshot.createdBy?.email ?? null,
+        epi_counts: snapshot.epiCounts,
+        function_counts: snapshot.functionCounts,
+      };
+    });
 
     const { error } = await supabase
       .from('inventory_snapshots')
@@ -307,9 +323,11 @@ export async function saveInventorySnapshotsToDB(snapshots: InventorySnapshot[])
 
 export async function addInventorySnapshotToDB(snapshot: InventorySnapshot): Promise<boolean> {
   try {
+    const dbObraType = snapshot.obraType === 'INCORPORACAO' ? 'INCORPORADORA' : snapshot.obraType;
+
     // Validar que obra_type não é null/undefined
-    if (!snapshot.obraType || !['INCORPORADORA', 'LOTEAMENTO'].includes(snapshot.obraType)) {
-      console.error('Invalid obra_type:', snapshot.obraType);
+    if (!dbObraType || !['INCORPORADORA', 'LOTEAMENTO'].includes(dbObraType)) {
+      console.error('Invalid obra_type:', dbObraType);
       return false;
     }
 
@@ -319,7 +337,7 @@ export async function addInventorySnapshotToDB(snapshot: InventorySnapshot): Pro
       obra_name: snapshot.obraName,
       obra_state: snapshot.obraState,
       obra_city: snapshot.obraCity,
-      obra_type: snapshot.obraType,
+      obra_type: dbObraType,
       created_at: snapshot.createdAt,
       created_by_id: snapshot.createdBy?.id ?? null,
       created_by_name: snapshot.createdBy?.name ?? null,
