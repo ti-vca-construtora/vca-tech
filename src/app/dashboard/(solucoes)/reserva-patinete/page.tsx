@@ -24,6 +24,10 @@ export default function ReservarPatinete() {
   const [modalOpenCheckout, setModalOpenCheckout] = useState(false);
   const [obsCheckin, setObsCheckin] = useState<string>("");
   const [obsCheckout, setObsCheckout] = useState<string>("");
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [showCodeModal, setShowCodeModal] = useState(false);
+  const [activeAccessCode, setActiveAccessCode] = useState<string | null>(null);
+  const [showActiveCodeModal, setShowActiveCodeModal] = useState(false);
 
   const sucessNotif = () =>
     toast.success("Reserva realizada!", {
@@ -113,6 +117,22 @@ export default function ReservarPatinete() {
       theme: "light",
     });
 
+  const warnMissingCode = () =>
+    toast.warn("Senha não encontrada para esta reserva.", {
+      position: "top-right",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "light",
+    });
+
+  const generateAccessCode = (): string => {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+  };
+
   const equipmentNames = ["vca001", "vca002", "vca003", "vca004", "vca005"];
   const selectedEquipmentName =
     selectedIndex !== null ? equipmentNames[selectedIndex] : null;
@@ -173,6 +193,7 @@ export default function ReservarPatinete() {
           available: true,
           currentUser: "",
           reservedUntil: "",
+          accessCode: "",
         });
 
         // Registra no Firestore
@@ -194,6 +215,7 @@ export default function ReservarPatinete() {
         await set(userLimitRef, null);
 
         setHasReservation(null);
+        setActiveAccessCode(null);
         window.location.reload();
       }
     }
@@ -217,10 +239,35 @@ export default function ReservarPatinete() {
   const checkUserReservation = async () => {
     if (!userLoggedId) return;
 
-    const hasReservation = await checkUserHasReservation(userLoggedId);
-    if (hasReservation) {
-      setHasReservation(hasReservation);
+    const reservation = await checkUserHasReservation(userLoggedId);
+    if (reservation) {
+      setHasReservation(reservation);
+
+      const equipmentRef = ref(rtdb, `equipments/${reservation}`);
+      const snapshot = await get(equipmentRef);
+      const equipmentData = snapshot.val();
+      setActiveAccessCode(equipmentData?.accessCode ?? null);
+    } else {
+      setHasReservation(null);
+      setActiveAccessCode(null);
     }
+  };
+
+  const showReservationCode = async () => {
+    if (!hasReservation) return;
+
+    const equipmentRef = ref(rtdb, `equipments/${hasReservation}`);
+    const snapshot = await get(equipmentRef);
+    const equipmentData = snapshot.val();
+    const reservationCode = equipmentData?.accessCode;
+
+    if (!reservationCode) {
+      warnMissingCode();
+      return;
+    }
+
+    setActiveAccessCode(reservationCode);
+    setShowActiveCodeModal(true);
   };
 
   const reservarPatineteRealtimeDb = async () => {
@@ -244,11 +291,14 @@ export default function ReservarPatinete() {
     const equipmentRef = ref(rtdb, `equipments/${selectedEquipmentId}`);
     const userLimitRef = ref(rtdb, `target_limits/${userLoggedId}`);
 
+    const accessCode = generateAccessCode();
+
     try {
       await set(equipmentRef, {
         available: false,
         currentUser: userLoggedId,
         reservedUntil,
+        accessCode,
       });
 
       await set(userLimitRef, {
@@ -256,14 +306,15 @@ export default function ReservarPatinete() {
         reserveLimit,
       });
 
-      reservarPatineteFirestoreDb();
+      setGeneratedCode(accessCode);
+      reservarPatineteFirestoreDb(accessCode);
     } catch (error) {
       console.error("Erro ao reservar patinete na realtimeDb:", error);
       warnNotif();
     }
   };
 
-  const reservarPatineteFirestoreDb = async () => {
+  const reservarPatineteFirestoreDb = async (accessCode: string) => {
     const date = new Date();
     date.setHours(date.getHours() - 3);
 
@@ -277,6 +328,7 @@ export default function ReservarPatinete() {
       await addDoc(logsRef, {
         equipment: selectedEquipmentId,
         obs: obsCheckin,
+        accessCode,
         photos: [],
         time: date.toISOString(),
         type: "in",
@@ -284,9 +336,7 @@ export default function ReservarPatinete() {
       });
       console.log(`Reserva feita com sucesso para ${selectedEquipmentId}`);
       sucessNotif();
-      setTimeout(() => {
-        window.location.reload();
-      }, 3000);
+      setShowCodeModal(true);
     } catch (error) {
       console.error("Erro ao reservar patinete no firestoreDb:", error);
       errorNotif();
@@ -306,7 +356,9 @@ export default function ReservarPatinete() {
         available: true,
         currentUser: "",
         reservedUntil: "",
+        accessCode: "",
       });
+      setActiveAccessCode(null);
       devolverPatineteFirestoreDb();
     } catch (error) {
       console.error("Erro ao devolver patinete no realtimeDb:", error);
@@ -354,7 +406,84 @@ export default function ReservarPatinete() {
         pauseOnHover
         theme="light"
       />
-      {modalOpen ? (
+      {showActiveCodeModal && activeAccessCode ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="flex w-10/12 flex-col items-center rounded-lg bg-white p-8 shadow-md md:w-2/5">
+            <div className="mb-4 rounded-full bg-emerald-100 p-4">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-12 w-12 text-emerald-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <h2 className="mb-2 text-center text-xl font-bold text-gray-800">
+              Sua senha de retirada
+            </h2>
+            <p className="mb-4 text-center text-gray-600">
+              Patinete <strong>{hasReservation?.toUpperCase()}</strong>
+            </p>
+            <div className="mb-4 rounded-lg bg-gray-100 px-8 py-4">
+              <span className="font-mono text-4xl font-bold tracking-[0.5em] text-gray-900">
+                {activeAccessCode}
+              </span>
+            </div>
+            <p className="mb-6 text-center text-sm text-gray-500">
+              Digite essa senha no teclado da caixa de chaves.
+            </p>
+            <Button
+              variant="default"
+              className="w-full bg-emerald-600 hover:bg-emerald-700"
+              onClick={() => setShowActiveCodeModal(false)}
+            >
+              Fechar
+            </Button>
+          </div>
+        </div>
+      ) : null}
+      {showCodeModal && generatedCode ? (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-8 rounded-lg shadow-md w-10/12 md:w-2/5 flex flex-col items-center">
+            <div className="bg-green-100 rounded-full p-4 mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">Reserva confirmada!</h2>
+            <p className="text-gray-600 mb-4 text-center">
+              Use a senha abaixo no dispositivo para retirar a chave do patinete <strong>{selectedEquipmentName?.toUpperCase()}</strong>
+            </p>
+            <div className="bg-gray-100 rounded-lg px-8 py-4 mb-4">
+              <span className="text-4xl font-mono font-bold tracking-[0.5em] text-gray-900">
+                {generatedCode}
+              </span>
+            </div>
+            <p className="text-sm text-gray-500 mb-6 text-center">
+              Digite essa senha no teclado da caixa de chaves para liberar a chave do seu patinete.
+            </p>
+            <Button
+              variant="default"
+              className="bg-green-600 hover:bg-green-700 w-full"
+              onClick={() => {
+                setShowCodeModal(false);
+                setGeneratedCode(null);
+                setModalOpen(false);
+                window.location.reload();
+              }}
+            >
+              Entendi
+            </Button>
+          </div>
+        </div>
+      ) : modalOpen ? (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white p-6 rounded-lg shadow-md w-10/12 md:w-3/5">
             <h2 className="text-lg font-semibold">Check-In</h2>
@@ -368,8 +497,8 @@ export default function ReservarPatinete() {
             ></textarea>
             <div className="flex justify-end mt-4">
               <Button
-                variant="default"
-                className="bg-red-600 hover:bg-red-700 mr-2"
+                variant="destructive"
+                className="mr-2"
                 onClick={() => setModalOpen(false)}
               >
                 Cancelar
@@ -421,51 +550,63 @@ export default function ReservarPatinete() {
       ) : null}
       <>
         {hasReservation ? (
-          <div className="flex flex-col items-center justify-center gap-6">
-            <h1 className="text-xl font-semibold text-red-600">
-              Você já possui uma reserva ativa!
+          <div className="flex flex-col items-center justify-center gap-6 p-8">
+            <div className="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center mb-2">
+              <svg className="w-8 h-8 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            </div>
+            <h1 className="text-lg font-bold text-slate-800">
+              Reserva ativa
             </h1>
+            <p className="text-sm text-slate-500">Você já possui o patinete <span className="font-semibold text-slate-700">{hasReservation?.toUpperCase()}</span> reservado.</p>
             <Image
-              width={250}
-              height={250}
+              width={220}
+              height={220}
               src={`/assets/${hasReservation}.png`}
               alt="Patinete reservado"
-              className="hover:scale-110 transition-transform duration-300"
-            ></Image>
-            <Button onClick={openModalCheckout} variant="destructive">
-              Fazer Check-Out
-            </Button>
+              className="hover:scale-105 transition-transform duration-500"
+            />
+            <div className="flex flex-col md:flex-row gap-3 items-center">
+              <Button
+                onClick={showReservationCode}
+                variant="outline"
+                className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300"
+              >
+                Mostrar senha
+              </Button>
+              <Button onClick={openModalCheckout} className="bg-rose-500 hover:bg-rose-600 text-white shadow-md shadow-rose-200">
+                Fazer Check-Out
+              </Button>
+            </div>
           </div>
         ) : (
-          <div className="size-full flex-col flex items-center justify-center md:p-6 relative ">
-            <Image
-              fill
-              src="/assets/banner-patinetes.jpg"
-              alt="Banner patinete"
-              className="z-0 opacity-100 hidden md:block rounded-xl"
-            ></Image>
-            <Image
-              fill
-              src="/assets/banner-patinetes-mobile.jpg"
-              alt="Banner patinete"
-              className="z-0 opacity-100 block md:hidden rounded-xl"
-            ></Image>
-            <div className="flex flex-col md:flex-row w-5/6 justify-center md:justify-between items-center mb-10 z-10">
-              <div>
-                <h1 className="text-xl font-semibold text-slate-50 mb-3 md:mb-0">
-                  Patinetes disponíveis: {availableCount}
-                </h1>
+          <div className="size-full flex-col flex items-center justify-start p-6 md:p-10 relative bg-gradient-to-br from-slate-50 via-white to-emerald-50/40">
+            {/* Header section */}
+            <div className="flex flex-col md:flex-row w-full max-w-4xl justify-between items-center mb-8 gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold text-slate-800">
+                    Reserva de Patinetes
+                  </h1>
+                  <p className="text-sm text-slate-500">
+                    <span className="font-semibold text-emerald-600">{availableCount}</span> disponíveis agora
+                  </p>
+                </div>
               </div>
-              <div>
-                <Link href="/dashboard/reserva-patinete/historico">
-                  <Button
-                    variant="default"
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    Histórico de reservas
-                  </Button>
-                </Link>
-              </div>
+              <Link href="/dashboard/reserva-patinete/historico">
+                <Button
+                  variant="outline"
+                  className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300"
+                >
+                  Histórico de reservas
+                </Button>
+              </Link>
             </div>
             <Carousel
               onSlideChange={setSelectedIndex}

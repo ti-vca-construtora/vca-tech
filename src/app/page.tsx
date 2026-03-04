@@ -11,8 +11,13 @@ export default function Home() {
   });
 
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      VCA Tech
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950">
+      <div className="flex flex-col items-center gap-4 animate-pulse">
+        <div className="w-12 h-12 rounded-full bg-gradient-to-r from-emerald-500 to-sky-500" />
+        <span className="text-white/60 text-sm font-medium tracking-wider">
+          Carregando...
+        </span>
+      </div>
     </div>
   );
 }

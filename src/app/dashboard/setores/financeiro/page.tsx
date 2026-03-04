@@ -46,7 +46,7 @@ const solucoesData: Solucoes[] = [
 
 const Financeiro = () => {
   return (
-    <div className="flex flex-col gap-3 h-full w-full p-4">
+    <div className="flex flex-col gap-3 h-full w-full p-6 animate-fade-up">
       {solucoesData.map((item, index) => (
         <SolucoesCard
           titulo={item.titulo}

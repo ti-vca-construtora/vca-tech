@@ -4,14 +4,15 @@ import { NavMain } from "@/components/nav-main";
 import { NavProjects } from "@/components/nav-projects";
 import { NavUser } from "@/components/nav-user";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarRail,
-  SidebarTrigger,
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarHeader,
+    SidebarRail,
+    SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Settings2, SquareTerminal } from "lucide-react";
+import Image from "next/image";
 import { MdOutlinePublic } from "react-icons/md";
 import { deleteExpiredReservations } from "../(solucoes)/reserva-patinete/_components/deleteReservations";
 
@@ -82,18 +83,39 @@ export function DashboardSidebar({
 }: React.ComponentProps<typeof Sidebar>) {
   deleteExpiredReservations();
   return (
-    <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
-        <SidebarTrigger />
+    <Sidebar
+      collapsible="icon"
+      className="border-r-0 bg-gradient-to-b from-slate-900 to-emerald-950"
+      {...props}
+    >
+      <SidebarHeader className="relative p-4">
+        <div className="flex w-full items-center justify-start gap-3 pr-8 text-left group-data-[collapsible=icon]:hidden">
+          <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl bg-white/10 p-1">
+            <Image
+              src="/assets/logo-vca.png"
+              alt="Logo VCA"
+              width={28}
+              height={28}
+              className="h-full w-full object-contain brightness-0 invert"
+            />
+          </div>
+          <div className="group-data-[collapsible=icon]:hidden overflow-hidden">
+            <h2 className="text-white font-semibold text-sm truncate">
+              VCA Tech
+            </h2>
+            <p className="text-white/40 text-[11px] truncate">Soluções</p>
+          </div>
+        </div>
+        <SidebarTrigger className="absolute right-3 top-3 z-10 text-white/50 hover:bg-white/[0.06] hover:text-white" />
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="px-2">
         <NavProjects projects={data.projects} />
         <NavMain items={data.navMain} />
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t border-white/[0.06] p-2">
         <NavUser />
       </SidebarFooter>
-      <SidebarRail />
+      <SidebarRail className="bg-white/[0.02] hover:bg-white/[0.04]" />
     </Sidebar>
   );
 }

@@ -76,9 +76,9 @@ export function Carousel({
       <div className="relative flex items-center w-full justify-center">
         <button
           onClick={scrollPrev}
-          className="absolute left-0 z-10 bg-green-600 text-white hover:text-purple-900 hover:bg-white shadow-md rounded-full p-2 m-2 transition mt-20 md:mt-0"
+          className="absolute left-0 z-10 bg-white border border-slate-200 text-slate-600 hover:text-emerald-600 hover:border-emerald-300 hover:bg-emerald-50 shadow-sm rounded-full w-10 h-10 flex items-center justify-center transition-all duration-200 mt-20 md:mt-0"
         >
-          <span className="text-xl font-bold">&#8592;</span>
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
         </button>
 
         <div
@@ -108,12 +108,13 @@ export function Carousel({
                     {availability[equipmentKeys[index]] ? (
                       <button
                         onClick={onOpenModal}
-                        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                        className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-medium hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
                       >
                         Reservar
                       </button>
                     ) : (
-                      <span className="text-red-600 font-semibold">
+                      <span className="inline-flex items-center gap-1.5 text-rose-500 font-medium text-sm bg-rose-50 px-4 py-2 rounded-xl">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
                         Indisponível
                       </span>
                     )}
@@ -126,9 +127,9 @@ export function Carousel({
 
         <button
           onClick={scrollNext}
-          className="absolute right-0 z-10 bg-green-600 text-white hover:text-purple-900 hover:bg-white shadow-md rounded-full p-2 m-2 transition mt-20 md:mt-0"
+          className="absolute right-0 z-10 bg-white border border-slate-200 text-slate-600 hover:text-emerald-600 hover:border-emerald-300 hover:bg-emerald-50 shadow-sm rounded-full w-10 h-10 flex items-center justify-center transition-all duration-200 mt-20 md:mt-0"
         >
-          <span className="text-xl font-bold">&#8594;</span>
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
         </button>
       </div>
     </div>
