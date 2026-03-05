@@ -311,6 +311,36 @@ export interface Database {
           updated_at?: string
         }
       }
+      tb_cdc: {
+        Row: {
+          id: string
+          external_id: number
+          name: string
+          cnpj: string
+          trade_name: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          external_id: number
+          name: string
+          cnpj: string
+          trade_name: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          external_id?: number
+          name?: string
+          cnpj?: string
+          trade_name?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tb_empresas: {
         Row: {
           id: string

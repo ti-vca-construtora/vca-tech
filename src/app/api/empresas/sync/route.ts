@@ -75,7 +75,7 @@ export async function POST() {
 
     // Buscar empresas existentes
     const { data: existingCompanies, error: fetchError } = await (supabase
-      .from("tb_empresas")
+      .from("tb_cdc")
       .select("external_id") as any);
 
     if (fetchError) {
@@ -100,7 +100,7 @@ export async function POST() {
 
     // Inserir novas empresas
     if (toInsert.length > 0) {
-      const { error: insertError } = await (supabase.from("tb_empresas") as any).insert(
+      const { error: insertError } = await (supabase.from("tb_cdc") as any).insert(
         toInsert.map((company) => ({
           external_id: company.id,
           name: company.name,
@@ -120,7 +120,7 @@ export async function POST() {
     // Atualizar empresas existentes
     for (const company of toUpdate) {
       const { error: updateError } = await (supabase
-        .from("tb_empresas") as any)
+        .from("tb_cdc") as any)
         .update({
           name: company.name,
           cnpj: company.cnpj || "",
