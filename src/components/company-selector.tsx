@@ -33,9 +33,10 @@ interface CompanySelectorProps {
   onChange: (empresa: Empresa | null) => void;
   disabled?: boolean;
   className?: string;
+  apiEndpoint?: string;
 }
 
-export function CompanySelector({ value, onChange, disabled, className }: CompanySelectorProps) {
+export function CompanySelector({ value, onChange, disabled, className, apiEndpoint = "/api/empresas" }: CompanySelectorProps) {
   const [open, setOpen] = useState(false);
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,7 +45,7 @@ export function CompanySelector({ value, onChange, disabled, className }: Compan
   useEffect(() => {
     async function fetchEmpresas() {
       try {
-        const response = await fetch("/api/empresas");
+        const response = await fetch(apiEndpoint);
         if (!response.ok) throw new Error("Erro ao buscar empresas");
         const data = await response.json();
         setEmpresas(data);
@@ -55,7 +56,7 @@ export function CompanySelector({ value, onChange, disabled, className }: Compan
       }
     }
     fetchEmpresas();
-  }, []);
+  }, [apiEndpoint]);
 
   const selectedEmpresa = empresas.find((empresa) => empresa.id === value);
 

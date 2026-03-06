@@ -8,7 +8,7 @@ export async function GET() {
     const supabase = createClient();
 
     const { data: empresas, error } = await supabase
-      .from('tb_empresas')
+      .from('tb_cdc')
       .select('*')
       .order('trade_name', { ascending: true });
 

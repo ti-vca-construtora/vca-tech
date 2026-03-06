@@ -104,7 +104,7 @@ export function GeradorDACForm({ formData, setFormData, onGeneratePreview, cadas
   const handleSyncCompanies = async () => {
     setSyncLoading(true);
     try {
-      const response = await fetch("/api/empresas/sync", {
+      const response = await fetch("/api/cdc/sync", {
         method: "POST",
       });
 
@@ -684,6 +684,7 @@ export function GeradorDACForm({ formData, setFormData, onGeneratePreview, cadas
                     Selecione a Empresa <span className="text-red-500">*</span>
                   </Label>
                   <CompanySelector
+                    apiEndpoint="/api/cdc"
                     value={formData.companyId}
                     onChange={(empresa: Empresa | null) => {
                       if (empresa) {
