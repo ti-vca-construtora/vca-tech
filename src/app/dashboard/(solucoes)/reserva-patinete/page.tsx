@@ -130,7 +130,12 @@ export default function ReservarPatinete() {
     });
 
   const generateAccessCode = (): string => {
-    return Math.floor(1000 + Math.random() * 9000).toString();
+    const BLOCKED = ["8001", "8002", "8003", "8004", "8005"];
+    let code: string;
+    do {
+      code = Math.floor(1000 + Math.random() * 9000).toString();
+    } while (BLOCKED.includes(code));
+    return code;
   };
 
   const equipmentNames = ["vca001", "vca002", "vca003", "vca004", "vca005"];

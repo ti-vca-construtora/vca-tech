@@ -1,23 +1,27 @@
 #include <Keypad.h>
-#include <ESP32Servo.h>
+#include <Stepper.h>
 
 // ============================
-// PINOS
+// CONFIG MOTOR
 // ============================
 
-#define SERVO_PIN 13
+#define STEPS_PER_REV 2048
+
+// IN1, IN3, IN2, IN4
+Stepper drumStepper(STEPS_PER_REV, 13, 27, 12, 25);
 
 // ============================
-// AJUSTE OS ÂNGULOS AQUI
+// POSIÇÕES DO TAMBOR
 // ============================
+// 6 lados = 360 / 6 = 60 graus
 
-const int DRUM_ANGLES[6] = {
-  180,    // 0 - Neutro
-  115,   // 1
-  50,   // 2
-  0,  // 3
-  360,  // 4
-  360   // 5
+const int POSITIONS[6] = {
+  950,
+  1320,
+  1630,
+  1930,
+  610,
+  100
 };
 
 #define RETURN_TIME 10000  // 10 segundos
@@ -40,11 +44,17 @@ byte rowPins[ROWS] = {19, 18, 5, 22};
 byte colPins[COLS] = {23, 4, 26, 15};
 
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
-Servo drumServo;
+
+// ============================
+// VARIÁVEIS
+// ============================
 
 String input = "";
-int currentAngle = 0;
+
+int currentStep = 0;
+
 unsigned long moveTime = 0;
+
 bool waitingReturn = false;
 
 // ============================
@@ -52,15 +62,14 @@ bool waitingReturn = false;
 // ============================
 
 void setup() {
+
   Serial.begin(115200);
-  Serial.println("Modo simples de calibracao");
 
-  drumServo.attach(SERVO_PIN);
+  Serial.println("Sistema iniciado");
+  Serial.println("Posicao inicial: 0");
 
-  currentAngle = DRUM_ANGLES[0];
-  drumServo.write(currentAngle);
+  drumStepper.setSpeed(10);  // RPM
 
-  Serial.println("Iniciado na posicao 0");
 }
 
 // ============================
@@ -73,73 +82,77 @@ void loop() {
 
   if (key) {
 
+    Serial.print("Tecla: ");
+    Serial.println(key);
+
     if (key == '#') {
+
       if (input.length() == 1) {
+
         int pos = input.toInt();
+
         moveToPosition(pos);
       }
+
       input = "";
     }
 
     else if (key >= '0' && key <= '5') {
-      input = key;  // aceita apenas 1 dígito
+
+      input = key;
+
       Serial.print("Selecionado: ");
       Serial.println(input);
     }
   }
 
-  // Verifica se precisa voltar para 0
+  // retorno automático
+
   if (waitingReturn && millis() - moveTime >= RETURN_TIME) {
-    Serial.println("Voltando para posicao 0...");
-    moveServoSmooth(DRUM_ANGLES[0]);
+
+    Serial.println("Voltando para posição 0");
+
+    moveToPosition(0);
+
     waitingReturn = false;
   }
 }
 
 // ============================
-// MOVE PARA POSIÇÃO
+// MOVIMENTO
 // ============================
 
 void moveToPosition(int position) {
 
   if (position < 0 || position > 5) {
-    Serial.println("Posicao invalida");
+
+    Serial.println("Posição inválida");
+
     return;
   }
 
-  Serial.print("Indo para posicao ");
+  int targetStep = POSITIONS[position];
+
+  int stepsToMove = targetStep - currentStep;
+
+  Serial.print("Movendo para posição ");
   Serial.println(position);
 
-  moveServoSmooth(DRUM_ANGLES[position]);
+  drumStepper.step(stepsToMove);
+
+  currentStep = targetStep;
+
+  Serial.print("Passo atual: ");
+  Serial.println(currentStep);
 
   if (position != 0) {
+
     moveTime = millis();
+
     waitingReturn = true;
-  } else {
+  }
+  else {
+
     waitingReturn = false;
   }
-}
-
-// ============================
-// MOVIMENTO SUAVE
-// ============================
-
-void moveServoSmooth(int targetAngle) {
-
-  if (currentAngle < targetAngle) {
-    for (int a = currentAngle; a <= targetAngle; a++) {
-      drumServo.write(a);
-      delay(15);
-    }
-  } else {
-    for (int a = currentAngle; a >= targetAngle; a--) {
-      drumServo.write(a);
-      delay(15);
-    }
-  }
-
-  currentAngle = targetAngle;
-
-  Serial.print("Angulo atual: ");
-  Serial.println(currentAngle);
 }

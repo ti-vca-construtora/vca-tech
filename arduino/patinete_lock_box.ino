@@ -2,38 +2,49 @@
   ============================================================
   VCA Tech - Caixa de Chaves para Patinetes com Senha
   ============================================================
-  
+
   Componentes:
   - ESP32 DevKit
-  - Servo SG90 - 3 fios (marrom=GND, vermelho=5V, laranja=sinal)
+  - Motor de Passo 28BYJ-48 + Driver ULN2003
   - Teclado Matricial 4x4 (16 teclas)
-  - Buzzer Ativo
-  - Fonte externa 5V para o servo (opcional para SG90, pode usar 3.3V do ESP32)
+  - Buzzer Ativo (modulo 3 pinos)
 
-  Ligacao do Servo SG90:
-    Marrom  (GND)   -> GND do ESP32
-    Vermelho (VCC)  -> 3.3V ou 5V do ESP32 (SG90 aceita ambos)
-    Laranja (Sinal) -> GPIO 13 do ESP32
+  Ligacao do Motor de Passo (ULN2003 → ESP32):
+    IN1 → GPIO 13
+    IN3 → GPIO 27
+    IN2 → GPIO 12
+    IN4 → GPIO 25
+    VCC → 5V externo (NAO use 3.3V do ESP32, corrente insuficiente)
+    GND → GND compartilhado com ESP32
 
   Ligacao do Buzzer Ativo (modulo 3 pinos):
-    Pino S (+)  -> GPIO 14 do ESP32
-    Pino +      -> 3.3V ou 5V do ESP32
-    Pino -      -> GND do ESP32
+    Pino S → GPIO 14
+    Pino +  → 3.3V ou 5V do ESP32
+    Pino -  → GND do ESP32
+
+  Ligacao do Teclado (pinos 1 a 10, esq→dir):
+    Pino 1 (LED-)  → GND
+    Pino 2 (C1)    → GPIO 19
+    Pino 3 (C2)    → GPIO 18
+    Pino 4 (C3)    → GPIO  5
+    Pino 5 (C4)    → GPIO 22
+    Pino 6 (L1)    → GPIO 23
+    Pino 7 (L2)    → GPIO  4
+    Pino 8 (L3)    → GPIO 26
+    Pino 9 (L4)    → GPIO 15
+    Pino 10 (LED+) → 3.3V (opcional, acende backlight)
+
+  Senhas hardcoded de teste (nao geradas pelo app):
+    8001 → vca001 (posicao 1)
+    8002 → vca002 (posicao 2)
+    8003 → vca003 (posicao 3)
+    8004 → vca004 (posicao 4)
+    8005 → vca005 (posicao 5)
 
   Bibliotecas necessarias (instale via Arduino IDE > Gerenciar Bibliotecas):
   - Firebase ESP32 Client (by mobizt)
   - Keypad (by Mark Stanley, Alexander Brevig)
-  - ESP32Servo (by Kevin Harrington)
-  
-  Estrutura Firebase Realtime Database esperada:
-  equipments/
-    vca001/
-      available: true/false
-      currentUser: "userId"
-      reservedUntil: "ISO date"
-      accessCode: "1234"           <-- senha de 4 dígitos
-    vca002/ ...
-    
+
   ============================================================
 */
 
@@ -41,62 +52,56 @@
 #include <Firebase_ESP_Client.h>
 #include <addons/RTDBHelper.h>
 #include <Keypad.h>
-#include <ESP32Servo.h>
+#include <Stepper.h>
 
 // ============================================================
-// CONFIGURAÇÕES - ALTERE AQUI
+// CONFIGURACOES - ALTERE AQUI
 // ============================================================
 
-// WiFi
-#define WIFI_SSID "VCA"
-#define WIFI_PASSWORD "vcaconstrutora"
+#define WIFI_SSID     "iPhone de Silas"
+#define WIFI_PASSWORD "12345678"
 
-// Firebase
-#define FIREBASE_DATABASE_URL "https://reserva-patinete-vca-default-rtdb.firebaseio.com"
-#define FIREBASE_DATABASE_SECRET "pXo0gMT3Oc7RQSZVItgs2TcbUe4hVCaQkrcn5oU9"  // veja instrucoes abaixo
+#define FIREBASE_DATABASE_URL    "https://reserva-patinete-vca-default-rtdb.firebaseio.com"
+#define FIREBASE_DATABASE_SECRET "pXo0gMT3Oc7RQSZVItgs2TcbUe4hVCaQkrcn5oU9"
 
 // ============================================================
-// PINOS E CONSTANTES
+// MOTOR DE PASSO
 // ============================================================
 
-// Servo Motor SG90
-#define SERVO_PIN 13
+#define STEPS_PER_REV 2048
 
-// Buzzer Ativo
-#define BUZZER_PIN 14
+// IN1, IN3, IN2, IN4 — mesma ordem do calibrar_tambor.ino
+Stepper drumStepper(STEPS_PER_REV, 13, 27, 12, 25);
 
-// Ângulos do servo para cada posição do tambor (6 lados)
-// Ajuste esses valores conforme a mecânica do seu tambor
-// Lado 0 = posição "neutra/fechada", Lados 1-5 = chaves dos patinetes vca001-vca005
-const int DRUM_ANGLES[6] = {
-  180,    // Posição 0: posição neutra/fechada (sem chave)
-  115,   // Posição 1: chave vca001
-  50,   // Posição 2: chave vca002
-  0,  // Posição 3: chave vca003
-  360,  // Posição 4: chave vca004
-  360   // Posição 5: chave vca005
+// Posicoes calibradas em steps para cada lado do tambor.
+// Posicao 0 = neutra/fechada. Posicoes 1-5 = chaves vca001-vca005.
+// IMPORTANTE: ao ligar, o tambor deve estar fisicamente na posicao 0.
+const int DRUM_POSITIONS[6] = {
+  950,   // Posicao 0: neutra/fechada
+  1320,  // Posicao 1: chave vca001
+  1630,  // Posicao 2: chave vca002
+  1930,  // Posicao 3: chave vca003
+  610,   // Posicao 4: chave vca004
+  100    // Posicao 5: chave vca005
 };
 
-// Tempo que o tambor fica aberto (ms) antes de voltar à posição neutra
+// Tempo que o tambor fica aberto antes de voltar para posicao 0 (ms)
 #define DRUM_OPEN_TIME 15000  // 15 segundos
 
-// Teclado Matricial 4x4
+// ============================================================
+// BUZZER
+// ============================================================
+
+#define BUZZER_PIN 14
+
+// ============================================================
+// TECLADO MATRICIAL 4x4
+// ============================================================
+
 const byte ROWS = 4;
 const byte COLS = 4;
 
-// Pinout fisico confirmado por teste de continuidade (pinos 1 a 10, esq→dir):
-//   Pino 1 = LED-, Pino 2=C1, 3=C2, 4=C3, 5=C4, 6=L1, 7=L2, 8=L3, 9=L4, 10=LED+
-//
-// Ligacao ao ESP32:
-//   Pino 2 (C1) → GPIO 19  |  Pino 6 (L1) → GPIO 23
-//   Pino 3 (C2) → GPIO 18  |  Pino 7 (L2) → GPIO 4
-//   Pino 4 (C3) → GPIO  5  |  Pino 8 (L3) → GPIO 26  ← era GPIO 2 (conflito com LED da placa)
-//   Pino 5 (C4) → GPIO 22  |  Pino 9 (L4) → GPIO 15
-//
-// rowPins varrem C1→C4 (saida), colPins leem L1→L4 (entrada)
-// keys[r][c] = tecla quando Cr baixo e Lc baixo
 char keys[ROWS][COLS] = {
-  //   L1    L2    L3    L4
   {'1', '4', '7', '*'},   // C1 (GPIO 19)
   {'2', '5', '8', '0'},   // C2 (GPIO 18)
   {'3', '6', '9', '#'},   // C3 (GPIO  5)
@@ -107,26 +112,32 @@ byte rowPins[ROWS] = {19, 18, 5, 22};   // C1, C2, C3, C4 do teclado
 byte colPins[COLS] = {23, 4, 26, 15};   // L1, L2, L3, L4 do teclado
 
 // ============================================================
+// SENHAS HARDCODED DE TESTE
+// ============================================================
+
+// Estas senhas abrem diretamente o tambor sem consultar o Firebase.
+// O app NUNCA gera essas senhas — sao exclusivas para testes fisicos.
+const char* HARDCODED_CODES[]    = {"8001", "8002", "8003", "8004", "8005"};
+const int   HARDCODED_POSITIONS[] = {1,      2,      3,      4,      5};
+const char* HARDCODED_IDS[]      = {"vca001","vca002","vca003","vca004","vca005"};
+const int   NUM_HARDCODED        = 5;
+
+// ============================================================
 // OBJETOS GLOBAIS
 // ============================================================
 
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
-Servo drumServo;
 
 FirebaseData fbdo;
 FirebaseAuth auth;
 FirebaseConfig config;
 
-// Estado
-String inputCode = "";
+String inputCode   = "";
 bool firebaseReady = false;
-unsigned long lastFirebaseCheck = 0;
-const unsigned long FIREBASE_CHECK_INTERVAL = 5000; // Checar Firebase a cada 5s
-int currentServoAngle = 0; // rastreia angulo atual do servo (nao usa read())
+int  currentStep   = 0;  // rastreia posicao atual do motor em steps
 
-// Nomes dos equipamentos
-const char* equipmentIds[] = {"vca001", "vca002", "vca003", "vca004", "vca005"};
-const int NUM_EQUIPMENTS = 5;
+const char* equipmentIds[] = {"vca001","vca002","vca003","vca004","vca005"};
+const int   NUM_EQUIPMENTS = 5;
 
 // ============================================================
 // SETUP
@@ -138,27 +149,26 @@ void setup() {
   Serial.println("VCA Tech - Caixa de Chaves");
   Serial.println("=============================\n");
 
-  Serial.println("Iniciando...");
-
-  // Inicializa Buzzer
+  // Buzzer
   pinMode(BUZZER_PIN, OUTPUT);
   digitalWrite(BUZZER_PIN, LOW);
 
-  // Inicializa Servo SG90 (attach simples, sem range customizado)
-  drumServo.attach(SERVO_PIN);
-  currentServoAngle = DRUM_ANGLES[0];
-  drumServo.write(currentServoAngle); // Posicao neutra
-  delay(500);
+  // Motor de passo — velocidade em RPM
+  drumStepper.setSpeed(10);
 
-  beepOk(); // 3 beeps de inicializacao
+  // Ao ligar, assume que o tambor esta fisicamente na posicao 0.
+  // currentStep recebe o valor de steps da posicao 0 para que todos
+  // os movimentos subsequentes sejam calculados corretamente.
+  currentStep = DRUM_POSITIONS[0];
+  Serial.println("Posicao inicial: 0 (neutra)");
 
-  // Conecta WiFi
+  beepOk();  // 3 beeps de inicializacao
+
   connectWiFi();
-
-  // Configura Firebase
   setupFirebase();
 
   Serial.println("Pronto. Aguardando senha...");
+  Serial.println("# = confirmar | * = limpar");
 }
 
 // ============================================================
@@ -166,12 +176,10 @@ void setup() {
 // ============================================================
 
 void loop() {
-  // Mantém conexão Firebase ativa
   if (Firebase.ready()) {
     firebaseReady = true;
   }
 
-  // Lê tecla pressionada
   char key = keypad.getKey();
 
   if (key) {
@@ -179,22 +187,19 @@ void loop() {
     Serial.println(key);
 
     if (key == '#') {
-      // # = Confirmar senha
       if (inputCode.length() == 4) {
         beepClick();
         validateCode(inputCode);
       } else {
         beepError();
-        Serial.println("Senha invalida: use 4 digitos");
+        Serial.println("Use 4 digitos + #");
         delay(2000);
         resetInput();
       }
     } else if (key == '*') {
-      // * = Limpar/Cancelar
       beepClick();
       resetInput();
     } else if (key >= '0' && key <= '9') {
-      // Digito numerico
       if (inputCode.length() < 4) {
         beepClick();
         inputCode += key;
@@ -203,17 +208,16 @@ void loop() {
         Serial.println();
       }
     }
-    // Teclas A, B, C, D sao ignoradas
+    // A, B, C, D ignorados
   }
 }
 
 // ============================================================
-// FUNÇÕES DE CONEXÃO
+// WIFI
 // ============================================================
 
 void connectWiFi() {
   Serial.print("Conectando WiFi");
-
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
   int attempts = 0;
@@ -224,29 +228,28 @@ void connectWiFi() {
   }
 
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("\nWiFi conectado!");
-    Serial.print("IP: ");
-    Serial.println(WiFi.localIP());
+    Serial.println("\nWiFi conectado! IP: " + WiFi.localIP().toString());
     delay(1500);
   } else {
-    Serial.println("\nFalha ao conectar WiFi!");
+    Serial.println("\nFalha WiFi!");
     delay(3000);
     ESP.restart();
   }
 }
 
+// ============================================================
+// FIREBASE
+// ============================================================
+
 void setupFirebase() {
   Serial.println("Configurando Firebase...");
 
-  // Autenticacao por Database Secret (legacy token) - mais simples para IoT
-  // Nao requer Firebase Auth habilitado no console
-  config.database_url = FIREBASE_DATABASE_URL;
+  config.database_url               = FIREBASE_DATABASE_URL;
   config.signer.tokens.legacy_token = FIREBASE_DATABASE_SECRET;
 
   Firebase.begin(&config, &auth);
   Firebase.reconnectNetwork(true);
 
-  // Aguarda conexao
   int attempts = 0;
   while (!Firebase.ready() && attempts < 20) {
     delay(500);
@@ -255,7 +258,6 @@ void setupFirebase() {
 
   if (Firebase.ready()) {
     Serial.println("Firebase conectado!");
-    delay(1000);
     firebaseReady = true;
   } else {
     Serial.println("Falha Firebase!");
@@ -265,70 +267,28 @@ void setupFirebase() {
 }
 
 // ============================================================
-// VALIDAÇÃO DE SENHA
+// VALIDACAO DE SENHA
 // ============================================================
 
 void validateCode(String code) {
-
-  Serial.print("Verificando senha: ");
+  Serial.print("Verificando: ");
   Serial.println(code);
 
-  // =====================================================
-  // 🔐 SENHAS HARDCODED DE EMERGÊNCIA (MANUAL)
-  // =====================================================
-  // 8001 -> vca001
-  // 8002 -> vca002
-  // 8003 -> vca003
-  // 8004 -> vca004
-  // 8005 -> vca005
-  // =====================================================
-
-  if (code == "8001") {
-    Serial.println("[HARDCODE] Acesso manual vca001");
-    beepSuccess();
-    openDrum(1, "vca001");
-    resetInput();
-    return;
+  // --- Senhas hardcoded de teste (8001-8005) ---
+  for (int i = 0; i < NUM_HARDCODED; i++) {
+    if (code == HARDCODED_CODES[i]) {
+      Serial.print("[TESTE] Senha hardcoded: ");
+      Serial.println(HARDCODED_CODES[i]);
+      beepSuccess();
+      openDrum(HARDCODED_POSITIONS[i], HARDCODED_IDS[i]);
+      resetInput();
+      return;
+    }
   }
 
-  if (code == "8002") {
-    Serial.println("[HARDCODE] Acesso manual vca002");
-    beepSuccess();
-    openDrum(2, "vca002");
-    resetInput();
-    return;
-  }
-
-  if (code == "8003") {
-    Serial.println("[HARDCODE] Acesso manual vca003");
-    beepSuccess();
-    openDrum(3, "vca003");
-    resetInput();
-    return;
-  }
-
-  if (code == "8004") {
-    Serial.println("[HARDCODE] Acesso manual vca004");
-    beepSuccess();
-    openDrum(4, "vca004");
-    resetInput();
-    return;
-  }
-
-  if (code == "8005") {
-    Serial.println("[HARDCODE] Acesso manual vca005");
-    beepSuccess();
-    openDrum(5, "vca005");
-    resetInput();
-    return;
-  }
-
-  // =====================================================
-  // 🔵 SE NÃO FOR HARDCODE, VERIFICA NO FIREBASE
-  // =====================================================
-
+  // --- Senhas do Firebase ---
   if (!firebaseReady) {
-    Serial.println("Sem conexao Firebase. Aguarde...");
+    Serial.println("Sem conexao Firebase.");
     beepError();
     delay(2000);
     resetInput();
@@ -339,120 +299,87 @@ void validateCode(String code) {
     String path = String("equipments/") + equipmentIds[i] + "/accessCode";
 
     if (Firebase.RTDB.getString(&fbdo, path.c_str())) {
-
       String storedCode = fbdo.stringData();
 
-      if (storedCode == code) {
-        Serial.print("Senha correta via Firebase! Equipamento: ");
+      if (storedCode.length() > 0 && storedCode == code) {
+        Serial.print("Senha correta! Equipamento: ");
         Serial.println(equipmentIds[i]);
 
         beepSuccess();
-
-        int drumPosition = i + 1;
-        openDrum(drumPosition, equipmentIds[i]);
-
-        // Limpa a senha no Firebase após uso
+        openDrum(i + 1, equipmentIds[i]);
         clearAccessCode(equipmentIds[i]);
-
         resetInput();
         return;
       }
-
     } else {
-      Serial.print("Erro ao ler ");
+      Serial.print("Erro Firebase (");
       Serial.print(equipmentIds[i]);
-      Serial.print(": ");
+      Serial.print("): ");
       Serial.println(fbdo.errorReason());
     }
   }
 
-  // Nenhuma senha encontrada
   Serial.println("Senha incorreta!");
   beepError();
   delay(2500);
   resetInput();
 }
+
 void clearAccessCode(const char* equipmentId) {
   String path = String("equipments/") + equipmentId + "/accessCode";
 
-  if (Firebase.RTDB.setString(&fbdo, path.c_str(), "")) {
-    Serial.print("Senha limpa para: ");
-    Serial.println(equipmentId);
-  } else {
+  if (!Firebase.RTDB.setString(&fbdo, path.c_str(), "")) {
     Serial.print("Erro ao limpar senha: ");
     Serial.println(fbdo.errorReason());
   }
 }
 
 // ============================================================
-// CONTROLE DO TAMBOR (SERVO)
+// CONTROLE DO TAMBOR (MOTOR DE PASSO)
 // ============================================================
 
-void openDrum(int position, const char* equipmentId) {
-  if (position < 1 || position > 5) {
-    Serial.println("Posicao invalida do tambor!");
+void moveToPosition(int position) {
+  if (position < 0 || position > 5) {
+    Serial.println("Posicao invalida!");
     return;
   }
 
-  int angle = DRUM_ANGLES[position];
+  int targetStep  = DRUM_POSITIONS[position];
+  int stepsToMove = targetStep - currentStep;
 
-  Serial.print("Abrindo tambor - Chave: ");
-  Serial.println(String(equipmentId).substring(3));
-  Serial.print("Girando tambor para posicao ");
+  Serial.print("Movendo para posicao ");
   Serial.print(position);
-  Serial.print(" (angulo: ");
-  Serial.print(angle);
-  Serial.println(")");
+  Serial.print(" (");
+  Serial.print(stepsToMove > 0 ? "+" : "");
+  Serial.print(stepsToMove);
+  Serial.println(" steps)");
 
-  // Gira o servo suavemente ate a posicao (usa variavel global, nao drumServo.read())
-  if (currentServoAngle < angle) {
-    for (int a = currentServoAngle; a <= angle; a++) {
-      drumServo.write(a);
-      delay(15);
-    }
-  } else {
-    for (int a = currentServoAngle; a >= angle; a--) {
-      drumServo.write(a);
-      delay(15);
-    }
-  }
-  currentServoAngle = angle;
+  drumStepper.step(stepsToMove);
+  currentStep = targetStep;
+}
+
+void openDrum(int position, const char* equipmentId) {
+  Serial.print("Abrindo tambor — chave: ");
+  Serial.println(equipmentId);
+
+  moveToPosition(position);
 
   Serial.println("RETIRE A CHAVE!");
 
-  // Countdown
-  int secondsRemaining = DRUM_OPEN_TIME / 1000;
   unsigned long startTime = millis();
-
   while (millis() - startTime < DRUM_OPEN_TIME) {
-    secondsRemaining = (DRUM_OPEN_TIME - (millis() - startTime)) / 1000;
+    int secsLeft = (DRUM_OPEN_TIME - (millis() - startTime)) / 1000;
     Serial.print("Fechando em: ");
-    Serial.print(secondsRemaining);
+    Serial.print(secsLeft);
     Serial.println("s");
-    // Beep de aviso nos ultimos 5 segundos
-    if (secondsRemaining <= 5) {
+    if (secsLeft <= 5) {
       beepWarning();
     }
     delay(1000);
   }
 
-  // Volta o tambor para a posicao neutra
   Serial.println("Fechando tambor...");
-
-  int neutralAngle = DRUM_ANGLES[0];
-  if (currentServoAngle < neutralAngle) {
-    for (int a = currentServoAngle; a <= neutralAngle; a++) {
-      drumServo.write(a);
-      delay(15);
-    }
-  } else {
-    for (int a = currentServoAngle; a >= neutralAngle; a--) {
-      drumServo.write(a);
-      delay(15);
-    }
-  }
-  currentServoAngle = neutralAngle;
-
+  moveToPosition(0);
   Serial.println("Tambor fechado. Aguardando senha...");
 }
 
@@ -465,14 +392,12 @@ void resetInput() {
 // BUZZER
 // ============================================================
 
-// Beep curto - pressionamento de tecla
 void beepClick() {
   digitalWrite(BUZZER_PIN, HIGH);
   delay(30);
   digitalWrite(BUZZER_PIN, LOW);
 }
 
-// Dois beeps rapidos - sucesso / senha correta
 void beepSuccess() {
   for (int i = 0; i < 2; i++) {
     digitalWrite(BUZZER_PIN, HIGH);
@@ -482,42 +407,23 @@ void beepSuccess() {
   }
 }
 
-// Beep longo - erro / senha errada
 void beepError() {
   digitalWrite(BUZZER_PIN, HIGH);
   delay(600);
   digitalWrite(BUZZER_PIN, LOW);
 }
 
-// Beep curto de aviso - contagem regressiva
 void beepWarning() {
   digitalWrite(BUZZER_PIN, HIGH);
   delay(80);
   digitalWrite(BUZZER_PIN, LOW);
 }
 
-// Tres beeps - inicializacao
 void beepOk() {
   for (int i = 0; i < 3; i++) {
     digitalWrite(BUZZER_PIN, HIGH);
     delay(80);
     digitalWrite(BUZZER_PIN, LOW);
     delay(80);
-  }
-}
-
-// ============================================================
-// RECONEXÃO WIFI (chamada no loop se necessário)
-// ============================================================
-
-void checkWiFiConnection() {
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("WiFi desconectado! Reconectando...");
-    WiFi.reconnect();
-    delay(5000);
-
-    if (WiFi.status() == WL_CONNECTED) {
-      Serial.println("WiFi reconectado!");
-    }
   }
 }
